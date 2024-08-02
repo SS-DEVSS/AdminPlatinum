@@ -184,7 +184,9 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
           </SheetContent>
         </Sheet>
       </header>
-      <div className="flex-1 overflow-y-auto py-5">{children}</div>
+      <div className="flex-1 overflow-y-auto px-4 md:px-0 py-0 md:py-5">
+        {children}
+      </div>
     </div>
   );
 };
