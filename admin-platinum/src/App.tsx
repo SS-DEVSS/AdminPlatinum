@@ -1,5 +1,9 @@
-function App() {
-  return <h1 className="text-red-900">test</h1>;
-}
+import Layout from "./components/Layout";
 
-export default App;
+export default function App() {
+  return (
+    <Layout>
+      <h1 className="text-red-900">test</h1>
+    </Layout>
+  );
+}
