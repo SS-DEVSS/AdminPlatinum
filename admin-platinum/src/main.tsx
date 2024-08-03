@@ -3,6 +3,8 @@ import * as ReactDOM from "react-dom/client";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import App from "./App";
 import "./index.css";
+import Login from "./pages/login";
+import Marcas from "./pages/marcas";
 
 import Root from "./pages/root";
 
@@ -12,8 +14,16 @@ const router = createBrowserRouter([
     element: <App />,
   },
   {
+    path: "/login",
+    element: <Login />,
+  },
+  {
     path: "/productos",
     element: <Root />,
+  },
+  {
+    path: "/marcas",
+    element: <Marcas />,
   },
 ]);
 

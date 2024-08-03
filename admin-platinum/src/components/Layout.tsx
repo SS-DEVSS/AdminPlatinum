@@ -145,7 +145,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
           )}
         </div>
       </div>
-      <header className="p-3">
+      <header className="p-3 md:p-0">
         <Sheet>
           <div className="flex justify-between">
             <div className="flex items-center md:hidden gap-2 font-semibold">
@@ -184,7 +184,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
           </SheetContent>
         </Sheet>
       </header>
-      <div className="flex-1 overflow-y-auto px-4 md:px-0 py-0 md:py-5">
+      <div className="flex-1 overflow-y-auto mx-4 md:px-0 py-0 md:my-5">
         {children}
       </div>
     </div>
