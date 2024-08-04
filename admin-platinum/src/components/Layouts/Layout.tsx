@@ -17,12 +17,18 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "../ui/button";
 import { NavLink } from "react-router-dom";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const menuItems = [
+  { href: "/kits", icon: Boxes, text: "Kits" },
   { href: "/productos", icon: Package, text: "Productos" },
   { href: "/marcas", icon: ShoppingCart, text: "Marcas" },
   { href: "/categorias", icon: LayoutGrid, text: "Categorías" },
-  { href: "/kits", icon: Boxes, text: "kits" },
   { href: "/boletines", icon: Newspaper, text: "Boletínes" },
   { href: "/noticias", icon: Megaphone, text: "Noticias" },
   { href: "/banners", icon: Dock, text: "Banners" },
@@ -44,13 +50,28 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     <NavLink
       to={href}
       className={({ isActive }) =>
-        `flex items-center gap-3 rounded-lg px-3 py-4 text-muted-foreground transition-all hover:text-primary ${
-          isActive ? "bg-black text-white" : ""
+        `flex items-center gap-3 rounded-lg px-3 py-3 my-2 first:mt-0 text-muted-foreground transition-all hover:text-primary ${
+          isActive ? "bg-black text-white hover:text-slate-300" : ""
         }`
       }
     >
-      <Icon className="h-4 w-4" />
-      {menuLarge && <p>{text}</p>}
+      {!menuLarge ? (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger>
+              <Icon className="h-4 w-4" />
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{text}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      ) : (
+        <>
+          <Icon className="h-4 w-4" />
+          {menuLarge && <p>{text}</p>}
+        </>
+      )}
     </NavLink>
   );
 
