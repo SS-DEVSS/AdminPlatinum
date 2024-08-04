@@ -15,7 +15,7 @@ import {
   Dock,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Button } from "./ui/button";
+import { Button } from "../ui/button";
 import { NavLink } from "react-router-dom";
 
 const menuItems = [

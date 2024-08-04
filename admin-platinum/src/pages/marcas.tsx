@@ -1,8 +1,7 @@
-import Layout from "@/components/Layout";
+import Layout from "@/components/Layouts/Layout";
 import { Button } from "@/components/ui/button";
 import {
   Card,
-  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
@@ -16,10 +15,59 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { PlusCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { PlusCircle, Search } from "lucide-react";
+import CardSectionLayout from "@/components/Layouts/CardSectionLayout";
+import CardTemplate from "@/components/Layouts/CardTemplate";
 
 type Props = {};
+
+const brands = [
+  {
+    id: 1,
+    image:
+      "https://www.platinumdriveline.com/wp-content/uploads/2020/07/NewBoxes-4-2048x1365.jpg",
+    title: "Platinum Driveline",
+    description:
+      "Lorem ipsum dolor, sit amet consectetur adipisicing elit. Repellendus rem minus, soluta officia ipsam repudiandae quia rerum voluptatibus ipsum minima",
+  },
+  {
+    id: 2,
+    image: "",
+    title: "Platinum Driveline",
+    description:
+      "Lorem ipsum dolor, sit amet consectetur adipisicing elit. Repellendus rem minus, soluta officia ipsam repudiandae quia rerum voluptatibus ipsum minima",
+  },
+  {
+    id: 3,
+    image: "",
+    title: "Platinum Driveline",
+    description:
+      "Lorem ipsum dolor, sit amet consectetur adipisicing elit. Repellendus rem minus, soluta officia ipsam repudiandae quia rerum voluptatibus ipsum minima",
+  },
+  {
+    id: 1,
+    image:
+      "https://www.platinumdriveline.com/wp-content/uploads/2020/07/NewBoxes-4-2048x1365.jpg",
+    title: "Platinum Driveline",
+    description:
+      "Lorem ipsum dolor, sit amet consectetur adipisicing elit. Repellendus rem minus, soluta officia ipsam repudiandae quia rerum voluptatibus ipsum minima",
+  },
+  {
+    id: 2,
+    image: "",
+    title: "Platinum Driveline",
+    description:
+      "Lorem ipsum dolor, sit amet consectetur adipisicing elit. Repellendus rem minus, soluta officia ipsam repudiandae quia rerum voluptatibus ipsum minima",
+  },
+  {
+    id: 3,
+    image: "",
+    title: "Platinum Driveline",
+    description:
+      "Lorem ipsum dolor, sit amet consectetur adipisicing elit. Repellendus rem minus, soluta officia ipsam repudiandae quia rerum voluptatibus ipsum minima",
+  },
+];
 
 const Marcas = (props: Props) => {
   return (
@@ -33,7 +81,15 @@ const Marcas = (props: Props) => {
                 Maneja tus marcas y las categorias asociadas a cada una de ellas
               </CardDescription>
             </div>
-            <div className="ml-auto">
+            <div className="ml-auto flex gap-3">
+              <div className="relative ml-auto flex-1 md:grow-0">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Buscar Marca..."
+                  className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[336px]"
+                />
+              </div>
               <Dialog>
                 <DialogTrigger asChild>
                   <Button size="sm" className="h-10 px-6 gap-1">
@@ -43,7 +99,6 @@ const Marcas = (props: Props) => {
                     </span>
                   </Button>
                 </DialogTrigger>
-
                 <DialogContent className="sm:max-w-[425px]">
                   <DialogHeader>
                     <DialogTitle className="mb-2">Agregar Marca</DialogTitle>
@@ -72,38 +127,29 @@ const Marcas = (props: Props) => {
                   </DialogDescription>
                   <DialogFooter>
                     <Button disabled type="submit">
-                      Agregar
+                      Agregar Marca
                     </Button>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
             </div>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {/* {categories.map((category) => (
-                <Link href={`/admin/Categories/category/${category.title}`}>
-                  <Card key={category.id} className="w-full">
-                    <Image
-                      width={600}
-                      height={100}
-                      src={`${category.image}`}
-                      alt="name"
-                      className="max-h-[300px] object-cover rounded-t-lg"
-                    />
-                    <CardContent>
-                      <div className="flex justify-between items-center">
-                        <CardTitle className="mt-6 mb-4">
-                          {category.title}
-                        </CardTitle>
-                      </div>
-                      <CardDescription className="leading-7">
-                        {category.description}
-                      </CardDescription>
-                    </CardContent>
-                  </Card>
-                </Link>
-              ))} */}
-          </CardContent>
+          <CardSectionLayout>
+            {brands.length === 0 ? (
+              <></>
+            ) : (
+              <>
+                {brands.map((brand) => (
+                  <CardTemplate
+                    key={brand.id}
+                    image={brand.image}
+                    title={brand.title}
+                    description={brand.description}
+                  />
+                ))}
+              </>
+            )}
+          </CardSectionLayout>
         </Card>
       </div>
     </Layout>
