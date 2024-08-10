@@ -6,7 +6,8 @@ import "./index.css";
 import Categorias from "./pages/categories/categories";
 import EditCategory from "./pages/categories/editCategory";
 import NewCategory from "./pages/categories/newCategory";
-import Login from "./pages/login";
+import ForgotPassword from "./pages/auth/forgotPassword";
+import Login from "./pages/auth/login";
 import Marcas from "./pages/marcas";
 import Root from "./pages/root";
 
@@ -18,6 +19,10 @@ const router = createBrowserRouter([
   {
     path: "/login",
     element: <Login />,
+  },
+  {
+    path: "/olvide-mi-contrasena",
+    element: <ForgotPassword />,
   },
   {
     path: "/productos",
