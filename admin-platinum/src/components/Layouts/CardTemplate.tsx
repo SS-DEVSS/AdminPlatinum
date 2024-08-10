@@ -1,4 +1,4 @@
-import { Box, MoreHorizontal, Pencil } from "lucide-react";
+import { Box, MoreHorizontal, Pencil, Trash } from "lucide-react";
 import { Badge } from "../ui/badge";
 import { Card, CardContent, CardDescription, CardTitle } from "../ui/card";
 import {
@@ -12,6 +12,20 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Link } from "react-router-dom";
 import { Brand } from "@/models/brand";
+import { useLocation } from "react-router-dom";
+import { useDeleteModal } from "@/context/delete-context";
+import { Dialog } from "@radix-ui/react-dialog";
+import {
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { AlertCircle } from "lucide-react";
+import { Alert, AlertTitle } from "@/components/ui/alert";
+import { Button } from "../ui/button";
+import { useState } from "react";
 
 type CardTemplateProps = {
   image: string;
@@ -26,50 +40,86 @@ const CardTemplate = ({
   title,
   description,
   brands,
-  date,
 }: CardTemplateProps) => {
+  const { openModal } = useDeleteModal();
+  const [isOpen, setIsOpen] = useState(false);
+
+  const location = useLocation();
+  const { pathname } = location;
+
+  const handleDelete = () => {
+    console.log("Deleted brand");
+  };
+
   return (
-    <Card className="w-full">
-      <img
-        src={image}
-        alt="name"
-        className="h-[300px] object-cover rounded-t-lg bg-[#D9D9D9] mx-auto"
-      />
-      <CardContent className="border-t">
-        <div className="flex justify-between items-center">
-          <CardTitle className="mt-6 mb-3">{title}</CardTitle>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <MoreHorizontal className="hover:cursor-pointer" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56">
-              <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuGroup>
-                <DropdownMenuItem>
-                  <Box className="mr-2 h-4 w-4" />
-                  <span>Consultar Productos</span>
-                </DropdownMenuItem>
-                <Link to="/categorias/editar">
-                  <DropdownMenuItem>
-                    <Pencil className="mr-2 h-4 w-4" />
-                    <span>Editar Categoría</span>
-                  </DropdownMenuItem>
-                </Link>
-              </DropdownMenuGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-        {brands && (
-          <div className="mb-3 rounded-md py-1">
-            {brands.map((brand) => (
-              <Badge>{brand.name}</Badge>
-            ))}
+    <>
+      <Card className="w-full">
+        <img
+          src={image}
+          alt="name"
+          className="h-[300px] object-cover rounded-t-lg bg-[#D9D9D9] mx-auto"
+        />
+        <CardContent className="border-t">
+          <div className="flex justify-between items-center">
+            <CardTitle className="mt-6 mb-3">{title}</CardTitle>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <MoreHorizontal className="hover:cursor-pointer" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56">
+                <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {pathname === "/categorias" && (
+                  <DropdownMenuGroup>
+                    <DropdownMenuItem>
+                      <Box className="mr-2 h-4 w-4" />
+                      <span>Consultar Productos</span>
+                    </DropdownMenuItem>
+                    <Link to="/categorias/editar">
+                      <DropdownMenuItem>
+                        <Pencil className="mr-2 h-4 w-4" />
+                        <span>Editar Categoría</span>
+                      </DropdownMenuItem>
+                    </Link>
+                  </DropdownMenuGroup>
+                )}
+                {pathname === "/marcas" && (
+                  <DropdownMenuGroup>
+                    <Link to="/categorias/editar">
+                      <DropdownMenuItem>
+                        <Pencil className="mr-2 h-4 w-4" />
+                        <span>Editar Categoría</span>
+                      </DropdownMenuItem>
+                    </Link>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        openModal({
+                          title: "Item Title",
+                          description:
+                            "Are you sure you want to delete this item?",
+                          handleDelete: handleDelete,
+                        })
+                      }
+                    >
+                      <Trash className="mr-2 h-4 w-4" />
+                      <span>Eliminar</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuGroup>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
-        )}
-        <CardDescription className="leading-7">{description}</CardDescription>
-      </CardContent>
-    </Card>
+          {brands && (
+            <div className="mb-3 rounded-md py-1">
+              {brands.map((brand) => (
+                <Badge key={brand.id}>{brand.name}</Badge>
+              ))}
+            </div>
+          )}
+          <CardDescription className="leading-7">{description}</CardDescription>
+        </CardContent>
+      </Card>
+    </>
   );
 };
 

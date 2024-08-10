@@ -69,7 +69,7 @@ const brands = [
   },
 ];
 
-const Marcas = (props: Props) => {
+const Marcas = ({ props }: Props) => {
   return (
     <Layout>
       <div>

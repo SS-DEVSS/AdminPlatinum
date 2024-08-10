@@ -2,6 +2,8 @@ import * as React from "react";
 import * as ReactDOM from "react-dom/client";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import App from "./App";
+import DeleteModal from "./components/DeleteModal";
+import { DeleteModalProvider } from "./context/delete-context";
 import "./index.css";
 import Categorias from "./pages/categories/categories";
 import EditCategory from "./pages/categories/editCategory";
@@ -48,6 +50,9 @@ const router = createBrowserRouter([
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <RouterProvider router={router} />
+    <DeleteModalProvider>
+      <DeleteModal />
+      <RouterProvider router={router} />
+    </DeleteModalProvider>
   </React.StrictMode>
 );
