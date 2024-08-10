@@ -14,17 +14,6 @@ import { Link } from "react-router-dom";
 import { Brand } from "@/models/brand";
 import { useLocation } from "react-router-dom";
 import { useDeleteModal } from "@/context/delete-context";
-import { Dialog } from "@radix-ui/react-dialog";
-import {
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { AlertCircle } from "lucide-react";
-import { Alert, AlertTitle } from "@/components/ui/alert";
-import { Button } from "../ui/button";
 import { useState } from "react";
 
 type CardTemplateProps = {
@@ -42,13 +31,15 @@ const CardTemplate = ({
   brands,
 }: CardTemplateProps) => {
   const { openModal } = useDeleteModal();
-  const [isOpen, setIsOpen] = useState(false);
-
   const location = useLocation();
   const { pathname } = location;
 
-  const handleDelete = () => {
+  const handleDeleteBrand = () => {
     console.log("Deleted brand");
+  };
+
+  const handleDeleteCategory = () => {
+    console.log("Deleted category");
   };
 
   return (
@@ -81,6 +72,19 @@ const CardTemplate = ({
                         <span>Editar Categoría</span>
                       </DropdownMenuItem>
                     </Link>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        openModal({
+                          title: "Item Title",
+                          description:
+                            "Are you sure you want to delete this item?",
+                          handleDelete: handleDeleteCategory,
+                        })
+                      }
+                    >
+                      <Trash className="mr-2 h-4 w-4" />
+                      <span>Eliminar</span>
+                    </DropdownMenuItem>
                   </DropdownMenuGroup>
                 )}
                 {pathname === "/marcas" && (
@@ -94,10 +98,10 @@ const CardTemplate = ({
                     <DropdownMenuItem
                       onClick={() =>
                         openModal({
-                          title: "Item Title",
+                          title: "Borrar Marca",
                           description:
-                            "Are you sure you want to delete this item?",
-                          handleDelete: handleDelete,
+                            "Estas seguro que deseas eliminar esta marca?",
+                          handleDelete: handleDeleteBrand,
                         })
                       }
                     >
