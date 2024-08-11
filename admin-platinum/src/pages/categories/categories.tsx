@@ -40,6 +40,7 @@ const categorias: Category[] = [
           "https://www.platinumdriveline.com/wp-content/uploads/2020/07/NewBoxes-4-2048x1365.jpg",
       },
     ],
+    products: ["test"],
   },
 ];
 

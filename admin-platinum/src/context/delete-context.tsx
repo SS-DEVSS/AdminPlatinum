@@ -4,6 +4,7 @@ type ModalState = {
   isOpen: boolean;
   title: string;
   description: string;
+  pathname?: string;
   handleDelete: () => void;
 };
 
@@ -31,8 +32,9 @@ export const DeleteModalProvider = ({
     title,
     description,
     handleDelete,
+    pathname,
   }: Omit<ModalState, "isOpen">) => {
-    setModalState({ isOpen: true, title, description, handleDelete });
+    setModalState({ isOpen: true, title, description, pathname, handleDelete });
   };
 
   const closeModal = () =>

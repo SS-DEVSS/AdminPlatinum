@@ -7,6 +7,7 @@ export type Category = {
   description: string;
   brands?: Brand[];
   attributes?: CategoryAtributes[];
+  products?: string[];
 };
 
 export enum CategoryAttributesTypes {

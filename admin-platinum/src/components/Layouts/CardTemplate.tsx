@@ -14,7 +14,6 @@ import { Link } from "react-router-dom";
 import { Brand } from "@/models/brand";
 import { useLocation } from "react-router-dom";
 import { useDeleteModal } from "@/context/delete-context";
-import { useState } from "react";
 
 type CardTemplateProps = {
   image: string;
@@ -75,9 +74,10 @@ const CardTemplate = ({
                     <DropdownMenuItem
                       onClick={() =>
                         openModal({
-                          title: "Item Title",
+                          title: "Borrar Categoría",
                           description:
-                            "Are you sure you want to delete this item?",
+                            "Estas seguro que deseas eliminar esta categoría?",
+                          pathname: "/categorias",
                           handleDelete: handleDeleteCategory,
                         })
                       }
