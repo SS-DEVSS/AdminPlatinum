@@ -19,8 +19,7 @@ import { Input } from "@/components/ui/input";
 import { PlusCircle, Search } from "lucide-react";
 import CardSectionLayout from "@/components/Layouts/CardSectionLayout";
 import CardTemplate from "@/components/Layouts/CardTemplate";
-
-type Props = {};
+import { useBrandModal } from "@/context/brand-context";
 
 const brands = [
   {
@@ -46,7 +45,7 @@ const brands = [
       "Lorem ipsum dolor, sit amet consectetur adipisicing elit. Repellendus rem minus, soluta officia ipsam repudiandae quia rerum voluptatibus ipsum minima",
   },
   {
-    id: 1,
+    id: 4,
     image:
       "https://www.platinumdriveline.com/wp-content/uploads/2020/07/NewBoxes-4-2048x1365.jpg",
     title: "Platinum Driveline",
@@ -54,14 +53,14 @@ const brands = [
       "Lorem ipsum dolor, sit amet consectetur adipisicing elit. Repellendus rem minus, soluta officia ipsam repudiandae quia rerum voluptatibus ipsum minima",
   },
   {
-    id: 2,
+    id: 5,
     image: "",
     title: "Platinum Driveline",
     description:
       "Lorem ipsum dolor, sit amet consectetur adipisicing elit. Repellendus rem minus, soluta officia ipsam repudiandae quia rerum voluptatibus ipsum minima",
   },
   {
-    id: 3,
+    id: 6,
     image: "",
     title: "Platinum Driveline",
     description:
@@ -69,7 +68,11 @@ const brands = [
   },
 ];
 
-const Marcas = ({ props }: Props) => {
+const Marcas = () => {
+  const { modalState, closeModal, openModal } = useBrandModal();
+  const { isOpen } = modalState;
+
+  console.log(isOpen);
   return (
     <Layout>
       <div>
@@ -90,8 +93,11 @@ const Marcas = ({ props }: Props) => {
                   className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[336px]"
                 />
               </div>
-              <Dialog>
-                <DialogTrigger asChild>
+              <Dialog
+                open={isOpen}
+                onOpenChange={(open) => !open && closeModal()}
+              >
+                <DialogTrigger onClick={() => openModal} asChild>
                   <Button size="sm" className="h-10 px-6 gap-1">
                     <PlusCircle className="h-3.5 w-3.5 mr-2" />
                     <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
@@ -107,19 +113,19 @@ const Marcas = ({ props }: Props) => {
                     </DialogDescription>
                   </DialogHeader>
                   <Label htmlFor="name">
-                    <span className="text-redLabel">*</span>Nombre
+                    <span className="text-redLabel">*</span> Nombre
                   </Label>
                   <Input
                     id="name"
-                    type="name"
+                    type="text"
                     placeholder="ej. Platinum"
                     required
                   />
-                  <Label htmlFor="email">Imagen</Label>
+                  <Label htmlFor="image">Imagen</Label>
                   <Input
-                    id="name"
+                    id="image"
                     type="file"
-                    placeholder="ej. Platinum"
+                    placeholder="Selecciona una imagen"
                     required
                   />
                   <DialogDescription>
@@ -136,18 +142,16 @@ const Marcas = ({ props }: Props) => {
           </CardHeader>
           <CardSectionLayout>
             {brands.length === 0 ? (
-              <></>
+              <p>No hay marcas disponibles.</p>
             ) : (
-              <>
-                {brands.map((brand) => (
-                  <CardTemplate
-                    key={brand.id}
-                    image={brand.image}
-                    title={brand.title}
-                    description={brand.description}
-                  />
-                ))}
-              </>
+              brands.map((brand) => (
+                <CardTemplate
+                  key={brand.id}
+                  image={brand.image}
+                  title={brand.title}
+                  description={brand.description}
+                />
+              ))
             )}
           </CardSectionLayout>
         </Card>

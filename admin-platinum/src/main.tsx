@@ -12,6 +12,7 @@ import ForgotPassword from "./pages/auth/forgotPassword";
 import Login from "./pages/auth/login";
 import Marcas from "./pages/marcas";
 import Root from "./pages/root";
+import { BrandProvider } from "./context/brand-context";
 
 const router = createBrowserRouter([
   {
@@ -51,8 +52,10 @@ const router = createBrowserRouter([
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <DeleteModalProvider>
-      <DeleteModal />
-      <RouterProvider router={router} />
+      <BrandProvider>
+        <DeleteModal />
+        <RouterProvider router={router} />
+      </BrandProvider>
     </DeleteModalProvider>
   </React.StrictMode>
 );

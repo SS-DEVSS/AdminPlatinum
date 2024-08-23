@@ -14,12 +14,14 @@ import { Link } from "react-router-dom";
 import { Brand } from "@/models/brand";
 import { useLocation } from "react-router-dom";
 import { useDeleteModal } from "@/context/delete-context";
+import { useBrandModal } from "@/context/brand-context";
 
 type CardTemplateProps = {
   image: string;
   title: string;
   description: string;
   brands?: Brand[];
+  brand?: Brand;
   date?: Date;
 };
 
@@ -28,8 +30,10 @@ const CardTemplate = ({
   title,
   description,
   brands,
-}: CardTemplateProps) => {
+}: // brand,
+CardTemplateProps) => {
   const { openModal } = useDeleteModal();
+  const { openModal: openModalBrand } = useBrandModal();
   const location = useLocation();
   const { pathname } = location;
 
@@ -66,7 +70,7 @@ const CardTemplate = ({
                       <span>Consultar Productos</span>
                     </DropdownMenuItem>
                     <Link to="/categorias/editar">
-                      <DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => openModalBrand}>
                         <Pencil className="mr-2 h-4 w-4" />
                         <span>Editar Categoría</span>
                       </DropdownMenuItem>
@@ -89,12 +93,10 @@ const CardTemplate = ({
                 )}
                 {pathname === "/marcas" && (
                   <DropdownMenuGroup>
-                    <Link to="/categorias/editar">
-                      <DropdownMenuItem>
-                        <Pencil className="mr-2 h-4 w-4" />
-                        <span>Editar Categoría</span>
-                      </DropdownMenuItem>
-                    </Link>
+                    <DropdownMenuItem onClick={openModalBrand}>
+                      <Pencil className="mr-2 h-4 w-4" />
+                      <span>Editar Marca</span>
+                    </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() =>
                         openModal({
