@@ -19,7 +19,7 @@ import { useBrandModal } from "@/context/brand-context";
 type CardTemplateProps = {
   image: string;
   title: string;
-  description: string;
+  description?: string;
   brands?: Brand[];
   brand?: Brand;
   date?: Date;
@@ -30,8 +30,8 @@ const CardTemplate = ({
   title,
   description,
   brands,
-}: // brand,
-CardTemplateProps) => {
+  brand,
+}: CardTemplateProps) => {
   const { openModal } = useDeleteModal();
   const { openModal: openModalBrand } = useBrandModal();
   const location = useLocation();
@@ -70,7 +70,7 @@ CardTemplateProps) => {
                       <span>Consultar Productos</span>
                     </DropdownMenuItem>
                     <Link to="/categorias/editar">
-                      <DropdownMenuItem onClick={() => openModalBrand}>
+                      <DropdownMenuItem>
                         <Pencil className="mr-2 h-4 w-4" />
                         <span>Editar Categoría</span>
                       </DropdownMenuItem>
@@ -93,7 +93,16 @@ CardTemplateProps) => {
                 )}
                 {pathname === "/marcas" && (
                   <DropdownMenuGroup>
-                    <DropdownMenuItem onClick={openModalBrand}>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        openModalBrand({
+                          title: "Editar Marca",
+                          description: "Edita una marca existente.",
+                          brand: brand,
+                          action: "",
+                        })
+                      }
+                    >
                       <Pencil className="mr-2 h-4 w-4" />
                       <span>Editar Marca</span>
                     </DropdownMenuItem>

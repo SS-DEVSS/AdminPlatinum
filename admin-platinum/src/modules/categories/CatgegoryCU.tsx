@@ -33,7 +33,9 @@ const CategoryCU = ({ category }: CategoryCUProps) => {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant={"outline"}>Cancelar</Button>
+          <Link to="/categorias">
+            <Button variant={"outline"}>Cancelar</Button>
+          </Link>
           {!category ? (
             <Button disabled size="sm" className="h-10 px-6 gap-1">
               <PlusCircle className="h-3.5 w-3.5 mr-2" />

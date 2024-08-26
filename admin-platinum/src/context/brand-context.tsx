@@ -1,7 +1,12 @@
+import { Brand } from "@/models/brand";
 import { createContext, useState, useContext } from "react";
 
 type ModalState = {
   isOpen: boolean;
+  title: string;
+  description: string;
+  brand?: Brand | null;
+  action: any;
 };
 
 const BrandContext = createContext<{
@@ -15,10 +20,19 @@ export const useBrandModal = () => useContext(BrandContext);
 export const BrandProvider = ({ children }: { children: React.ReactNode }) => {
   const [modalState, setModalState] = useState<ModalState>({
     isOpen: false,
+    title: "",
+    description: "",
+    brand: null,
+    action: () => {},
   });
 
-  const openModal = () => {
-    setModalState({ isOpen: true });
+  const openModal = ({
+    title,
+    description,
+    brand,
+    action,
+  }: Omit<ModalState, "isOpen">) => {
+    setModalState({ isOpen: true, title, description, brand, action });
   };
 
   const closeModal = () =>

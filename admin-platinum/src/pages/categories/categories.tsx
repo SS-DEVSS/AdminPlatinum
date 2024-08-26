@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Link } from "react-router-dom";
 import { Category } from "@/models/category";
+import { useBrands } from "@/hooks/useBrands";
 
 type Props = {};
 
@@ -45,6 +46,7 @@ const categorias: Category[] = [
 ];
 
 const Categorias = (props: Props) => {
+  const { brands } = useBrands();
   return (
     <Layout>
       <div>
@@ -62,10 +64,9 @@ const Categorias = (props: Props) => {
                 <SelectContent>
                   <SelectGroup>
                     <SelectLabel>Marcas</SelectLabel>
-                    <SelectItem value="apple">Apple</SelectItem>
-                    <SelectItem value="banana">Banana</SelectItem>
-                    <SelectItem value="blueberry">Blueberry</SelectItem>
-                    <SelectItem value="grapes">Grapes</SelectItem>
+                    {brands.map((brand) => (
+                      <SelectItem value={brand.id}>{brand.name}</SelectItem>
+                    ))}
                   </SelectGroup>
                 </SelectContent>
               </Select>

@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import Layout from "@/components/Layouts/Layout";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,59 +21,100 @@ import { PlusCircle, Search } from "lucide-react";
 import CardSectionLayout from "@/components/Layouts/CardSectionLayout";
 import CardTemplate from "@/components/Layouts/CardTemplate";
 import { useBrandModal } from "@/context/brand-context";
-
-const brands = [
-  {
-    id: 1,
-    image:
-      "https://www.platinumdriveline.com/wp-content/uploads/2020/07/NewBoxes-4-2048x1365.jpg",
-    title: "Platinum Driveline",
-    description:
-      "Lorem ipsum dolor, sit amet consectetur adipisicing elit. Repellendus rem minus, soluta officia ipsam repudiandae quia rerum voluptatibus ipsum minima",
-  },
-  {
-    id: 2,
-    image: "",
-    title: "Platinum Driveline",
-    description:
-      "Lorem ipsum dolor, sit amet consectetur adipisicing elit. Repellendus rem minus, soluta officia ipsam repudiandae quia rerum voluptatibus ipsum minima",
-  },
-  {
-    id: 3,
-    image: "",
-    title: "Platinum Driveline",
-    description:
-      "Lorem ipsum dolor, sit amet consectetur adipisicing elit. Repellendus rem minus, soluta officia ipsam repudiandae quia rerum voluptatibus ipsum minima",
-  },
-  {
-    id: 4,
-    image:
-      "https://www.platinumdriveline.com/wp-content/uploads/2020/07/NewBoxes-4-2048x1365.jpg",
-    title: "Platinum Driveline",
-    description:
-      "Lorem ipsum dolor, sit amet consectetur adipisicing elit. Repellendus rem minus, soluta officia ipsam repudiandae quia rerum voluptatibus ipsum minima",
-  },
-  {
-    id: 5,
-    image: "",
-    title: "Platinum Driveline",
-    description:
-      "Lorem ipsum dolor, sit amet consectetur adipisicing elit. Repellendus rem minus, soluta officia ipsam repudiandae quia rerum voluptatibus ipsum minima",
-  },
-  {
-    id: 6,
-    image: "",
-    title: "Platinum Driveline",
-    description:
-      "Lorem ipsum dolor, sit amet consectetur adipisicing elit. Repellendus rem minus, soluta officia ipsam repudiandae quia rerum voluptatibus ipsum minima",
-  },
-];
+import { useBrands } from "@/hooks/useBrands";
+import { Textarea } from "@/components/ui/textarea";
 
 const Marcas = () => {
+  const { brands, addBrand, updateBrand } = useBrands();
   const { modalState, closeModal, openModal } = useBrandModal();
-  const { isOpen } = modalState;
+  const { isOpen, title, description, brand } = modalState;
 
-  console.log(isOpen);
+  const [form, setForm] = useState({
+    name: "",
+    description: "",
+    logo_img_url: "",
+  });
+
+  const [isEditMode, setIsEditMode] = useState(false);
+
+  useEffect(() => {
+    if (brand) {
+      setForm({
+        name: brand.name || "",
+        description: brand.description || "",
+        logo_img_url: brand.logo_img_url || "",
+      });
+      setIsEditMode(true);
+    } else {
+      setForm({
+        name: "",
+        description: "",
+        logo_img_url: "",
+      });
+      setIsEditMode(false);
+    }
+  }, [brand]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setForm({
+        name: "",
+        description: "",
+        logo_img_url: "",
+      });
+      setIsEditMode(false);
+    }
+  }, [isOpen]);
+
+  const handleForm = (e: any) => {
+    const { name, value, files } = e.target;
+    setForm((prevForm) => ({
+      ...prevForm,
+      [name]: files ? URL.createObjectURL(files[0]) : value,
+    }));
+  };
+
+  const validateForm = () => {
+    return (
+      form.name !== "" && form.description !== "" && form.logo_img_url !== ""
+    );
+  };
+
+  const handleSubmit = () => {
+    const brandData = {
+      ...form,
+      id: brand ? brand.id : "",
+    };
+
+    if (isEditMode) {
+      updateBrand(brandData);
+    } else {
+      addBrand(brandData);
+    }
+
+    closeModal();
+  };
+
+  const handleOpenModal = (brandToEdit = null) => {
+    if (brandToEdit) {
+      setIsEditMode(true);
+      openModal({
+        title: "Editar Marca",
+        description: "Edita la marca seleccionada.",
+        brand: brandToEdit,
+        action: "",
+      });
+    } else {
+      setIsEditMode(false);
+      openModal({
+        title: "Agregar Marca",
+        description: "Agregar una nueva marca al sistema.",
+        brand: null,
+        action: "",
+      });
+    }
+  };
+
   return (
     <Layout>
       <div>
@@ -81,7 +123,7 @@ const Marcas = () => {
             <div className="flex flex-col gap-3">
               <CardTitle>Marcas</CardTitle>
               <CardDescription>
-                Maneja tus marcas y las categorias asociadas a cada una de ellas
+                Maneja tus marcas y las categorías asociadas a cada una de ellas
               </CardDescription>
             </div>
             <div className="ml-auto flex gap-3">
@@ -95,10 +137,24 @@ const Marcas = () => {
               </div>
               <Dialog
                 open={isOpen}
-                onOpenChange={(open) => !open && closeModal()}
+                onOpenChange={(open) => {
+                  if (!open) {
+                    setForm({
+                      name: "",
+                      description: "",
+                      logo_img_url: "",
+                    });
+                    setIsEditMode(false);
+                    closeModal();
+                  }
+                }}
               >
-                <DialogTrigger onClick={() => openModal} asChild>
-                  <Button size="sm" className="h-10 px-6 gap-1">
+                <DialogTrigger asChild>
+                  <Button
+                    size="sm"
+                    className="h-10 px-6 gap-1"
+                    onClick={() => handleOpenModal()}
+                  >
                     <PlusCircle className="h-3.5 w-3.5 mr-2" />
                     <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
                       Agregar Marca
@@ -107,33 +163,51 @@ const Marcas = () => {
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-[425px]">
                   <DialogHeader>
-                    <DialogTitle className="mb-2">Agregar Marca</DialogTitle>
-                    <DialogDescription>
-                      Agregar una nueva marca al sistema.
-                    </DialogDescription>
+                    <DialogTitle className="mb-2">{title}</DialogTitle>
+                    <DialogDescription>{description}</DialogDescription>
                   </DialogHeader>
                   <Label htmlFor="name">
                     <span className="text-redLabel">*</span> Nombre
                   </Label>
                   <Input
                     id="name"
+                    name="name"
                     type="text"
                     placeholder="ej. Platinum"
+                    value={form.name}
+                    onChange={handleForm}
                     required
                   />
-                  <Label htmlFor="image">Imagen</Label>
+                  <Label htmlFor="description">
+                    <span className="text-redLabel">*</span> Descripción
+                  </Label>
+                  <Textarea
+                    id="description"
+                    name="description"
+                    placeholder="ej. Marca de lujo"
+                    value={form.description}
+                    onChange={handleForm}
+                    required
+                  />
+                  <Label htmlFor="logo_img_url">Imagen</Label>
                   <Input
-                    id="image"
+                    id="logo_img_url"
+                    name="logo_img_url"
                     type="file"
                     placeholder="Selecciona una imagen"
+                    onChange={handleForm}
                     required
                   />
                   <DialogDescription>
                     Formatos Válidos: jpg, png, jpeg
                   </DialogDescription>
                   <DialogFooter>
-                    <Button disabled type="submit">
-                      Agregar Marca
+                    <Button
+                      disabled={!validateForm()}
+                      onClick={handleSubmit}
+                      type="submit"
+                    >
+                      {isEditMode ? "Actualizar Marca" : "Agregar Marca"}
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -147,9 +221,10 @@ const Marcas = () => {
               brands.map((brand) => (
                 <CardTemplate
                   key={brand.id}
-                  image={brand.image}
-                  title={brand.title}
+                  image={brand.logo_img_url}
+                  title={brand.name}
                   description={brand.description}
+                  brand={brand}
                 />
               ))
             )}
