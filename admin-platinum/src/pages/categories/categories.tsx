@@ -57,6 +57,14 @@ const Categorias = (props: Props) => {
               <CardDescription>Maneja tus categorías.</CardDescription>
             </div>
             <div className="ml-auto flex gap-3">
+              <div className="relative ml-auto flex-1 md:grow-0">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Buscar Categoría..."
+                  className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[336px]"
+                />
+              </div>
               <Select>
                 <SelectTrigger className="w-[280px]">
                   <SelectValue placeholder="Selecciona una marca" />
@@ -70,14 +78,6 @@ const Categorias = (props: Props) => {
                   </SelectGroup>
                 </SelectContent>
               </Select>
-              <div className="relative ml-auto flex-1 md:grow-0">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="search"
-                  placeholder="Buscar Categoría..."
-                  className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[336px]"
-                />
-              </div>
               <Link to="/categorias/nueva">
                 <Button size="sm" className="h-10 px-6 gap-1">
                   <PlusCircle className="h-3.5 w-3.5 mr-2" />
