@@ -39,15 +39,19 @@ const Categorias = () => {
     setSearchFilter(value);
   };
 
-  const filteredCategories = useMemo(
-    () =>
-      categories.filter((category: Category) =>
-        category.name.toLowerCase().includes(searchFilter.toLocaleLowerCase())
-      ),
-    [searchFilter, categories]
-  );
+  const filteredCategories = useMemo(() => {
+    return categories.filter((category: Category) => {
+      const matchesSearch =
+        !searchFilter ||
+        category.name.toLowerCase().includes(searchFilter.toLowerCase());
+      const matchesBrand =
+        !brandFilter ||
+        brandFilter === "-" ||
+        category.brands?.some((brand) => brand.id === brandFilter);
 
-  console.log(filteredCategories);
+      return matchesSearch && matchesBrand;
+    });
+  }, [searchFilter, brandFilter, categories]);
 
   return (
     <Layout>
@@ -69,7 +73,7 @@ const Categorias = () => {
                   className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[336px]"
                 />
               </div>
-              <Select>
+              <Select value={brandFilter} onValueChange={setBrandFilter}>
                 <SelectTrigger className="w-[280px]">
                   <SelectValue placeholder="Selecciona una marca" />
                 </SelectTrigger>
@@ -78,7 +82,7 @@ const Categorias = () => {
                     <SelectLabel>Marcas</SelectLabel>
                     <SelectItem value={"-"}>Seleccionar</SelectItem>
                     {brands.map((brand: Brand) => (
-                      <SelectItem key={brand.id} value={brand.id}>
+                      <SelectItem key={brand.id} value={brand.id!}>
                         {brand.name}
                       </SelectItem>
                     ))}
@@ -96,7 +100,7 @@ const Categorias = () => {
             </div>
           </CardHeader>
           <CardSectionLayout>
-            {categories.length && filteredCategories.length === 0 ? (
+            {categories.length === 0 && filteredCategories.length === 0 ? (
               <>No hay categorías por mostrar.</>
             ) : (
               (filteredCategories.length > 0
