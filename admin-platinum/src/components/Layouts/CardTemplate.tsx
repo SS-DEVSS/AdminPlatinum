@@ -134,7 +134,7 @@ const CardTemplate = ({ brands, brand, getBrandById }: CardTemplateProps) => {
             {brand?.description}
           </CardDescription>
         </CardContent>
-        {brand?.categories?.length && (
+        {brand?.categories?.length! > 0 && (
           <>
             <Separator />
             <CardContent className="mt-3">

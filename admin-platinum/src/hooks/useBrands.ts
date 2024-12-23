@@ -2,14 +2,17 @@ import { useAuthContext } from "@/context/auth-context";
 import { Brand } from "@/models/brand";
 import axiosClient from "@/services/axiosInstance";
 import { useEffect, useState } from "react";
+import { useToast } from "./use-toast";
 
 export const useBrands = () => {
   const { authState } = useAuthContext();
   const client = axiosClient(authState.authKey);
+  const { toast } = useToast();
 
   const [brands, setBrands] = useState<Brand[]>([]);
   const [brand, setBrand] = useState<Brand | null>({} as Brand);
   const [loading, setLoading] = useState<boolean>(false);
+  const [errorMsg, setErrorMsg] = useState<boolean>(false);
 
   useEffect(() => {
     getBrands();
@@ -43,9 +46,19 @@ export const useBrands = () => {
   const deleteBrand = async (id: Brand["id"]) => {
     try {
       setLoading(true);
-      await client.delete(`/brands/${id}`);
-    } catch (error) {
-      console.log(error);
+      const response = await client.delete(`/brands/${id}`);
+      toast({
+        title: "Marca eliminada correctamente.",
+        variant: "success",
+        description: response.data.message,
+      });
+    } catch (error: any) {
+      setErrorMsg(error.response.data.error);
+      toast({
+        title: "Error al eliminar marca",
+        variant: "destructive",
+        description: errorMsg,
+      });
     } finally {
       setLoading(false);
     }
