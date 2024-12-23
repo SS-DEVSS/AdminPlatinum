@@ -25,9 +25,9 @@ import { useBrands } from "@/hooks/useBrands";
 import { Textarea } from "@/components/ui/textarea";
 
 const Marcas = () => {
-  const { brands, addBrand, updateBrand } = useBrands();
+  const { brands, brand, addBrand, updateBrand, getBrandById } = useBrands();
   const { modalState, closeModal, openModal } = useBrandModal();
-  const { isOpen, title, description, brand } = modalState;
+  const { isOpen, title, description } = modalState;
 
   const [form, setForm] = useState({
     name: "",
@@ -81,18 +81,16 @@ const Marcas = () => {
   };
 
   const handleSubmit = () => {
-    const brandData = {
-      ...form,
-      id: brand ? brand.id : "",
-    };
-
-    if (isEditMode) {
-      updateBrand(brandData);
-    } else {
-      addBrand(brandData);
-    }
-
-    closeModal();
+    // const brandData = {
+    //   ...form,
+    //   id: brand ? brand.id : "",
+    // };
+    // if (isEditMode) {
+    //   updateBrand(brandData);
+    // } else {
+    //   addBrand(brandData);
+    // }
+    // closeModal();
   };
 
   const handleOpenModal = (brandToEdit = null) => {
@@ -221,10 +219,8 @@ const Marcas = () => {
               brands.map((brand) => (
                 <CardTemplate
                   key={brand.id}
-                  image={brand.logo_img_url}
-                  title={brand.name}
-                  description={brand.description}
                   brand={brand}
+                  getBrandById={getBrandById}
                 />
               ))
             )}

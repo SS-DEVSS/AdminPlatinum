@@ -17,28 +17,40 @@ import { useDeleteModal } from "@/context/delete-context";
 import { useBrandModal } from "@/context/brand-context";
 
 type CardTemplateProps = {
-  image: string;
-  title: string;
-  description?: string;
   brands?: Brand[];
   brand?: Brand;
   date?: Date;
+  getBrandById: (id: Brand["id"]) => void;
 };
 
-const CardTemplate = ({
-  image,
-  title,
-  description,
-  brands,
-  brand,
-}: CardTemplateProps) => {
+const CardTemplate = ({ brands, brand, getBrandById }: CardTemplateProps) => {
   const { openModal } = useDeleteModal();
   const { openModal: openModalBrand } = useBrandModal();
+
   const location = useLocation();
   const { pathname } = location;
 
+  const handleEditBrand = () => {
+    getBrandById(brand?.id!);
+    openModalBrand({
+      title: "Editar Marca",
+      description: "Edita una marca existente.",
+      brand: brand,
+      action: "",
+    });
+  };
+
   const handleDeleteBrand = () => {
     console.log("Deleted brand");
+  };
+
+  const handleEditCategory = () => {
+    openModal({
+      title: "Borrar Categoría",
+      description: "Estas seguro que deseas eliminar esta categoría?",
+      pathname: "/categorias",
+      handleDelete: handleDeleteCategory,
+    });
   };
 
   const handleDeleteCategory = () => {
@@ -49,13 +61,13 @@ const CardTemplate = ({
     <>
       <Card className="w-full">
         <img
-          src={image}
-          alt="name"
+          src={brand?.logo_img_url}
+          alt={`${brand?.name} image`}
           className="h-[300px] object-cover rounded-t-lg bg-[#D9D9D9] mx-auto"
         />
         <CardContent className="border-t">
           <div className="flex justify-between items-center">
-            <CardTitle className="mt-6 mb-3">{title}</CardTitle>
+            <CardTitle className="mt-6 mb-3">{brand?.name}</CardTitle>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <MoreHorizontal className="hover:cursor-pointer" />
@@ -75,17 +87,7 @@ const CardTemplate = ({
                         <span>Editar Categoría</span>
                       </DropdownMenuItem>
                     </Link>
-                    <DropdownMenuItem
-                      onClick={() =>
-                        openModal({
-                          title: "Borrar Categoría",
-                          description:
-                            "Estas seguro que deseas eliminar esta categoría?",
-                          pathname: "/categorias",
-                          handleDelete: handleDeleteCategory,
-                        })
-                      }
-                    >
+                    <DropdownMenuItem onClick={handleEditCategory}>
                       <Trash className="mr-2 h-4 w-4" />
                       <span>Eliminar</span>
                     </DropdownMenuItem>
@@ -93,16 +95,7 @@ const CardTemplate = ({
                 )}
                 {pathname === "/marcas" && (
                   <DropdownMenuGroup>
-                    <DropdownMenuItem
-                      onClick={() =>
-                        openModalBrand({
-                          title: "Editar Marca",
-                          description: "Edita una marca existente.",
-                          brand: brand,
-                          action: "",
-                        })
-                      }
-                    >
+                    <DropdownMenuItem onClick={handleEditBrand}>
                       <Pencil className="mr-2 h-4 w-4" />
                       <span>Editar Marca</span>
                     </DropdownMenuItem>
@@ -131,7 +124,9 @@ const CardTemplate = ({
               ))}
             </div>
           )}
-          <CardDescription className="leading-7">{description}</CardDescription>
+          <CardDescription className="leading-7">
+            {brand?.description}
+          </CardDescription>
         </CardContent>
       </Card>
     </>
