@@ -1,9 +1,9 @@
 import { Brand } from "./brand";
 
 export type Category = {
-  id: number;
+  id?: string;
   name: string;
-  image: string;
+  imgUrl: string;
   description: string;
   brands?: Brand[];
   attributes?: CategoryAtributes[];

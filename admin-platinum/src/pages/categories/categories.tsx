@@ -21,30 +21,14 @@ import {
 } from "@/components/ui/select";
 import { Link } from "react-router-dom";
 import { Category } from "@/models/category";
+import { useCategories } from "@/hooks/useCategories";
 import { useBrands } from "@/hooks/useBrands";
-
-const categorias: Category[] = [
-  {
-    id: 1,
-    image:
-      "https://www.platinumdriveline.com/wp-content/uploads/2020/07/NewBoxes-4-2048x1365.jpg",
-    name: "Clutches",
-    description:
-      "Lorem ipsum dolor, sit amet consectetur adipisicing elit. Repellendus rem minus, soluta officia ipsam repudiandae quia rerum voluptatibus ipsum minima",
-    brands: [
-      {
-        id: "1",
-        name: "Platinum Driveline",
-        logoImgUrl:
-          "https://www.platinumdriveline.com/wp-content/uploads/2020/07/NewBoxes-4-2048x1365.jpg",
-      },
-    ],
-    products: ["test"],
-  },
-];
+import { Brand } from "@/models/brand";
 
 const Categorias = () => {
+  const { categories, getCategories } = useCategories();
   const { brands } = useBrands();
+
   return (
     <Layout>
       <div>
@@ -70,8 +54,10 @@ const Categorias = () => {
                 <SelectContent>
                   <SelectGroup>
                     <SelectLabel>Marcas</SelectLabel>
-                    {brands.map((brand) => (
-                      <SelectItem value={brand.id}>{brand.name}</SelectItem>
+                    {brands.map((brand: Brand) => (
+                      <SelectItem key={brand.id} value={brand.id}>
+                        {brand.name}
+                      </SelectItem>
                     ))}
                   </SelectGroup>
                 </SelectContent>
@@ -87,12 +73,17 @@ const Categorias = () => {
             </div>
           </CardHeader>
           <CardSectionLayout>
-            {categorias.length === 0 ? (
+            {categories.length === 0 ? (
               <></>
             ) : (
               <>
-                {categorias.map((categoria) => (
-                  <CardTemplate key={categoria.id} brands={categoria.brands} />
+                {categories.map((categoria: Category) => (
+                  <CardTemplate
+                    category={categoria}
+                    key={categoria.id}
+                    brands={categoria.brands}
+                    getItems={getCategories}
+                  />
                 ))}
               </>
             )}

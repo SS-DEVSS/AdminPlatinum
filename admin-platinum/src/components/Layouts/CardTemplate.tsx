@@ -18,9 +18,11 @@ import { useBrandModal } from "@/context/brand-context";
 import { useBrands } from "@/hooks/useBrands";
 import { Category } from "@/models/category";
 import { Separator } from "../ui/separator";
+import { useCategories } from "@/hooks/useCategories";
 
 type CardTemplateProps = {
   brands?: Brand[];
+  category?: Category;
   brand?: Brand;
   date?: Date;
   getItems: () => void;
@@ -30,6 +32,7 @@ type CardTemplateProps = {
 const CardTemplate = ({
   brands,
   brand,
+  category,
   getBrandById,
   getItems,
 }: CardTemplateProps) => {
@@ -37,6 +40,7 @@ const CardTemplate = ({
   const { openModal: openModalBrand } = useBrandModal();
 
   const { deleteBrand } = useBrands();
+  const { deleteCategory } = useCategories();
 
   const location = useLocation();
   const { pathname } = location;
@@ -57,30 +61,26 @@ const CardTemplate = ({
     await getItems();
   };
 
-  const handleEditCategory = () => {
-    openModal({
-      title: "Borrar Categoría",
-      description: "Estas seguro que deseas eliminar esta categoría?",
-      pathname: "/categorias",
-      handleDelete: handleDeleteCategory,
-    });
-  };
+  const handleEditCategory = () => {};
 
-  const handleDeleteCategory = () => {
-    console.log("Deleted category");
+  const handleDeleteCategory = async () => {
+    await deleteCategory(category?.id!);
+    await getItems();
   };
 
   return (
     <>
       <Card className="w-full">
         <img
-          src={brand?.logoImgUrl}
-          alt={`${brand?.name} image`}
+          src={brand ? brand?.logoImgUrl : category?.imgUrl}
+          alt={`${brand ? brand?.name : category?.name} image`}
           className="h-[300px] object-cover rounded-t-lg bg-[#D9D9D9] mx-auto"
         />
         <CardContent className="border-t">
           <div className="flex justify-between items-center">
-            <CardTitle className="mt-6 mb-3">{brand?.name}</CardTitle>
+            <CardTitle className="mt-6 mb-3">
+              {brand ? brand?.name : category?.name}
+            </CardTitle>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <MoreHorizontal className="hover:cursor-pointer" />
@@ -95,12 +95,20 @@ const CardTemplate = ({
                       <span>Consultar Productos</span>
                     </DropdownMenuItem>
                     <Link to="/categorias/editar">
-                      <DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleEditCategory}>
                         <Pencil className="mr-2 h-4 w-4" />
                         <span>Editar Categoría</span>
                       </DropdownMenuItem>
                     </Link>
-                    <DropdownMenuItem onClick={handleEditCategory}>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        openModal({
+                          title: "Categoría",
+                          description: "Estas seguro que deseas eliminar esta?",
+                          handleDelete: handleDeleteCategory,
+                        })
+                      }
+                    >
                       <Trash className="mr-2 h-4 w-4" />
                       <span>Eliminar</span>
                     </DropdownMenuItem>
@@ -115,7 +123,7 @@ const CardTemplate = ({
                     <DropdownMenuItem
                       onClick={() =>
                         openModal({
-                          title: "Borrar Marca",
+                          title: "Marca",
                           description:
                             "Estas seguro que deseas eliminar esta marca?",
                           handleDelete: handleDeleteBrand,
@@ -138,7 +146,7 @@ const CardTemplate = ({
             </div>
           )}
           <CardDescription className="leading-7">
-            {brand?.description}
+            {brand ? brand?.description : category?.description}
           </CardDescription>
         </CardContent>
         {brand?.categories?.length! > 0 && (
