@@ -36,6 +36,7 @@ export const useCategories = () => {
       setLoading(true);
       const data = await client.get(`/categories/${id}`);
       setCategory(data.data);
+      console.log(data);
       return data.data;
     } catch (error) {
       console.error("Error fetching categories:", error);
