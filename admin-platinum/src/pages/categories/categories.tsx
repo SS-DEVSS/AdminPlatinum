@@ -23,8 +23,6 @@ import { Link } from "react-router-dom";
 import { Category } from "@/models/category";
 import { useBrands } from "@/hooks/useBrands";
 
-type Props = {};
-
 const categorias: Category[] = [
   {
     id: 1,

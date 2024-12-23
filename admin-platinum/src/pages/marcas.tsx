@@ -33,7 +33,7 @@ const Marcas = () => {
   const [form, setForm] = useState({
     name: "",
     description: "",
-    logo_img_url: "",
+    logoImgUrl: "",
   });
 
   const [isEditMode, setIsEditMode] = useState(false);
@@ -43,14 +43,14 @@ const Marcas = () => {
       setForm({
         name: brand.name || "",
         description: brand.description || "",
-        logo_img_url: brand.logo_img_url || "",
+        logoImgUrl: brand.logoImgUrl || "",
       });
       setIsEditMode(true);
     } else {
       setForm({
         name: "",
         description: "",
-        logo_img_url: "",
+        logoImgUrl: "",
       });
       setIsEditMode(false);
     }
@@ -61,7 +61,7 @@ const Marcas = () => {
       setForm({
         name: "",
         description: "",
-        logo_img_url: "",
+        logoImgUrl: "",
       });
       setIsEditMode(false);
     }
@@ -72,30 +72,30 @@ const Marcas = () => {
   }, [brands]);
 
   const handleForm = (e: any) => {
-    const { name, value, files } = e.target;
+    const { name, value } = e.target;
     setForm((prevForm) => ({
       ...prevForm,
-      [name]: files ? URL.createObjectURL(files[0]) : value,
+      [name]: value,
     }));
   };
 
   const validateForm = () => {
     return (
-      form.name !== "" && form.description !== "" && form.logo_img_url !== ""
+      form.name !== "" && form.description !== "" && form.logoImgUrl !== ""
     );
   };
 
   const handleSubmit = () => {
-    // const brandData = {
-    //   ...form,
-    //   id: brand ? brand.id : "",
-    // };
-    // if (isEditMode) {
-    //   updateBrand(brandData);
-    // } else {
-    //   addBrand(brandData);
-    // }
-    // closeModal();
+    const brandData = {
+      ...form,
+      // id: brand ? brand.id : "",
+    };
+    if (isEditMode) {
+      updateBrand(brandData);
+    } else {
+      addBrand(brandData);
+    }
+    closeModal();
   };
 
   const handleOpenModal = (brandToEdit = null) => {
@@ -143,7 +143,7 @@ const Marcas = () => {
                     setForm({
                       name: "",
                       description: "",
-                      logo_img_url: "",
+                      logoImgUrl: "",
                     });
                     setIsEditMode(false);
                     closeModal();
@@ -190,12 +190,21 @@ const Marcas = () => {
                     onChange={handleForm}
                     required
                   />
-                  <Label htmlFor="logo_img_url">Imagen</Label>
-                  <Input
-                    id="logo_img_url"
-                    name="logo_img_url"
+                  <Label htmlFor="logoImgUrl">Imagen</Label>
+                  {/* <Input
+                    id="logoImgUrl"
+                    name="logoImgUrl"
                     type="file"
                     placeholder="Selecciona una imagen"
+                    onChange={handleForm}
+                    required
+                  /> */}
+                  <Input
+                    id="logoImgUrl"
+                    name="logoImgUrl"
+                    type="text"
+                    placeholder="https://"
+                    value={form.logoImgUrl}
                     onChange={handleForm}
                     required
                   />

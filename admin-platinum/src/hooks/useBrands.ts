@@ -12,7 +12,7 @@ export const useBrands = () => {
   const [brands, setBrands] = useState<Brand[]>([]);
   const [brand, setBrand] = useState<Brand | null>({} as Brand);
   const [loading, setLoading] = useState<boolean>(false);
-  const [errorMsg, setErrorMsg] = useState<boolean>(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
     getBrands();
@@ -61,15 +61,60 @@ export const useBrands = () => {
       });
     } finally {
       setLoading(false);
+      setErrorMsg("");
     }
   };
 
-  const addBrand = (brand: Brand) => {
-    console.log(brand);
+  const addBrand = async (brand: Omit<Brand, "id">) => {
+    try {
+      const headers = {
+        "Content-Type": "application/json",
+      };
+      setLoading(true);
+      const response = await client.post("/brands/", brand, { headers });
+      toast({
+        title: "Marca eliminada correctamente.",
+        variant: "success",
+        description: response.data.message,
+      });
+    } catch (error: any) {
+      console.log(error);
+      setErrorMsg(error.response.data.error);
+      toast({
+        title: "Error al eliminar marca",
+        variant: "destructive",
+        description: errorMsg,
+      });
+    } finally {
+      setLoading(false);
+      setErrorMsg("");
+    }
   };
 
-  const updateBrand = (brand: Brand) => {
-    console.log(brand);
+  const updateBrand = async (brand: Brand) => {
+    try {
+      const headers = {
+        "Content-Type": "application/json",
+      };
+      setLoading(true);
+      const response = await client.post("/brands/", brand, { headers });
+      toast({
+        title: "Marca creada correctamente.",
+        variant: "success",
+        description: response.data.message,
+      });
+    } catch (error: any) {
+      console.log(error);
+      setErrorMsg(error.response.data.error);
+      toast({
+        title: "Error al crear marca",
+        variant: "destructive",
+        description: errorMsg,
+      });
+    } finally {
+      setLoading(false);
+      setErrorMsg("");
+    }
   };
 
   return {
