@@ -1,4 +1,4 @@
-import { Box, MoreHorizontal, Pencil, Trash } from "lucide-react";
+import { Box, ExternalLink, MoreHorizontal, Pencil, Trash } from "lucide-react";
 import { Badge } from "../ui/badge";
 import { Card, CardContent, CardDescription, CardTitle } from "../ui/card";
 import {
@@ -15,33 +15,39 @@ import { Brand } from "@/models/brand";
 import { useLocation } from "react-router-dom";
 import { useDeleteModal } from "@/context/delete-context";
 import { useBrandModal } from "@/context/brand-context";
+import { useBrands } from "@/hooks/useBrands";
+import { Category } from "@/models/category";
+import { Separator } from "../ui/separator";
 
 type CardTemplateProps = {
   brands?: Brand[];
   brand?: Brand;
   date?: Date;
-  getBrandById: (id: Brand["id"]) => void;
+  getBrandById?: (id: Brand["id"]) => void;
 };
 
 const CardTemplate = ({ brands, brand, getBrandById }: CardTemplateProps) => {
   const { openModal } = useDeleteModal();
   const { openModal: openModalBrand } = useBrandModal();
 
+  const { deleteBrand } = useBrands();
+
   const location = useLocation();
   const { pathname } = location;
 
   const handleEditBrand = () => {
-    getBrandById(brand?.id!);
-    openModalBrand({
-      title: "Editar Marca",
-      description: "Edita una marca existente.",
-      brand: brand,
-      action: "",
-    });
+    if (getBrandById) {
+      getBrandById(brand?.id!);
+      openModalBrand({
+        title: "Editar Marca",
+        description: "Edita una marca existente.",
+        action: "",
+      });
+    }
   };
 
   const handleDeleteBrand = () => {
-    console.log("Deleted brand");
+    deleteBrand(brand?.id!);
   };
 
   const handleEditCategory = () => {
@@ -128,6 +134,19 @@ const CardTemplate = ({ brands, brand, getBrandById }: CardTemplateProps) => {
             {brand?.description}
           </CardDescription>
         </CardContent>
+        {brand?.categories?.length && (
+          <>
+            <Separator />
+            <CardContent className="mt-3">
+              <p className="font-bold mb-4">Categorías Asociadas</p>
+              {brand?.categories?.map((category: Category) => (
+                <Badge key={category.id} className="px-4 py-1 hover:underline">
+                  {category.name} <ExternalLink className="ml-2 w-5" />
+                </Badge>
+              ))}
+            </CardContent>
+          </>
+        )}
       </Card>
     </>
   );

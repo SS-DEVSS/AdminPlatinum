@@ -13,6 +13,7 @@ import Login from "./pages/auth/login";
 import Marcas from "./pages/marcas";
 import Root from "./pages/root";
 import { BrandProvider } from "./context/brand-context";
+import { AuthProvider } from "./context/auth-context";
 
 const router = createBrowserRouter([
   {
@@ -51,11 +52,13 @@ const router = createBrowserRouter([
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <DeleteModalProvider>
-      <BrandProvider>
-        <DeleteModal />
-        <RouterProvider router={router} />
-      </BrandProvider>
-    </DeleteModalProvider>
+    <AuthProvider>
+      <DeleteModalProvider>
+        <BrandProvider>
+          <DeleteModal />
+          <RouterProvider router={router} />
+        </BrandProvider>
+      </DeleteModalProvider>
+    </AuthProvider>
   </React.StrictMode>
 );

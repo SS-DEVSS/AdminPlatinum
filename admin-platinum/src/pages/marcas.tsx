@@ -25,7 +25,8 @@ import { useBrands } from "@/hooks/useBrands";
 import { Textarea } from "@/components/ui/textarea";
 
 const Marcas = () => {
-  const { brands, brand, addBrand, updateBrand, getBrandById } = useBrands();
+  const { brands, brand, addBrand, updateBrand, getBrands, getBrandById } =
+    useBrands();
   const { modalState, closeModal, openModal } = useBrandModal();
   const { isOpen, title, description } = modalState;
 
@@ -66,6 +67,10 @@ const Marcas = () => {
     }
   }, [isOpen]);
 
+  useEffect(() => {
+    getBrands();
+  }, [brands]);
+
   const handleForm = (e: any) => {
     const { name, value, files } = e.target;
     setForm((prevForm) => ({
@@ -99,7 +104,6 @@ const Marcas = () => {
       openModal({
         title: "Editar Marca",
         description: "Edita la marca seleccionada.",
-        brand: brandToEdit,
         action: "",
       });
     } else {
@@ -107,7 +111,6 @@ const Marcas = () => {
       openModal({
         title: "Agregar Marca",
         description: "Agregar una nueva marca al sistema.",
-        brand: null,
         action: "",
       });
     }

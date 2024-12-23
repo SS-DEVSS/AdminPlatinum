@@ -1,9 +1,11 @@
+import { useAuthContext } from "@/context/auth-context";
 import { Brand } from "@/models/brand";
 import axiosClient from "@/services/axiosInstance";
 import { useEffect, useState } from "react";
 
 export const useBrands = () => {
-  const client = axiosClient();
+  const { authState } = useAuthContext();
+  const client = axiosClient(authState.authKey);
 
   const [brands, setBrands] = useState<Brand[]>([]);
   const [brand, setBrand] = useState<Brand | null>({} as Brand);
@@ -30,7 +32,6 @@ export const useBrands = () => {
       setLoading(true);
       const data = await client.get(`/brands/${id}`);
       setBrand(data.data);
-      console.log(brand);
       return data.data;
     } catch (error) {
       console.error("Error fetching brands:", error);
@@ -42,8 +43,7 @@ export const useBrands = () => {
   const deleteBrand = async (id: Brand["id"]) => {
     try {
       setLoading(true);
-      const data = await client.delete(`/brands/${id}`);
-      console.log(data);
+      await client.delete(`/brands/${id}`);
     } catch (error) {
       console.log(error);
     } finally {
@@ -63,6 +63,7 @@ export const useBrands = () => {
     brands,
     brand,
     loading,
+    getBrands,
     getBrandById,
     deleteBrand,
     addBrand,

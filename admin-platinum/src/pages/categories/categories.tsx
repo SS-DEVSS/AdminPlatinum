@@ -45,7 +45,7 @@ const categorias: Category[] = [
   },
 ];
 
-const Categorias = (props: Props) => {
+const Categorias = () => {
   const { brands } = useBrands();
   return (
     <Layout>
@@ -94,13 +94,7 @@ const Categorias = (props: Props) => {
             ) : (
               <>
                 {categorias.map((categoria) => (
-                  <CardTemplate
-                    key={categoria.id}
-                    image={categoria.image}
-                    title={categoria.name}
-                    brands={categoria.brands}
-                    description={categoria.description}
-                  />
+                  <CardTemplate key={categoria.id} brands={categoria.brands} />
                 ))}
               </>
             )}
