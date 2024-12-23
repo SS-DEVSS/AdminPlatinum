@@ -23,8 +23,6 @@ import { Link } from "react-router-dom";
 import { Category } from "@/models/category";
 import { useBrands } from "@/hooks/useBrands";
 
-type Props = {};
-
 const categorias: Category[] = [
   {
     id: 1,
@@ -37,7 +35,7 @@ const categorias: Category[] = [
       {
         id: "1",
         name: "Platinum Driveline",
-        logo_img_url:
+        logoImgUrl:
           "https://www.platinumdriveline.com/wp-content/uploads/2020/07/NewBoxes-4-2048x1365.jpg",
       },
     ],
@@ -45,7 +43,7 @@ const categorias: Category[] = [
   },
 ];
 
-const Categorias = (props: Props) => {
+const Categorias = () => {
   const { brands } = useBrands();
   return (
     <Layout>
@@ -94,13 +92,7 @@ const Categorias = (props: Props) => {
             ) : (
               <>
                 {categorias.map((categoria) => (
-                  <CardTemplate
-                    key={categoria.id}
-                    image={categoria.image}
-                    title={categoria.name}
-                    brands={categoria.brands}
-                    description={categoria.description}
-                  />
+                  <CardTemplate key={categoria.id} brands={categoria.brands} />
                 ))}
               </>
             )}

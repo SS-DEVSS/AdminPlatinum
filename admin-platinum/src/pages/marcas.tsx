@@ -23,16 +23,20 @@ import CardTemplate from "@/components/Layouts/CardTemplate";
 import { useBrandModal } from "@/context/brand-context";
 import { useBrands } from "@/hooks/useBrands";
 import { Textarea } from "@/components/ui/textarea";
+import { useMemo } from "react";
+import { Brand } from "@/models/brand";
 
 const Marcas = () => {
-  const { brands, addBrand, updateBrand } = useBrands();
+  const { brands, brand, addBrand, updateBrand, getBrands, getBrandById } =
+    useBrands();
   const { modalState, closeModal, openModal } = useBrandModal();
-  const { isOpen, title, description, brand } = modalState;
+  const { isOpen, title, description } = modalState;
 
+  const [filterBrandSearch, setFilterBrandSearch] = useState("");
   const [form, setForm] = useState({
     name: "",
     description: "",
-    logo_img_url: "",
+    logoImgUrl: "",
   });
 
   const [isEditMode, setIsEditMode] = useState(false);
@@ -42,14 +46,14 @@ const Marcas = () => {
       setForm({
         name: brand.name || "",
         description: brand.description || "",
-        logo_img_url: brand.logo_img_url || "",
+        logoImgUrl: brand.logoImgUrl || "",
       });
       setIsEditMode(true);
     } else {
       setForm({
         name: "",
         description: "",
-        logo_img_url: "",
+        logoImgUrl: "",
       });
       setIsEditMode(false);
     }
@@ -60,38 +64,55 @@ const Marcas = () => {
       setForm({
         name: "",
         description: "",
-        logo_img_url: "",
+        logoImgUrl: "",
       });
       setIsEditMode(false);
     }
   }, [isOpen]);
 
+  useEffect(() => {
+    getBrands();
+  }, []);
+
   const handleForm = (e: any) => {
-    const { name, value, files } = e.target;
+    const { name, value } = e.target;
     setForm((prevForm) => ({
       ...prevForm,
-      [name]: files ? URL.createObjectURL(files[0]) : value,
+      [name]: value,
     }));
   };
 
   const validateForm = () => {
     return (
-      form.name !== "" && form.description !== "" && form.logo_img_url !== ""
+      form.name !== "" && form.description !== "" && form.logoImgUrl !== ""
     );
   };
 
-  const handleSubmit = () => {
+  const handleSearchFilter = (e: any) => {
+    const { value } = e.target;
+    setFilterBrandSearch(value.trim());
+  };
+
+  const filterBrands = useMemo(
+    () =>
+      brands.filter((brand: Brand) => brand.name.includes(filterBrandSearch)),
+    [brands, filterBrandSearch]
+  );
+  console.log(filterBrands);
+
+  const handleSubmit = async () => {
     const brandData = {
       ...form,
       id: brand ? brand.id : "",
     };
 
     if (isEditMode) {
-      updateBrand(brandData);
+      await updateBrand(brandData);
     } else {
-      addBrand(brandData);
+      await addBrand(form);
     }
 
+    await getBrands();
     closeModal();
   };
 
@@ -101,7 +122,6 @@ const Marcas = () => {
       openModal({
         title: "Editar Marca",
         description: "Edita la marca seleccionada.",
-        brand: brandToEdit,
         action: "",
       });
     } else {
@@ -109,7 +129,6 @@ const Marcas = () => {
       openModal({
         title: "Agregar Marca",
         description: "Agregar una nueva marca al sistema.",
-        brand: null,
         action: "",
       });
     }
@@ -132,6 +151,8 @@ const Marcas = () => {
                 <Input
                   type="search"
                   placeholder="Buscar Marca..."
+                  onChange={handleSearchFilter}
+                  value={filterBrandSearch}
                   className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[336px]"
                 />
               </div>
@@ -142,7 +163,7 @@ const Marcas = () => {
                     setForm({
                       name: "",
                       description: "",
-                      logo_img_url: "",
+                      logoImgUrl: "",
                     });
                     setIsEditMode(false);
                     closeModal();
@@ -189,12 +210,21 @@ const Marcas = () => {
                     onChange={handleForm}
                     required
                   />
-                  <Label htmlFor="logo_img_url">Imagen</Label>
-                  <Input
-                    id="logo_img_url"
-                    name="logo_img_url"
+                  <Label htmlFor="logoImgUrl">Imagen</Label>
+                  {/* <Input
+                    id="logoImgUrl"
+                    name="logoImgUrl"
                     type="file"
                     placeholder="Selecciona una imagen"
+                    onChange={handleForm}
+                    required
+                  /> */}
+                  <Input
+                    id="logoImgUrl"
+                    name="logoImgUrl"
+                    type="text"
+                    placeholder="https://"
+                    value={form.logoImgUrl}
                     onChange={handleForm}
                     required
                   />
@@ -218,13 +248,12 @@ const Marcas = () => {
             {brands.length === 0 ? (
               <p>No hay marcas disponibles.</p>
             ) : (
-              brands.map((brand) => (
+              (filterBrands.length > 0 ? filterBrands : brands).map((brand) => (
                 <CardTemplate
                   key={brand.id}
-                  image={brand.logo_img_url}
-                  title={brand.name}
-                  description={brand.description}
                   brand={brand}
+                  getBrandById={getBrandById}
+                  getItems={getBrands}
                 />
               ))
             )}
