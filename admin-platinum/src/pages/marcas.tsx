@@ -23,6 +23,8 @@ import CardTemplate from "@/components/Layouts/CardTemplate";
 import { useBrandModal } from "@/context/brand-context";
 import { useBrands } from "@/hooks/useBrands";
 import { Textarea } from "@/components/ui/textarea";
+import { useMemo } from "react";
+import { Brand } from "@/models/brand";
 
 const Marcas = () => {
   const { brands, brand, addBrand, updateBrand, getBrands, getBrandById } =
@@ -30,6 +32,7 @@ const Marcas = () => {
   const { modalState, closeModal, openModal } = useBrandModal();
   const { isOpen, title, description } = modalState;
 
+  const [filterBrandSearch, setFilterBrandSearch] = useState("");
   const [form, setForm] = useState({
     name: "",
     description: "",
@@ -69,7 +72,7 @@ const Marcas = () => {
 
   useEffect(() => {
     getBrands();
-  }, [brands]);
+  }, []);
 
   const handleForm = (e: any) => {
     const { name, value } = e.target;
@@ -85,16 +88,31 @@ const Marcas = () => {
     );
   };
 
-  const handleSubmit = () => {
+  const handleSearchFilter = (e: any) => {
+    const { value } = e.target;
+    setFilterBrandSearch(value.trim());
+  };
+
+  const filterBrands = useMemo(
+    () =>
+      brands.filter((brand: Brand) => brand.name.includes(filterBrandSearch)),
+    [brands, filterBrandSearch]
+  );
+  console.log(filterBrands);
+
+  const handleSubmit = async () => {
     const brandData = {
       ...form,
       id: brand ? brand.id : "",
     };
+
     if (isEditMode) {
-      updateBrand(brandData);
+      await updateBrand(brandData);
     } else {
-      addBrand(form);
+      await addBrand(form);
     }
+
+    await getBrands();
     closeModal();
   };
 
@@ -133,6 +151,8 @@ const Marcas = () => {
                 <Input
                   type="search"
                   placeholder="Buscar Marca..."
+                  onChange={handleSearchFilter}
+                  value={filterBrandSearch}
                   className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[336px]"
                 />
               </div>
@@ -228,11 +248,12 @@ const Marcas = () => {
             {brands.length === 0 ? (
               <p>No hay marcas disponibles.</p>
             ) : (
-              brands.map((brand) => (
+              (filterBrands.length > 0 ? filterBrands : brands).map((brand) => (
                 <CardTemplate
                   key={brand.id}
                   brand={brand}
                   getBrandById={getBrandById}
+                  getItems={getBrands}
                 />
               ))
             )}

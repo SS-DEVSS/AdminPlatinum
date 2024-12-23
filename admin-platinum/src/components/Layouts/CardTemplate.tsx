@@ -23,10 +23,16 @@ type CardTemplateProps = {
   brands?: Brand[];
   brand?: Brand;
   date?: Date;
+  getItems: () => void;
   getBrandById?: (id: Brand["id"]) => void;
 };
 
-const CardTemplate = ({ brands, brand, getBrandById }: CardTemplateProps) => {
+const CardTemplate = ({
+  brands,
+  brand,
+  getBrandById,
+  getItems,
+}: CardTemplateProps) => {
   const { openModal } = useDeleteModal();
   const { openModal: openModalBrand } = useBrandModal();
 
@@ -46,8 +52,9 @@ const CardTemplate = ({ brands, brand, getBrandById }: CardTemplateProps) => {
     }
   };
 
-  const handleDeleteBrand = () => {
-    deleteBrand(brand?.id!);
+  const handleDeleteBrand = async () => {
+    await deleteBrand(brand?.id!);
+    await getItems();
   };
 
   const handleEditCategory = () => {
@@ -67,7 +74,7 @@ const CardTemplate = ({ brands, brand, getBrandById }: CardTemplateProps) => {
     <>
       <Card className="w-full">
         <img
-          src={brand?.logo_img_url}
+          src={brand?.logoImgUrl}
           alt={`${brand?.name} image`}
           className="h-[300px] object-cover rounded-t-lg bg-[#D9D9D9] mx-auto"
         />

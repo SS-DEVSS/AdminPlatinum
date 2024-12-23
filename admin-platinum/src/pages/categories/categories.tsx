@@ -35,7 +35,7 @@ const categorias: Category[] = [
       {
         id: "1",
         name: "Platinum Driveline",
-        logo_img_url:
+        logoImgUrl:
           "https://www.platinumdriveline.com/wp-content/uploads/2020/07/NewBoxes-4-2048x1365.jpg",
       },
     ],
