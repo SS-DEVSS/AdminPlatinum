@@ -88,12 +88,12 @@ const Marcas = () => {
   const handleSubmit = () => {
     const brandData = {
       ...form,
-      // id: brand ? brand.id : "",
+      id: brand ? brand.id : "",
     };
     if (isEditMode) {
       updateBrand(brandData);
     } else {
-      addBrand(brandData);
+      addBrand(form);
     }
     closeModal();
   };

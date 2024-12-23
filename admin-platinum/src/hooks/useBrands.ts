@@ -97,9 +97,11 @@ export const useBrands = () => {
         "Content-Type": "application/json",
       };
       setLoading(true);
-      const response = await client.post("/brands/", brand, { headers });
+      const response = await client.patch(`/brands/${brand.id}`, brand, {
+        headers,
+      });
       toast({
-        title: "Marca creada correctamente.",
+        title: "Marca actualizada correctamente.",
         variant: "success",
         description: response.data.message,
       });
@@ -107,7 +109,7 @@ export const useBrands = () => {
       console.log(error);
       setErrorMsg(error.response.data.error);
       toast({
-        title: "Error al crear marca",
+        title: "Error al actualizar marca",
         variant: "destructive",
         description: errorMsg,
       });
