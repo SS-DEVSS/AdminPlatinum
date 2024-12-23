@@ -23,7 +23,6 @@ export const useCategories = () => {
     try {
       setLoading(true);
       const data = await client.get("/categories");
-      console.log(data.data);
       setCategories(data.data);
     } catch (error) {
       console.error("Error fetching categories:", error);
@@ -68,65 +67,66 @@ export const useCategories = () => {
     }
   };
 
-  const addCategory = async (category: Omit<Category, "id">) => {
-    try {
-      const headers = {
-        "Content-Type": "application/json",
-      };
-      setLoading(true);
-      const response = await client.post("/categories/", category, { headers });
-      toast({
-        title: "Categoría eliminada correctamente.",
-        variant: "success",
-        description: response.data.message,
-      });
-    } catch (error: any) {
-      console.log(error);
-      setErrorMsg(error.response.data.error);
-      toast({
-        title: "Error al eliminar categoría",
-        variant: "destructive",
-        description: errorMsg,
-      });
-    } finally {
-      setLoading(false);
-      setErrorMsg("");
-    }
-  };
+  //   const addCategory = async (category: Omit<Category, "id">) => {
+  //     try {
+  //       const headers = {
+  //         "Content-Type": "application/json",
+  //       };
+  //       setLoading(true);
+  //       const response = await client.post("/categories/", category, { headers });
+  //       toast({
+  //         title: "Categoría eliminada correctamente.",
+  //         variant: "success",
+  //         description: response.data.message,
+  //       });
+  //     } catch (error: any) {
+  //       console.log(error);
+  //       setErrorMsg(error.response.data.error);
+  //       toast({
+  //         title: "Error al eliminar categoría",
+  //         variant: "destructive",
+  //         description: errorMsg,
+  //       });
+  //     } finally {
+  //       setLoading(false);
+  //       setErrorMsg("");
+  //     }
+  //   };
 
-  const updateBrand = async (category: Category) => {
-    try {
-      const headers = {
-        "Content-Type": "application/json",
-      };
-      setLoading(true);
-      const response = await client.patch(
-        `/categories/${category.id}`,
-        category,
-        {
-          headers,
-        }
-      );
-      toast({
-        title: "Categoría actualizada correctamente.",
-        variant: "success",
-        description: response.data.message,
-      });
-    } catch (error: any) {
-      console.log(error);
-      setErrorMsg(error.response.data.error);
-      toast({
-        title: "Error al actualizar categoría",
-        variant: "destructive",
-        description: errorMsg,
-      });
-    } finally {
-      setLoading(false);
-      setErrorMsg("");
-    }
-  };
+  //   const updateCategory= async (category: Category) => {
+  //     try {
+  //       const headers = {
+  //         "Content-Type": "application/json",
+  //       };
+  //       setLoading(true);
+  //       const response = await client.patch(
+  //         `/categories/${category.id}`,
+  //         category,
+  //         {
+  //           headers,
+  //         }
+  //       );
+  //       toast({
+  //         title: "Categoría actualizada correctamente.",
+  //         variant: "success",
+  //         description: response.data.message,
+  //       });
+  //     } catch (error: any) {
+  //       console.log(error);
+  //       setErrorMsg(error.response.data.error);
+  //       toast({
+  //         title: "Error al actualizar categoría",
+  //         variant: "destructive",
+  //         description: errorMsg,
+  //       });
+  //     } finally {
+  //       setLoading(false);
+  //       setErrorMsg("");
+  //     }
+  //   };
 
   return {
+    loading,
     categories,
     category,
     getCategories,

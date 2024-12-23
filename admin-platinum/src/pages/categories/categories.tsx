@@ -24,10 +24,30 @@ import { Category } from "@/models/category";
 import { useCategories } from "@/hooks/useCategories";
 import { useBrands } from "@/hooks/useBrands";
 import { Brand } from "@/models/brand";
+import { useState } from "react";
+import { useMemo } from "react";
 
 const Categorias = () => {
   const { categories, getCategories } = useCategories();
   const { brands } = useBrands();
+
+  const [searchFilter, setSearchFilter] = useState("");
+  const [brandFilter, setBrandFilter] = useState<Brand["id"]>("");
+
+  const handleSearchFilter = (e: any) => {
+    const { value } = e.target;
+    setSearchFilter(value);
+  };
+
+  const filteredCategories = useMemo(
+    () =>
+      categories.filter((category: Category) =>
+        category.name.toLowerCase().includes(searchFilter.toLocaleLowerCase())
+      ),
+    [searchFilter, categories]
+  );
+
+  console.log(filteredCategories);
 
   return (
     <Layout>
@@ -44,6 +64,8 @@ const Categorias = () => {
                 <Input
                   type="search"
                   placeholder="Buscar Categoría..."
+                  value={searchFilter}
+                  onChange={handleSearchFilter}
                   className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[336px]"
                 />
               </div>
@@ -54,6 +76,7 @@ const Categorias = () => {
                 <SelectContent>
                   <SelectGroup>
                     <SelectLabel>Marcas</SelectLabel>
+                    <SelectItem value={"-"}>Seleccionar</SelectItem>
                     {brands.map((brand: Brand) => (
                       <SelectItem key={brand.id} value={brand.id}>
                         {brand.name}
@@ -73,19 +96,20 @@ const Categorias = () => {
             </div>
           </CardHeader>
           <CardSectionLayout>
-            {categories.length === 0 ? (
-              <></>
+            {categories.length && filteredCategories.length === 0 ? (
+              <>No hay categorías por mostrar.</>
             ) : (
-              <>
-                {categories.map((categoria: Category) => (
-                  <CardTemplate
-                    category={categoria}
-                    key={categoria.id}
-                    brands={categoria.brands}
-                    getItems={getCategories}
-                  />
-                ))}
-              </>
+              (filteredCategories.length > 0
+                ? filteredCategories
+                : categories
+              ).map((categoria: Category) => (
+                <CardTemplate
+                  category={categoria}
+                  key={categoria.id}
+                  brands={categoria.brands}
+                  getItems={getCategories}
+                />
+              ))
             )}
           </CardSectionLayout>
         </Card>
