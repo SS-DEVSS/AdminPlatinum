@@ -95,7 +95,9 @@ const Marcas = () => {
 
   const filterBrands = useMemo(
     () =>
-      brands.filter((brand: Brand) => brand.name.includes(filterBrandSearch)),
+      brands.filter((brand: Brand) =>
+        brand.name.toLowerCase().includes(filterBrandSearch.toLocaleLowerCase())
+      ),
     [brands, filterBrandSearch]
   );
   console.log(filterBrands);
@@ -245,7 +247,7 @@ const Marcas = () => {
             </div>
           </CardHeader>
           <CardSectionLayout>
-            {brands.length === 0 ? (
+            {brands.length && filterBrands.length === 0 ? (
               <p>No hay marcas disponibles.</p>
             ) : (
               (filterBrands.length > 0 ? filterBrands : brands).map((brand) => (

@@ -21,17 +21,23 @@ import { Separator } from "../ui/separator";
 
 type CardTemplateProps = {
   brands?: Brand[];
+  category?: Category;
   brand?: Brand;
   date?: Date;
   getItems: () => void;
   getBrandById?: (id: Brand["id"]) => void;
+  deleteCategory?: any;
+  getCategoryById?: any;
 };
 
 const CardTemplate = ({
   brands,
   brand,
+  category,
   getBrandById,
   getItems,
+  deleteCategory,
+  getCategoryById,
 }: CardTemplateProps) => {
   const { openModal } = useDeleteModal();
   const { openModal: openModalBrand } = useBrandModal();
@@ -57,30 +63,30 @@ const CardTemplate = ({
     await getItems();
   };
 
-  const handleEditCategory = () => {
-    openModal({
-      title: "Borrar Categoría",
-      description: "Estas seguro que deseas eliminar esta categoría?",
-      pathname: "/categorias",
-      handleDelete: handleDeleteCategory,
-    });
+  const handleEditCategory = async (id: Category["id"]) => {
+    await getCategoryById(id);
+    // const data = await getCategoryById("bd3dcd72-961a-49fc-ab5d-21a2243c1c44");
+    // console.log("Direct Data Returned:", data);
   };
 
-  const handleDeleteCategory = () => {
-    console.log("Deleted category");
+  const handleDeleteCategory = async () => {
+    await deleteCategory(category?.id!);
+    await getItems();
   };
 
   return (
     <>
       <Card className="w-full">
         <img
-          src={brand?.logoImgUrl}
-          alt={`${brand?.name} image`}
+          src={brand ? brand?.logoImgUrl : category?.imgUrl}
+          alt={`${brand ? brand?.name : category?.name} image`}
           className="h-[300px] object-cover rounded-t-lg bg-[#D9D9D9] mx-auto"
         />
         <CardContent className="border-t">
           <div className="flex justify-between items-center">
-            <CardTitle className="mt-6 mb-3">{brand?.name}</CardTitle>
+            <CardTitle className="mt-6 mb-3">
+              {brand ? brand?.name : category?.name}
+            </CardTitle>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <MoreHorizontal className="hover:cursor-pointer" />
@@ -95,12 +101,22 @@ const CardTemplate = ({
                       <span>Consultar Productos</span>
                     </DropdownMenuItem>
                     <Link to="/categorias/editar">
-                      <DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleEditCategory(category?.id)}
+                      >
                         <Pencil className="mr-2 h-4 w-4" />
                         <span>Editar Categoría</span>
                       </DropdownMenuItem>
                     </Link>
-                    <DropdownMenuItem onClick={handleEditCategory}>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        openModal({
+                          title: "Categoría",
+                          description: "Estas seguro que deseas eliminar esta?",
+                          handleDelete: handleDeleteCategory,
+                        })
+                      }
+                    >
                       <Trash className="mr-2 h-4 w-4" />
                       <span>Eliminar</span>
                     </DropdownMenuItem>
@@ -115,7 +131,7 @@ const CardTemplate = ({
                     <DropdownMenuItem
                       onClick={() =>
                         openModal({
-                          title: "Borrar Marca",
+                          title: "Marca",
                           description:
                             "Estas seguro que deseas eliminar esta marca?",
                           handleDelete: handleDeleteBrand,
@@ -138,7 +154,7 @@ const CardTemplate = ({
             </div>
           )}
           <CardDescription className="leading-7">
-            {brand?.description}
+            {brand ? brand?.description : category?.description}
           </CardDescription>
         </CardContent>
         {brand?.categories?.length! > 0 && (
@@ -146,8 +162,12 @@ const CardTemplate = ({
             <Separator />
             <CardContent className="mt-3">
               <p className="font-bold mb-4">Categorías Asociadas</p>
+              <section className="flex flex-wrap gap-2"></section>
               {brand?.categories?.map((category: Category) => (
-                <Badge key={category.id} className="px-4 py-1 hover:underline">
+                <Badge
+                  key={category.id}
+                  className="px-4 py-1 mr-3 hover:underline"
+                >
                   {category.name} <ExternalLink className="ml-2 w-5" />
                 </Badge>
               ))}

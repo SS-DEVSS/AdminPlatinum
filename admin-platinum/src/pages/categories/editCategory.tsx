@@ -1,60 +1,8 @@
 import Layout from "@/components/Layouts/Layout";
-import { Category, CategoryAttributesTypes } from "@/models/category";
 import CategoryCU from "@/modules/categories/CatgegoryCU";
 
 const EditCategory = () => {
-  const category: Category = {
-    id: 1,
-    image:
-      "https://www.platinumdriveline.com/wp-content/uploads/2020/07/NewBoxes-4-2048x1365.jpg",
-    name: "Clutches",
-    description:
-      "Lorem ipsum dolor, sit amet consectetur adipisicing elit. Repellendus rem minus, soluta officia ipsam repudiandae quia rerum voluptatibus ipsum minima",
-    brands: [
-      {
-        id: "1",
-        name: "Platinum Driveline",
-        logo_img_url:
-          "https://www.platinumdriveline.com/wp-content/uploads/2020/07/NewBoxes-4-2048x1365.jpg",
-      },
-    ],
-    attributes: [
-      {
-        id: "1",
-        id_category: "1",
-        name: "Diametro",
-        type: CategoryAttributesTypes.NUMERIC,
-        required: true,
-      },
-      {
-        id: "2",
-        id_category: "1",
-        name: "Dientes",
-        type: CategoryAttributesTypes.NUMERIC,
-        required: false,
-      },
-      {
-        id: "3",
-        id_category: "2",
-        name: "Marca",
-        type: CategoryAttributesTypes.STRING,
-        required: true,
-      },
-      {
-        id: "4",
-        id_category: "2",
-        name: "Modelo",
-        type: CategoryAttributesTypes.STRING,
-        required: false,
-      },
-    ],
-  };
-
-  return (
-    <Layout>
-      <CategoryCU category={category} />
-    </Layout>
-  );
+  return <Layout>{<CategoryCU />}</Layout>;
 };
 
 export default EditCategory;
