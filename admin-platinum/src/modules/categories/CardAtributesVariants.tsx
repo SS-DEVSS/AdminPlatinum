@@ -1,6 +1,4 @@
 import { useState } from "react";
-import NoData from "@/components/NoData";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -19,15 +17,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -40,38 +29,100 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Category, CategoryAtributes, typesArray } from "@/models/category";
-import {
-  AlertTriangle,
-  MoreVertical,
-  Pencil,
-  PlusCircle,
-  Trash,
-} from "lucide-react";
+  CategoryAtributes,
+  CategoryAttributesTypes,
+  typesArray,
+} from "@/models/category";
+import { PlusCircle } from "lucide-react";
+import { useEffect } from "react";
+import { useMemo } from "react";
+import { Dispatch } from "react";
+import { formTypes } from "./CatgegoryCU";
+import CardAttributeTable from "@/components/CardAttributeTable";
 
 type CardAtributesVariantsProps = {
-  category?: Category;
+  form: formTypes;
+  setForm: Dispatch<React.SetStateAction<formTypes>>;
   title: "Atributos de Categoría" | "Atributos de Variantes";
   description: string;
 };
 
+interface AttributeFormType {
+  name: string;
+  type: CategoryAttributesTypes | string;
+  required: boolean | string | undefined;
+}
+
+const AttributeFormInitialState = {
+  name: "",
+  type: "",
+  required: "",
+};
+
+interface AttributesType {
+  productAttributes: CategoryAtributes[];
+  variantAttributes: CategoryAtributes[];
+}
+
 const CardAtributesVariants = ({
-  category,
+  form,
+  setForm,
   title,
   description,
 }: CardAtributesVariantsProps) => {
+  const [type, setType] = useState<"VARIANT" | "PRODUCT" | "">("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState("add");
   const [currentAttribute, setCurrentAttribute] =
     useState<CategoryAtributes | null>(null);
+  const [attributeForm, setAttributeForm] = useState<AttributeFormType>(
+    AttributeFormInitialState
+  );
+  const [attributes, setAttributes] = useState<AttributesType>({
+    productAttributes: [],
+    variantAttributes: [],
+  });
+
+  useEffect(() => {
+    if (title === "Atributos de Categoría") {
+      setType("PRODUCT");
+    } else {
+      setType("VARIANT");
+    }
+  }, []);
+
+  useEffect(() => {
+    if (form.attributes) {
+      const productAttrs = form.attributes.filter(
+        (attr) => attr.scope === "PRODUCT"
+      );
+      const variantAttrs = form.attributes.filter(
+        (attr) => attr.scope === "VARIANT"
+      );
+      setAttributes({
+        productAttributes: productAttrs,
+        variantAttributes: variantAttrs,
+      });
+    }
+  }, [form.attributes]);
+
+  const handleAttributeForm = (e: any) => {
+    const { name, value } = e.target;
+    setAttributeForm({
+      ...attributeForm,
+      [name]: value,
+    });
+  };
+
+  const validateForm = useMemo(() => {
+    return (
+      attributeForm.name.trim() !== "" &&
+      ["si", "no"].includes(attributeForm.required as string) &&
+      typesArray.includes(attributeForm.type)
+    );
+  }, [attributeForm]);
 
   const handleEditClick = (attribute: CategoryAtributes) => {
     setCurrentAttribute(attribute);
@@ -86,8 +137,30 @@ const CardAtributesVariants = ({
   };
 
   const handleSubmit = () => {
+    const payload = {
+      ...attributeForm,
+      scope: type,
+      order: 1,
+    };
+
+    setForm((prev) => ({
+      ...prev,
+      attributes: [...prev.attributes, payload],
+    }));
+
+    setAttributes((prev) => ({
+      ...prev,
+      ...(type === "PRODUCT"
+        ? { productAttributes: [...prev.productAttributes, payload] }
+        : { variantAttributes: [...prev.variantAttributes, payload] }),
+    }));
+
     setIsDialogOpen(false);
   };
+
+  useEffect(() => {
+    setAttributeForm(AttributeFormInitialState);
+  }, [isDialogOpen]);
 
   return (
     <Card className="w-full">
@@ -96,77 +169,18 @@ const CardAtributesVariants = ({
         <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent>
-        {category?.attributes ? (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nombre</TableHead>
-                <TableHead>Tipo de Dato</TableHead>
-                <TableHead>Obligatorio</TableHead>
-                <TableHead className="w-[20px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {category.attributes.map((attribute) => (
-                <TableRow key={attribute.name}>
-                  <TableCell className="font-semibold">
-                    {attribute.name}
-                  </TableCell>
-                  <TableCell>{attribute.type}</TableCell>
-                  <TableCell>
-                    <Badge>{attribute.required ? "Si" : "No"}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <MoreVertical />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent className="w-56">
-                        <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuGroup>
-                          <DropdownMenuItem
-                            onClick={() => handleEditClick(attribute)}
-                          >
-                            <Pencil className="mr-2 h-4 w-4" />
-                            <span>
-                              Editar{" "}
-                              {title === "Atributos de Categoría"
-                                ? "Atributo"
-                                : "Variante"}
-                            </span>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Trash className="mr-2 h-4 w-4" />
-                            <span>
-                              Eliminar{" "}
-                              {title === "Atributos de Categoría"
-                                ? "Atributo"
-                                : "Variante"}
-                            </span>
-                          </DropdownMenuItem>
-                        </DropdownMenuGroup>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+        {type === "PRODUCT" ? (
+          <CardAttributeTable
+            title={title}
+            attributes={attributes.productAttributes}
+            handleEditClick={handleEditClick}
+          />
         ) : (
-          <NoData>
-            <AlertTriangle className="text-[#4E5154]" />
-            <p className="text-[#4E5154]">
-              {title === "Atributos de Categoría"
-                ? "No existen atributos asociados"
-                : "No existen variantes asociadas"}
-            </p>
-            <p className="text-[#94A3B8] font-semibold text-sm">
-              Agrega uno en la parte posterior
-            </p>
-          </NoData>
+          <CardAttributeTable
+            title={title}
+            attributes={attributes.variantAttributes}
+            handleEditClick={handleEditClick}
+          />
         )}
       </CardContent>
       <CardFooter className="justify-center border-t p-4">
@@ -210,15 +224,25 @@ const CardAtributesVariants = ({
             </Label>
             <Input
               id="name"
+              name="name"
               type="name"
               placeholder="ej. Platinum"
-              defaultValue={currentAttribute?.name || ""}
+              value={currentAttribute?.name || attributeForm.name}
+              onChange={handleAttributeForm}
               required
             />
             <Label htmlFor="data-type">
               <span className="text-redLabel">*</span>Tipo de Dato
             </Label>
-            <Select defaultValue={currentAttribute?.type || ""}>
+            <Select
+              value={currentAttribute?.type || attributeForm.type}
+              onValueChange={(value) =>
+                setAttributeForm({
+                  ...attributeForm,
+                  type: value,
+                })
+              }
+            >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Selecciona tipo de dato" />
               </SelectTrigger>
@@ -234,7 +258,12 @@ const CardAtributesVariants = ({
             <Label>
               <span className="text-redLabel">*</span>Opcional?
             </Label>
-            <RadioGroup defaultValue={currentAttribute?.required ? "si" : "no"}>
+            <RadioGroup
+              value={attributeForm.required as string}
+              onValueChange={(value) =>
+                setAttributeForm({ ...attributeForm, required: value })
+              }
+            >
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="si" id="r1" />
                 <Label htmlFor="r1">Si</Label>
@@ -245,7 +274,11 @@ const CardAtributesVariants = ({
               </div>
             </RadioGroup>
             <DialogFooter>
-              <Button type="submit" onSubmit={() => handleSubmit}>
+              <Button
+                disabled={!validateForm}
+                type="submit"
+                onClick={handleSubmit}
+              >
                 {dialogMode === "edit"
                   ? title === "Atributos de Categoría"
                     ? "Guardar Cambios"

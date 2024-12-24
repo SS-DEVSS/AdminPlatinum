@@ -27,7 +27,7 @@ type CategoryCUProps = {
   category?: Category;
 };
 
-interface formTypes {
+export interface formTypes {
   name: string;
   description: string;
   imgUrl: string;
@@ -71,7 +71,7 @@ const CategoryCU = ({ category }: CategoryCUProps) => {
     });
   };
 
-  console.log(selectedBrandIds);
+  console.log(form);
 
   return (
     <main>
@@ -220,12 +220,14 @@ const CategoryCU = ({ category }: CategoryCUProps) => {
       </section>
       <section className="mt-4 flex flex-col md:flex-row justify-between gap-3 w-full">
         <CardAtributesVariants
-          category={category}
+          form={form}
+          setForm={setForm}
           title={"Atributos de Categoría"}
           description={"Ingresa los atributos de la categoría"}
         />
         <CardAtributesVariants
-          category={category}
+          form={form}
+          setForm={setForm}
           title={"Atributos de Variantes"}
           description={"Ingresa los atributos de la variante"}
         />
