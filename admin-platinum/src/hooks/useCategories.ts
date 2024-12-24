@@ -5,6 +5,11 @@ import { useEffect } from "react";
 import { useState } from "react";
 import { useToast } from "./use-toast";
 
+interface CategoryRespone {
+  id: string;
+  message: string;
+}
+
 export const useCategories = () => {
   const { authState } = useAuthContext();
   const client = axiosClient(authState.authKey);
@@ -68,31 +73,39 @@ export const useCategories = () => {
     }
   };
 
-  //   const addCategory = async (category: Omit<Category, "id">) => {
-  //     try {
-  //       const headers = {
-  //         "Content-Type": "application/json",
-  //       };
-  //       setLoading(true);
-  //       const response = await client.post("/categories/", category, { headers });
-  //       toast({
-  //         title: "Categoría eliminada correctamente.",
-  //         variant: "success",
-  //         description: response.data.message,
-  //       });
-  //     } catch (error: any) {
-  //       console.log(error);
-  //       setErrorMsg(error.response.data.error);
-  //       toast({
-  //         title: "Error al eliminar categoría",
-  //         variant: "destructive",
-  //         description: errorMsg,
-  //       });
-  //     } finally {
-  //       setLoading(false);
-  //       setErrorMsg("");
-  //     }
-  //   };
+  const addCategory = async (
+    category: Omit<Category, "id">
+  ): Promise<CategoryRespone | null> => {
+    try {
+      const headers = {
+        "Content-Type": "application/json",
+      };
+      setLoading(true);
+      const response = await client.post<CategoryRespone>(
+        "/categories/",
+        category,
+        { headers }
+      );
+      toast({
+        title: "Categoría agregada correctamente.",
+        variant: "success",
+        description: response.data.message,
+      });
+      return response.data;
+    } catch (error: any) {
+      console.log(error);
+      setErrorMsg(error.response.data.error);
+      toast({
+        title: "Error al crear categoría",
+        variant: "destructive",
+        description: errorMsg,
+      });
+      return null;
+    } finally {
+      setLoading(false);
+      setErrorMsg("");
+    }
+  };
 
   //   const updateCategory= async (category: Category) => {
   //     try {
@@ -133,5 +146,6 @@ export const useCategories = () => {
     getCategories,
     getCategoryById,
     deleteCategory,
+    addCategory,
   };
 };

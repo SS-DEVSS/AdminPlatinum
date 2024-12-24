@@ -52,13 +52,13 @@ type CardAtributesVariantsProps = {
 interface AttributeFormType {
   name: string;
   type: CategoryAttributesTypes | string;
-  required: boolean | string | undefined;
+  required: boolean;
 }
 
 const AttributeFormInitialState = {
   name: "",
   type: "",
-  required: "",
+  required: false,
 };
 
 interface AttributesType {
@@ -119,7 +119,7 @@ const CardAtributesVariants = ({
   const validateForm = useMemo(() => {
     return (
       attributeForm.name.trim() !== "" &&
-      ["si", "no"].includes(attributeForm.required as string) &&
+      typeof attributeForm.required === "boolean" &&
       typesArray.includes(attributeForm.type)
     );
   }, [attributeForm]);
@@ -259,20 +259,24 @@ const CardAtributesVariants = ({
               <span className="text-redLabel">*</span>Opcional?
             </Label>
             <RadioGroup
-              value={attributeForm.required as string}
+              value={String(attributeForm.required)}
               onValueChange={(value) =>
-                setAttributeForm({ ...attributeForm, required: value })
+                setAttributeForm({
+                  ...attributeForm,
+                  required: value === "true",
+                })
               }
             >
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="si" id="r1" />
-                <Label htmlFor="r1">Si</Label>
+                <RadioGroupItem value="true" id="r1" />
+                <Label htmlFor="r1">Sí</Label>
               </div>
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="no" id="r2" />
+                <RadioGroupItem value="false" id="r2" />
                 <Label htmlFor="r2">No</Label>
               </div>
             </RadioGroup>
+
             <DialogFooter>
               <Button
                 disabled={!validateForm}

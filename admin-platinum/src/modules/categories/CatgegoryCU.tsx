@@ -19,12 +19,14 @@ import {
   PlusCircleIcon,
   XCircleIcon,
 } from "lucide-react";
+import { useMemo } from "react";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import CardAtributesVariants from "./CardAtributesVariants";
 
 type CategoryCUProps = {
-  category?: Category;
+  category?: Category | null;
+  addCategory?: (category: Omit<Category, "id">) => void;
 };
 
 export interface formTypes {
@@ -35,8 +37,9 @@ export interface formTypes {
   attributes: CategoryAtributes[];
 }
 
-const CategoryCU = ({ category }: CategoryCUProps) => {
+const CategoryCU = ({ category, addCategory }: CategoryCUProps) => {
   const { brands } = useBrands();
+  const navigate = useNavigate();
 
   const [selectedBrandIds, setSelectedBrandIds] = useState<Set<string>>(
     new Set()
@@ -60,6 +63,10 @@ const CategoryCU = ({ category }: CategoryCUProps) => {
   };
 
   const toggleBrandSelection = (brandId: string) => {
+    setForm({
+      ...form,
+      brands: [...form.brands, brandId],
+    });
     setSelectedBrandIds((prev) => {
       const updatedSet = new Set(prev);
       if (updatedSet.has(brandId)) {
@@ -69,6 +76,32 @@ const CategoryCU = ({ category }: CategoryCUProps) => {
       }
       return updatedSet;
     });
+  };
+
+  const validateForm = useMemo(
+    () =>
+      form.name.trim() != "" &&
+      form.description.trim() != "" &&
+      form.imgUrl.trim() !== "" &&
+      form.imgUrl.includes("https://") &&
+      form.brands.length > 0 &&
+      form.attributes.length > 0,
+    [form]
+  );
+
+  const handleSubmit = async (form: formTypes) => {
+    try {
+      if (addCategory) {
+        const response = (await addCategory(form)) as
+          | { id: string }
+          | undefined;
+        if (response && response.id) {
+          navigate("/categorias");
+        }
+      }
+    } catch (error) {
+      console.error("Error in handleSubmit:", error);
+    }
   };
 
   console.log(form);
@@ -91,7 +124,12 @@ const CategoryCU = ({ category }: CategoryCUProps) => {
             <Button variant={"outline"}>Cancelar</Button>
           </Link>
           {!category ? (
-            <Button disabled size="sm" className="h-10 px-6 gap-1">
+            <Button
+              size="sm"
+              disabled={!validateForm}
+              className="h-10 px-6 gap-1"
+              onClick={() => handleSubmit(form)}
+            >
               <PlusCircle className="h-3.5 w-3.5 mr-2" />
               <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
                 Agregar Categoría

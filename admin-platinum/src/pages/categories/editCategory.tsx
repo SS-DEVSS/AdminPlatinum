@@ -4,7 +4,6 @@ import CategoryCU from "@/modules/categories/CatgegoryCU";
 
 const EditCategory = () => {
   const { category } = useCategories();
-  console.log(category);
   return (
     <Layout>
       <CategoryCU category={category} />

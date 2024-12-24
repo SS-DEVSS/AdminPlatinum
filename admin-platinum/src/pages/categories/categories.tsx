@@ -47,7 +47,7 @@ const Categorias = () => {
       const matchesBrand =
         !brandFilter ||
         brandFilter === "-" ||
-        category.brands?.some((brand) => brand.id === brandFilter);
+        category.brands?.some((brand: any) => brand.id === brandFilter);
 
       return matchesSearch && matchesBrand;
     });
@@ -110,7 +110,6 @@ const Categorias = () => {
                 <CardTemplate
                   category={categoria}
                   key={categoria.id}
-                  brands={categoria.brands}
                   getItems={getCategories}
                 />
               ))
