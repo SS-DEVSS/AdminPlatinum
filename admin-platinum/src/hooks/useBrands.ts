@@ -39,6 +39,7 @@ export const useBrands = () => {
     } catch (error) {
       console.error("Error fetching brands:", error);
     } finally {
+      console.log(brand);
       setLoading(false);
     }
   };

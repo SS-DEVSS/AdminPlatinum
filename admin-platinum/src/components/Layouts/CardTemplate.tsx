@@ -18,7 +18,6 @@ import { useBrandModal } from "@/context/brand-context";
 import { useBrands } from "@/hooks/useBrands";
 import { Category } from "@/models/category";
 import { Separator } from "../ui/separator";
-import { useCategories } from "@/hooks/useCategories";
 
 type CardTemplateProps = {
   brands?: Brand[];
@@ -27,6 +26,8 @@ type CardTemplateProps = {
   date?: Date;
   getItems: () => void;
   getBrandById?: (id: Brand["id"]) => void;
+  deleteCategory?: any;
+  getCategoryById?: any;
 };
 
 const CardTemplate = ({
@@ -35,12 +36,13 @@ const CardTemplate = ({
   category,
   getBrandById,
   getItems,
+  deleteCategory,
+  getCategoryById,
 }: CardTemplateProps) => {
   const { openModal } = useDeleteModal();
   const { openModal: openModalBrand } = useBrandModal();
 
   const { deleteBrand } = useBrands();
-  const { deleteCategory } = useCategories();
 
   const location = useLocation();
   const { pathname } = location;
@@ -61,7 +63,11 @@ const CardTemplate = ({
     await getItems();
   };
 
-  const handleEditCategory = () => {};
+  const handleEditCategory = async (id: Category["id"]) => {
+    await getCategoryById(id);
+    // const data = await getCategoryById("bd3dcd72-961a-49fc-ab5d-21a2243c1c44");
+    // console.log("Direct Data Returned:", data);
+  };
 
   const handleDeleteCategory = async () => {
     await deleteCategory(category?.id!);
@@ -95,7 +101,9 @@ const CardTemplate = ({
                       <span>Consultar Productos</span>
                     </DropdownMenuItem>
                     <Link to="/categorias/editar">
-                      <DropdownMenuItem onClick={handleEditCategory}>
+                      <DropdownMenuItem
+                        onClick={() => handleEditCategory(category?.id)}
+                      >
                         <Pencil className="mr-2 h-4 w-4" />
                         <span>Editar Categoría</span>
                       </DropdownMenuItem>
@@ -154,8 +162,12 @@ const CardTemplate = ({
             <Separator />
             <CardContent className="mt-3">
               <p className="font-bold mb-4">Categorías Asociadas</p>
+              <section className="flex flex-wrap gap-2"></section>
               {brand?.categories?.map((category: Category) => (
-                <Badge key={category.id} className="px-4 py-1 hover:underline">
+                <Badge
+                  key={category.id}
+                  className="px-4 py-1 mr-3 hover:underline"
+                >
                   {category.name} <ExternalLink className="ml-2 w-5" />
                 </Badge>
               ))}

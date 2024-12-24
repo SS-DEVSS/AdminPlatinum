@@ -52,13 +52,15 @@ type CardAtributesVariantsProps = {
 interface AttributeFormType {
   name: string;
   type: CategoryAttributesTypes | string;
-  required: boolean;
+  required: boolean | null;
+  order?: number;
+  scope?: "VARIANT" | "PRODUCT";
 }
 
 const AttributeFormInitialState = {
   name: "",
   type: "",
-  required: false,
+  required: null,
 };
 
 interface AttributesType {
@@ -124,11 +126,7 @@ const CardAtributesVariants = ({
     );
   }, [attributeForm]);
 
-  const handleEditClick = (attribute: CategoryAtributes) => {
-    setCurrentAttribute(attribute);
-    setDialogMode("edit");
-    setIsDialogOpen(true);
-  };
+  console.log(currentAttribute);
 
   const handleAddClick = () => {
     setCurrentAttribute(null);
@@ -136,30 +134,116 @@ const CardAtributesVariants = ({
     setIsDialogOpen(true);
   };
 
-  const handleSubmit = () => {
-    const payload = {
-      ...attributeForm,
-      scope: type,
-      order: 1,
-    };
+  const handleEditClick = (attribute: CategoryAtributes) => {
+    setDialogMode("edit");
+    setIsDialogOpen(true);
 
-    setForm((prev) => ({
-      ...prev,
-      attributes: [...prev.attributes, payload],
-    }));
+    console.log(attribute);
+    setCurrentAttribute(attribute);
 
-    setAttributes((prev) => ({
-      ...prev,
-      ...(type === "PRODUCT"
-        ? { productAttributes: [...prev.productAttributes, payload] }
-        : { variantAttributes: [...prev.variantAttributes, payload] }),
-    }));
-
-    setIsDialogOpen(false);
+    setAttributeForm({
+      name: attribute.name,
+      type: attribute.type,
+      required: true,
+      order: attribute.order,
+      scope: attribute.scope,
+    });
   };
 
   useEffect(() => {
-    setAttributeForm(AttributeFormInitialState);
+    console.log("attributeForm updated:", attributeForm);
+  }, [attributeForm]);
+
+  console.log(attributes);
+  console.log(form.attributes);
+
+  const handleDeleteClick = (name: string) => {
+    const tempList = (
+      type === "PRODUCT"
+        ? attributes.productAttributes
+        : attributes.variantAttributes
+    ).filter((attribute: CategoryAtributes) => attribute.name !== name);
+
+    if (type === "PRODUCT") {
+      setAttributes({
+        ...attributes,
+        productAttributes: tempList,
+      });
+    } else {
+      setAttributes({
+        ...attributes,
+        variantAttributes: tempList,
+      });
+    }
+
+    setForm((prev) => ({
+      ...prev,
+      attributes: prev.attributes.filter((attr) => attr.name !== name),
+    }));
+  };
+
+  const handleSubmit = () => {
+    const order =
+      type === "PRODUCT"
+        ? attributes.productAttributes.length
+        : attributes.variantAttributes.length;
+
+    const payload =
+      dialogMode === "add"
+        ? {
+            ...attributeForm,
+            scope: type,
+            order,
+          }
+        : attributeForm;
+
+    console.log("payload", payload);
+
+    if (dialogMode === "add") {
+      // Adding a new attribute
+      setForm((prev) => ({
+        ...prev,
+        attributes: [...prev.attributes, payload],
+      }));
+
+      setAttributes((prev) => ({
+        ...prev,
+        ...(type === "PRODUCT"
+          ? { productAttributes: [...prev.productAttributes, payload] }
+          : { variantAttributes: [...prev.variantAttributes, payload] }),
+      }));
+    } else if (dialogMode === "edit") {
+      setForm((prev) => ({
+        ...prev,
+        attributes: prev.attributes.map((attr) =>
+          attr.name === currentAttribute?.name ? payload : attr
+        ),
+      }));
+
+      setAttributes((prev) => ({
+        ...prev,
+        ...(type === "PRODUCT"
+          ? {
+              productAttributes: prev.productAttributes.map((attr) =>
+                attr.name === currentAttribute?.name ? payload : attr
+              ),
+            }
+          : {
+              variantAttributes: prev.variantAttributes.map((attr) =>
+                attr.name === currentAttribute?.name ? payload : attr
+              ),
+            }),
+      }));
+    }
+
+    setIsDialogOpen(false);
+    setCurrentAttribute(null);
+  };
+
+  useEffect(() => {
+    if (!isDialogOpen) {
+      setAttributeForm(AttributeFormInitialState);
+    }
   }, [isDialogOpen]);
 
   return (
@@ -171,15 +255,17 @@ const CardAtributesVariants = ({
       <CardContent>
         {type === "PRODUCT" ? (
           <CardAttributeTable
+            handleEditClick={handleEditClick}
             title={title}
             attributes={attributes.productAttributes}
-            handleEditClick={handleEditClick}
+            handleDeleteClick={handleDeleteClick}
           />
         ) : (
           <CardAttributeTable
+            handleEditClick={handleEditClick}
             title={title}
             attributes={attributes.variantAttributes}
-            handleEditClick={handleEditClick}
+            handleDeleteClick={handleDeleteClick}
           />
         )}
       </CardContent>
@@ -227,7 +313,7 @@ const CardAtributesVariants = ({
               name="name"
               type="name"
               placeholder="ej. Platinum"
-              value={currentAttribute?.name || attributeForm.name}
+              value={attributeForm.name || ""}
               onChange={handleAttributeForm}
               required
             />
@@ -235,7 +321,7 @@ const CardAtributesVariants = ({
               <span className="text-redLabel">*</span>Tipo de Dato
             </Label>
             <Select
-              value={currentAttribute?.type || attributeForm.type}
+              value={attributeForm.type}
               onValueChange={(value) =>
                 setAttributeForm({
                   ...attributeForm,

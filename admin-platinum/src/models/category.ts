@@ -10,6 +10,19 @@ export type Category = {
   products?: string[];
 };
 
+export type CategoryResponse = {
+  id?: string;
+  name: string;
+  imgUrl: string;
+  description: string;
+  brands?: Brand[];
+  attributes?: {
+    product: CategoryAtributes[];
+    variant: CategoryAtributes[];
+  };
+  products?: [];
+};
+
 export enum CategoryAttributesTypes {
   STRING = "string",
   NUMERIC = "number",
@@ -23,10 +36,10 @@ console.log(typesArray);
 
 export type CategoryAtributes = {
   id?: string;
-  id_category?: string;
   name: string;
-  type: CategoryAttributesTypes;
   required: boolean;
+  type: CategoryAttributesTypes;
   order: number;
   scope: "PRODUCT" | "VARIANT";
+  id_category?: string;
 };

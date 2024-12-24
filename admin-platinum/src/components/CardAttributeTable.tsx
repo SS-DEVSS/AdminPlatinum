@@ -25,12 +25,14 @@ interface CardAttributeTableProps {
   title: string;
   attributes: CategoryAtributes[];
   handleEditClick: (attribute: CategoryAtributes) => void;
+  handleDeleteClick: (name: string) => void;
 }
 
 const CardAttributeTable = ({
   title,
   attributes,
   handleEditClick,
+  handleDeleteClick,
 }: CardAttributeTableProps) => {
   return (
     <>
@@ -76,7 +78,9 @@ const CardAttributeTable = ({
                               : "Variante"}
                           </span>
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => handleDeleteClick(attribute.name)}
+                        >
                           <Trash className="mr-2 h-4 w-4" />
                           <span>
                             Eliminar{" "}

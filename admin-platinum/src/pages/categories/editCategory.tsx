@@ -1,14 +1,8 @@
 import Layout from "@/components/Layouts/Layout";
-import { useCategories } from "@/hooks/useCategories";
 import CategoryCU from "@/modules/categories/CatgegoryCU";
 
 const EditCategory = () => {
-  const { category } = useCategories();
-  return (
-    <Layout>
-      <CategoryCU category={category} />
-    </Layout>
-  );
+  return <Layout>{<CategoryCU />}</Layout>;
 };
 
 export default EditCategory;

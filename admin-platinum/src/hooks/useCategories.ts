@@ -16,13 +16,17 @@ export const useCategories = () => {
   const { toast } = useToast();
 
   const [categories, setCategories] = useState<Category[]>([]);
-  const [category, setCategory] = useState<Category | null>({} as Category);
+  const [category, setCategory] = useState({});
   const [loading, setLoading] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
     getCategories();
   }, []);
+
+  useEffect(() => {
+    console.log("Updated Category:", category);
+  }, [category]);
 
   const getCategories = async () => {
     try {
@@ -36,15 +40,17 @@ export const useCategories = () => {
     }
   };
 
-  const getCategoryById = async (id: Category["id"]) => {
+  const getCategoryById = async (id: CategoryRespone["id"]) => {
     try {
       setLoading(true);
-      const data = await client.get(`/categories/${id}`);
-      setCategory(data.data);
-      console.log(data);
-      return data.data;
+      const { data } = await client.get(
+        `/categories/${id}?attributes=true&products=true`
+      );
+      setCategory(data);
+      console.log("Fetched Data:", data);
+      return data;
     } catch (error) {
-      console.error("Error fetching categories:", error);
+      console.error("Error fetching category by ID:", error);
     } finally {
       setLoading(false);
     }

@@ -28,7 +28,13 @@ import { useState } from "react";
 import { useMemo } from "react";
 
 const Categorias = () => {
-  const { categories, getCategories } = useCategories();
+  const {
+    category,
+    categories,
+    getCategories,
+    deleteCategory,
+    getCategoryById,
+  } = useCategories();
   const { brands } = useBrands();
 
   const [searchFilter, setSearchFilter] = useState("");
@@ -111,6 +117,8 @@ const Categorias = () => {
                   category={categoria}
                   key={categoria.id}
                   getItems={getCategories}
+                  deleteCategory={deleteCategory}
+                  getCategoryById={getCategoryById}
                 />
               ))
             )}

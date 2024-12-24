@@ -52,6 +52,8 @@ const CategoryCU = ({ category, addCategory }: CategoryCUProps) => {
     attributes: [],
   });
 
+  console.log(form);
+
   const handleFormInput = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -103,8 +105,6 @@ const CategoryCU = ({ category, addCategory }: CategoryCUProps) => {
       console.error("Error in handleSubmit:", error);
     }
   };
-
-  console.log(form);
 
   return (
     <main>
