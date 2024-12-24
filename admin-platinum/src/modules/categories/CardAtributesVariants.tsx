@@ -345,11 +345,11 @@ const CardAtributesVariants = ({
               <span className="text-redLabel">*</span>Opcional?
             </Label>
             <RadioGroup
-              value={String(attributeForm.required)}
+              value={attributeForm.required == false ? "false" : "true"}
               onValueChange={(value) =>
                 setAttributeForm({
                   ...attributeForm,
-                  required: value === "true",
+                  required: value === "true" ? true : false,
                 })
               }
             >

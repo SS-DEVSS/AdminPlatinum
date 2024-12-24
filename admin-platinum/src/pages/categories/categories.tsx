@@ -28,13 +28,8 @@ import { useState } from "react";
 import { useMemo } from "react";
 
 const Categorias = () => {
-  const {
-    category,
-    categories,
-    getCategories,
-    deleteCategory,
-    getCategoryById,
-  } = useCategories();
+  const { categories, getCategories, deleteCategory, getCategoryById } =
+    useCategories();
   const { brands } = useBrands();
 
   const [searchFilter, setSearchFilter] = useState("");
