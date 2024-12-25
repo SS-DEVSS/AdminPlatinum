@@ -32,8 +32,6 @@ export enum CategoryAttributesTypes {
 
 export const typesArray = Object.values(CategoryAttributesTypes);
 
-console.log(typesArray);
-
 export type CategoryAtributes = {
   id?: string;
   name: string;

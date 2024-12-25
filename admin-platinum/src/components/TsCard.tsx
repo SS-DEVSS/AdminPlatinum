@@ -13,14 +13,35 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { TSFormType } from "@/pages/techincalSheets";
 
 type TsCardProps = {
   ts: TechnicalSheet;
+  getTsById: (id: TechnicalSheet["id"]) => void;
   deleteTechnicalSheet: (id: TechnicalSheet["id"]) => void;
+  setIsEditMode: React.Dispatch<React.SetStateAction<boolean>>;
+  setTsForm: React.Dispatch<React.SetStateAction<TSFormType>>;
 };
 
-const TsCard = ({ ts, deleteTechnicalSheet }: TsCardProps) => {
+const TsCard = ({
+  ts,
+  getTsById,
+  deleteTechnicalSheet,
+  setIsEditMode,
+  setTsForm,
+}: TsCardProps) => {
   const { openModal } = useDeleteModal();
+
+  const handleEditPrep = async () => {
+    setIsEditMode(true);
+    const tsData: any = await getTsById(ts?.id);
+    setTsForm({
+      title: tsData.title,
+      path: tsData.url,
+      description: tsData.description,
+      variant: tsData.variant || null,
+    });
+  };
 
   const handleDeleteTS = async () => {
     await deleteTechnicalSheet(ts.id);
@@ -41,9 +62,7 @@ const TsCard = ({ ts, deleteTechnicalSheet }: TsCardProps) => {
               <DropdownMenuLabel>Acciones</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuGroup>
-                <DropdownMenuItem
-                // onClick={() => handleEditCategory(category?.id)}
-                >
+                <DropdownMenuItem onClick={handleEditPrep}>
                   <Pencil className="mr-2 h-4 w-4" />
                   <span>Editar Boletín</span>
                 </DropdownMenuItem>

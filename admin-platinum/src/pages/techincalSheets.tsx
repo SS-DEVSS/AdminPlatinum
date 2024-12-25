@@ -24,11 +24,12 @@ import { useTs } from "@/hooks/useTs";
 import { Variant } from "@/models/item";
 import { TechnicalSheet } from "@/models/technicalSheet";
 import { PlusCircle, Search } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-interface TSFormType {
+export interface TSFormType {
   title: string;
-  path: string;
+  path?: string;
+  url?: string;
   description: string;
   variant?: Variant | null;
 }
@@ -36,12 +37,19 @@ interface TSFormType {
 const TsFormInitialState = {
   title: "",
   path: "",
+  url: "",
   description: "",
   variant: {} as Variant,
 };
 
 const TechincalSheets = () => {
-  const { technicalSheets, addTechnicalSheet, deleteTechnicalSheet } = useTs();
+  const {
+    technicalSheet,
+    technicalSheets,
+    addTechnicalSheet,
+    getTsById,
+    deleteTechnicalSheet,
+  } = useTs();
 
   const [searchFilter, setSearchFilter] = useState("");
   const [isOpen, setIsOpen] = useState(false);
@@ -54,22 +62,29 @@ const TechincalSheets = () => {
 
   //   Crear
 
-  const validateForm = useMemo(
-    () =>
-      tsForm.title.trim() !== "" &&
-      tsForm.description.trim() !== "" &&
-      tsForm.path.includes("https://") &&
-      tsForm.path.includes(".pdf"),
-    [tsForm]
-  );
+  const validateForm = () => {};
+
+  //   const validateForm = useMemo(
+  //     () =>
+  //       tsForm.title.trim() !== "" &&
+  //       tsForm.description.trim() !== "" &&
+  //       tsForm.path.includes("https://") &&
+  //       tsForm.path.includes(".pdf"),
+  //     [tsForm]
+  //   );
 
   const handleSubmit = async (payload: TechnicalSheet) => {
     try {
-      await addTechnicalSheet(payload);
-      toggleModal();
-      setTsForm(TsFormInitialState);
+      if (!isEditMode) {
+        await addTechnicalSheet(payload);
+        setTsForm(TsFormInitialState);
+      }
     } catch (error) {
       console.log(error);
+    } finally {
+      setTsForm(TsFormInitialState);
+      setIsEditMode(false);
+      toggleModal();
     }
   };
 
@@ -81,7 +96,18 @@ const TechincalSheets = () => {
     });
   };
 
-  console.log(searchFilter);
+  useEffect(() => {
+    if (isEditMode && technicalSheet) {
+      setTsForm({
+        title: technicalSheet.title,
+        path: technicalSheet.url,
+        description: technicalSheet.description,
+        variant: technicalSheet.variant,
+      });
+      setIsEditMode(true);
+      setIsOpen(true);
+    }
+  }, [isEditMode]);
 
   //   Read
 
@@ -97,8 +123,6 @@ const TechincalSheets = () => {
       ),
     [searchFilter]
   );
-
-  console.log(filteredTs);
 
   return (
     <Layout>
@@ -211,7 +235,10 @@ const TechincalSheets = () => {
                   <TsCard
                     key={ts.id}
                     ts={ts}
+                    getTsById={getTsById}
                     deleteTechnicalSheet={deleteTechnicalSheet}
+                    setIsEditMode={setIsEditMode}
+                    setTsForm={setTsForm}
                   />
                 )
               )

@@ -10,7 +10,9 @@ export const useTs = () => {
   const { toast } = useToast();
 
   const [technicalSheets, setTechnicalSheets] = useState<TechnicalSheet[]>([]);
-  //   const [brand, setBrand] = useState<Brand | null>({} as Brand);
+  const [technicalSheet, setTechnicalSheet] = useState<TechnicalSheet | null>(
+    {} as TechnicalSheet
+  );
   const [loading, setLoading] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -58,19 +60,21 @@ export const useTs = () => {
     }
   };
 
-  //   const getBrandById = async (id: Brand["id"]) => {
-  //     try {
-  //       setLoading(true);
-  //       const data = await client.get(`/brands/${id}`);
-  //       setBrand(data.data);
-  //       return data.data;
-  //     } catch (error) {
-  //       console.error("Error fetching brands:", error);
-  //     } finally {
-  //       console.log(brand);
-  //       setLoading(false);
-  //     }
-  //   };
+  const getTsById = async (
+    id: TechnicalSheet["id"]
+  ): Promise<TechnicalSheet | null> => {
+    try {
+      setLoading(true);
+      const data = await client.get(`/ts/${id}`);
+      setTechnicalSheet(data.data);
+      return data.data;
+    } catch (error) {
+      console.error("Error fetching technicalsheet:", error);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const deleteTechnicalSheet = async (id: TechnicalSheet["id"]) => {
     try {
@@ -94,25 +98,24 @@ export const useTs = () => {
     }
   };
 
-  //   const updateBrand = async (brand: Brand) => {
+  //   const updateTechnicalSheet = async (ts: TechnicalSheet) => {
   //     try {
   //       const headers = {
   //         "Content-Type": "application/json",
   //       };
   //       setLoading(true);
-  //       const response = await client.patch(`/brands/${brand.id}`, brand, {
+  //       await client.patch(`/ts/${ts.id}`, ts, {
   //         headers,
   //       });
   //       toast({
-  //         title: "Marca actualizada correctamente.",
+  //         title: "Boletín actualizado correctamente.",
   //         variant: "success",
-  //         description: response.data.message,
   //       });
   //     } catch (error: any) {
   //       console.log(error);
   //       setErrorMsg(error.response.data.error);
   //       toast({
-  //         title: "Error al actualizar marca",
+  //         title: "Error al actualizar boletín",
   //         variant: "destructive",
   //         description: errorMsg,
   //       });
@@ -123,13 +126,13 @@ export const useTs = () => {
   //   };
 
   return {
+    technicalSheet,
     technicalSheets,
-    // brand,
     loading,
     addTechnicalSheet,
     getTechnicalSheets,
-    // getBrandById,
-    // updateBrand,
+    getTsById,
+    // updateTechnicalSheet,
     deleteTechnicalSheet,
   };
 };
