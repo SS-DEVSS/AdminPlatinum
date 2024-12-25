@@ -9,17 +9,81 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Dialog, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useTs } from "@/hooks/useTs";
+import { Variant } from "@/models/item";
 import { TechnicalSheet } from "@/models/technicalSheet";
 import { PlusCircle, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 
+interface TSFormType {
+  title: string;
+  path: string;
+  description: string;
+  variant?: Variant | null;
+}
+
+const TsFormInitialState = {
+  title: "",
+  path: "",
+  description: "",
+  variant: {} as Variant,
+};
+
 const TechincalSheets = () => {
-  const { technicalSheets } = useTs();
+  const { technicalSheets, addTechnicalSheet, deleteTechnicalSheet } = useTs();
 
   const [searchFilter, setSearchFilter] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [tsForm, setTsForm] = useState<TSFormType>(TsFormInitialState);
+
+  const toggleModal = () => {
+    setIsOpen(!isOpen);
+  };
+
+  //   Crear
+
+  const validateForm = useMemo(
+    () =>
+      tsForm.title.trim() !== "" &&
+      tsForm.description.trim() !== "" &&
+      tsForm.path.includes("https://") &&
+      tsForm.path.includes(".pdf"),
+    [tsForm]
+  );
+
+  const handleSubmit = async (payload: TechnicalSheet) => {
+    try {
+      await addTechnicalSheet(payload);
+      toggleModal();
+      setTsForm(TsFormInitialState);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const handleForm = (e: any) => {
+    const { name, value } = e.target;
+    setTsForm({
+      ...tsForm,
+      [name]: value,
+    });
+  };
+
+  console.log(searchFilter);
+
+  //   Read
 
   const handleSearchFilter = (e: any) => {
     const { value } = e.target;
@@ -33,6 +97,8 @@ const TechincalSheets = () => {
       ),
     [searchFilter]
   );
+
+  console.log(filteredTs);
 
   return (
     <Layout>
@@ -54,24 +120,20 @@ const TechincalSheets = () => {
               />
             </div>
             <Dialog
-            // open={isOpen}
-            // onOpenChange={(open) => {
-            //   if (!open) {
-            //     setForm({
-            //       name: "",
-            //       description: "",
-            //       logoImgUrl: "",
-            //     });
-            //     setIsEditMode(false);
-            //     closeModal();
-            //   }
-            // }}
+              open={isOpen}
+              onOpenChange={(open) => {
+                if (!open) {
+                  setTsForm(TsFormInitialState);
+                  setIsEditMode(false);
+                  setIsOpen(false);
+                }
+              }}
             >
               <DialogTrigger asChild>
                 <Button
                   size="sm"
                   className="h-10 px-6 gap-1"
-                  // onClick={() => handleOpenModal()}
+                  onClick={toggleModal}
                 >
                   <PlusCircle className="h-3.5 w-3.5 mr-2" />
                   <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
@@ -79,67 +141,79 @@ const TechincalSheets = () => {
                   </span>
                 </Button>
               </DialogTrigger>
-              {/* <DialogContent className="sm:max-w-[425px]">
-                  <DialogHeader>
-                    <DialogTitle className="mb-2">{title}</DialogTitle>
-                    <DialogDescription>{description}</DialogDescription>
-                  </DialogHeader>
-                  <Label htmlFor="name">
-                    <span className="text-redLabel">*</span> Nombre
-                  </Label>
-                  <Input
-                    id="name"
-                    name="name"
-                    type="text"
-                    placeholder="ej. Platinum"
-                    value={form.name}
-                    onChange={handleForm}
-                    required
-                  />
-                  <Label htmlFor="description">
-                    <span className="text-redLabel">*</span> Descripción
-                  </Label>
-                  <Textarea
-                    id="description"
-                    name="description"
-                    placeholder="ej. Marca de lujo"
-                    value={form.description}
-                    onChange={handleForm}
-                    required
-                  />
-                  <Label htmlFor="logoImgUrl">Imagen</Label>
-                  <Input
-                    id="logoImgUrl"
-                    name="logoImgUrl"
-                    type="text"
-                    placeholder="https://"
-                    value={form.logoImgUrl}
-                    onChange={handleForm}
-                    required
-                  />
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle className="mb-2">
+                    {isEditMode ? "Editar Boletín" : "Agregar Boletín"}
+                  </DialogTitle>
                   <DialogDescription>
-                    Formatos Válidos: jpg, png, jpeg
+                    {isEditMode ? "Editar Boletín" : "Agregar Boletín"}
                   </DialogDescription>
-                  <DialogFooter>
-                    <Button
-                      disabled={!validateForm()}
-                      onClick={handleSubmit}
-                      type="submit"
-                    >
-                      {isEditMode ? "Actualizar Marca" : "Agregar Marca"}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent> */}
+                </DialogHeader>
+                <Label htmlFor="title">
+                  <span className="text-redLabel">*</span> Título
+                </Label>
+                <Input
+                  id="title"
+                  name="title"
+                  type="text"
+                  placeholder="ej. Platinum"
+                  value={tsForm.title}
+                  onChange={handleForm}
+                  required
+                />
+                <Label htmlFor="path">
+                  <span className="text-redLabel">*</span> Documento
+                </Label>
+                <Input
+                  id="path"
+                  name="path"
+                  type="text"
+                  placeholder="ej. Platinum"
+                  value={tsForm.path}
+                  onChange={handleForm}
+                  required
+                />
+                <Label htmlFor="description">
+                  <span className="text-redLabel">*</span> Descripción
+                </Label>
+                <Input
+                  id="description"
+                  name="description"
+                  type="text"
+                  placeholder="ej. Platinum"
+                  value={tsForm.description}
+                  onChange={handleForm}
+                  required
+                />
+                <Label htmlFor="logoImgUrl">Variante</Label>
+
+                <DialogFooter>
+                  <Button
+                    disabled={!validateForm}
+                    onClick={() => handleSubmit(tsForm)}
+                    type="submit"
+                  >
+                    {isEditMode ? "Actualizar Marca" : "Agregar Marca"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
             </Dialog>
           </div>
         </CardHeader>
         <CardContent className="p-0">
           <CardSectionLayout>
-            {filteredTs.length === 0 && technicalSheets.length ? (
-              <>no hay nada</>
+            {technicalSheets.length === 0 && filteredTs.length === 0 ? (
+              <p>No hay marcas disponibles.</p>
             ) : (
               (filteredTs.length > 0 ? filteredTs : technicalSheets).map(
-                (ts: TechnicalSheet) => <TsCard key={ts.id} ts={ts} />
+                (ts: TechnicalSheet) => (
+                  <TsCard
+                    key={ts.id}
+                    ts={ts}
+                    deleteTechnicalSheet={deleteTechnicalSheet}
+                  />
+                )
               )
             )}
           </CardSectionLayout>

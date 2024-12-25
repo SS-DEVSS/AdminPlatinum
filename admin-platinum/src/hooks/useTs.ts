@@ -18,6 +18,32 @@ export const useTs = () => {
     getTechnicalSheets();
   }, []);
 
+  const addTechnicalSheet = async (ts: Omit<TechnicalSheet, "id">) => {
+    try {
+      const headers = {
+        "Content-Type": "application/json",
+      };
+      setLoading(true);
+      await client.post("/ts/", ts, { headers });
+      await getTechnicalSheets();
+      toast({
+        title: "Boletín creado correctamente.",
+        variant: "success",
+      });
+    } catch (error: any) {
+      console.log(error);
+      setErrorMsg(error.response.data.error);
+      toast({
+        title: "Error al crear boletín",
+        variant: "destructive",
+        description: errorMsg,
+      });
+    } finally {
+      setLoading(false);
+      setErrorMsg("");
+    }
+  };
+
   const getTechnicalSheets = async (): Promise<TechnicalSheet[] | null> => {
     try {
       setLoading(true);
@@ -46,53 +72,27 @@ export const useTs = () => {
   //     }
   //   };
 
-  //   const deleteBrand = async (id: Brand["id"]) => {
-  //     try {
-  //       setLoading(true);
-  //       const response = await client.delete(`/brands/${id}`);
-  //       toast({
-  //         title: "Marca eliminada correctamente.",
-  //         variant: "success",
-  //         description: response.data.message,
-  //       });
-  //     } catch (error: any) {
-  //       setErrorMsg(error.response.data.error);
-  //       toast({
-  //         title: "Error al eliminar marca",
-  //         variant: "destructive",
-  //         description: errorMsg,
-  //       });
-  //     } finally {
-  //       setLoading(false);
-  //       setErrorMsg("");
-  //     }
-  //   };
-
-  //   const addBrand = async (brand: Omit<Brand, "id">) => {
-  //     try {
-  //       const headers = {
-  //         "Content-Type": "application/json",
-  //       };
-  //       setLoading(true);
-  //       const response = await client.post("/brands/", brand, { headers });
-  //       toast({
-  //         title: "Marca eliminada correctamente.",
-  //         variant: "success",
-  //         description: response.data.message,
-  //       });
-  //     } catch (error: any) {
-  //       console.log(error);
-  //       setErrorMsg(error.response.data.error);
-  //       toast({
-  //         title: "Error al eliminar marca",
-  //         variant: "destructive",
-  //         description: errorMsg,
-  //       });
-  //     } finally {
-  //       setLoading(false);
-  //       setErrorMsg("");
-  //     }
-  //   };
+  const deleteTechnicalSheet = async (id: TechnicalSheet["id"]) => {
+    try {
+      setLoading(true);
+      await client.delete(`/ts/${id}`);
+      await getTechnicalSheets();
+      toast({
+        title: "Boletín eliminado correctamente.",
+        variant: "success",
+      });
+    } catch (error: any) {
+      setErrorMsg(error.response.data.error);
+      toast({
+        title: "Error al eliminar boletín",
+        variant: "destructive",
+        description: errorMsg,
+      });
+    } finally {
+      setLoading(false);
+      setErrorMsg("");
+    }
+  };
 
   //   const updateBrand = async (brand: Brand) => {
   //     try {
@@ -126,10 +126,10 @@ export const useTs = () => {
     technicalSheets,
     // brand,
     loading,
+    addTechnicalSheet,
     getTechnicalSheets,
     // getBrandById,
-    // deleteBrand,
-    // addBrand,
     // updateBrand,
+    deleteTechnicalSheet,
   };
 };

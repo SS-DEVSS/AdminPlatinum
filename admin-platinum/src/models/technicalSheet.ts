@@ -1,7 +1,9 @@
+import { Variant } from "./item";
+
 export interface TechnicalSheet {
   id?: string;
   title: string;
-  url: string;
+  path: string;
   description: string;
-  variant?: null;
+  variant?: Variant | null;
 }
