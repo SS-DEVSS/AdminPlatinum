@@ -16,6 +16,7 @@ import { BrandProvider } from "./context/brand-context";
 import { AuthProvider } from "./context/auth-context";
 import { Toaster } from "./components/ui/toaster";
 import TechincalSheets from "./pages/techincalSheets";
+import News from "./pages/news/news";
 
 const router = createBrowserRouter([
   {
@@ -53,6 +54,10 @@ const router = createBrowserRouter([
   {
     path: "/boletines",
     element: <TechincalSheets />,
+  },
+  {
+    path: "/noticias",
+    element: <News />,
   },
 ]);
 
