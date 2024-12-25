@@ -15,6 +15,7 @@ import Root from "./pages/root";
 import { BrandProvider } from "./context/brand-context";
 import { AuthProvider } from "./context/auth-context";
 import { Toaster } from "./components/ui/toaster";
+import TechincalSheets from "./pages/techincalSheets";
 
 const router = createBrowserRouter([
   {
@@ -48,6 +49,10 @@ const router = createBrowserRouter([
   {
     path: "/categorias/editar",
     element: <EditCategory />,
+  },
+  {
+    path: "/boletines",
+    element: <TechincalSheets />,
   },
 ]);
 
