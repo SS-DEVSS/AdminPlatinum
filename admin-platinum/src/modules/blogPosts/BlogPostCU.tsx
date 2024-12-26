@@ -1,5 +1,9 @@
 import Layout from "@/components/Layouts/Layout";
+import { ChevronDown, ChevronLeft, PlusCircle, SquarePlus } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import { useMemo, useState } from "react";
+import { BlogPost } from "@/models/news";
+import { useNews } from "@/hooks/useNews";
 import {
   Card,
   CardHeader,
@@ -7,14 +11,19 @@ import {
   CardDescription,
   CardContent,
 } from "@/components/ui/card";
-import { ChevronLeft, PlusCircle } from "lucide-react";
-import { BlogPost } from "@/models/news";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { useMemo, useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
-import { useNews } from "@/hooks/useNews";
+import NewsComponent from "@/components/NewsComponent";
 
 type BlogPostCUProps = {
   blogPost?: BlogPost;
@@ -33,11 +42,27 @@ const FormInitialState = {
   content: "<p>Test</p>",
 };
 
+enum ComponentTypes {
+  TITLE = "h1",
+  SUBTITLE = "h3",
+  PARAGRAPH = "p",
+  IMAGE = "img",
+}
+
+export interface Component {
+  id?: number;
+  type: ComponentTypes;
+  title: string;
+  content: string;
+}
+
 const BlogPostCU = ({ blogPost }: BlogPostCUProps) => {
   const { addBlogPost } = useNews();
   const navigate = useNavigate();
 
   const [form, setForm] = useState<FormTypes>(FormInitialState);
+  const [component, setComponent] = useState<Component>({} as Component);
+  const [components, setComponents] = useState<Component[]>([]);
 
   const handleFormInput = (e: any) => {
     const { name, value } = e.target;
@@ -59,6 +84,23 @@ const BlogPostCU = ({ blogPost }: BlogPostCUProps) => {
     await addBlogPost(form);
     navigate("/noticias");
   };
+
+  const returnComponent = (selectedComponent: ComponentTypes) => {
+    switch (selectedComponent) {
+      case "h1":
+        setComponent({
+          ...component,
+          id: components.length,
+          type: ComponentTypes.TITLE,
+          title: "Título",
+        });
+    }
+    console.log("a");
+    setComponents([...components, component]);
+  };
+
+  console.log(component);
+  console.log(components);
 
   return (
     <Layout>
@@ -159,7 +201,43 @@ const BlogPostCU = ({ blogPost }: BlogPostCUProps) => {
               Use los bloques para crear el contenido de su noticia.
             </CardDescription>
           </CardHeader>
-          <CardContent></CardContent>
+          <CardContent>
+            <div className="flex flex-col gap-3">
+              {components &&
+                components.map((component: Component) => (
+                  <NewsComponent
+                    component={component}
+                    components={components}
+                    setComponents={setComponents}
+                  />
+                ))}
+            </div>
+            <div className="border border-dashed rounded-lg mt-3 p-4 px-6 flex justify-between">
+              <div className="flex items-center gap-3">
+                <SquarePlus className="w-8 h-8 fill-slate-400 text-white" />
+                <p className="text-[#94A3B8]">Agregar Bloque</p>
+              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger>
+                  <ChevronDown className="w-6 h-6 text-slate-400 hover:outline-none" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuLabel>
+                    Elige el componente deseado
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => returnComponent(ComponentTypes.TITLE)}
+                  >
+                    Título
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>Billing</DropdownMenuItem>
+                  <DropdownMenuItem>Team</DropdownMenuItem>
+                  <DropdownMenuItem>Subscription</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </CardContent>
         </Card>
       </section>
     </Layout>

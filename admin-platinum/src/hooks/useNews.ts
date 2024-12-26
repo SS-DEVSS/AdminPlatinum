@@ -49,7 +49,6 @@ export const useNews = () => {
       setLoading(true);
       const data = await client.get("/blog/posts");
       setBlogPosts(data.data.blogPosts);
-      console.log(data.data.blogPosts);
     } catch (error) {
       console.error("Error fetching blogPosts:", error);
     } finally {

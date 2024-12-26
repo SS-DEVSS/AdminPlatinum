@@ -1,8 +1,8 @@
 export interface BlogPost {
-  id: string;
+  id?: string;
   title: string;
   coverImagePath: string;
   content: string;
   description: string;
-  createdAtstring: string | Date;
+  createdAtstring?: string | Date;
 }
