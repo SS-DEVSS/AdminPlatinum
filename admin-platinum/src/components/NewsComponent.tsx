@@ -16,7 +16,7 @@ const NewsComponent = ({
   components,
   setComponents,
 }: NewsComponentProps) => {
-  const [editedComponent, setEditedComponent] = useState<number>();
+  const [editedComponent, setEditedComponent] = useState<string>();
   console.log(editedComponent);
 
   const deleteNewsComponent = (id: Component["id"]) => {

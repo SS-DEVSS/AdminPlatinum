@@ -1,7 +1,9 @@
+import { v4 as uuidv4 } from "uuid";
+import { Link, useNavigate } from "react-router-dom";
+
+import { useMemo, useState } from "react";
 import Layout from "@/components/Layouts/Layout";
 import { ChevronDown, ChevronLeft, PlusCircle, SquarePlus } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
-import { useMemo, useState } from "react";
 import { BlogPost } from "@/models/news";
 import { useNews } from "@/hooks/useNews";
 import {
@@ -50,7 +52,7 @@ enum ComponentTypes {
 }
 
 export interface Component {
-  id?: number;
+  id?: string;
   type: ComponentTypes;
   title: string;
   content: string;
@@ -72,6 +74,15 @@ const BlogPostCU = ({ blogPost }: BlogPostCUProps) => {
     });
   };
 
+  const convertContentToString = () => {
+    components.forEach((component) => {
+      setForm({
+        ...form,
+        content: `${form.content}<${component.type}>${component.content}</${component.type}>`,
+      });
+    });
+  };
+
   const validateForm = useMemo(
     () =>
       form.title.trim() !== "" &&
@@ -81,22 +92,35 @@ const BlogPostCU = ({ blogPost }: BlogPostCUProps) => {
   );
 
   const handleSubmit = async (form: FormTypes) => {
+    convertContentToString();
     await addBlogPost(form);
     navigate("/noticias");
   };
 
-  const returnComponent = (selectedComponent: ComponentTypes) => {
+  console.log(form);
+
+  const returnComponent = async (selectedComponent: ComponentTypes) => {
+    let type: ComponentTypes = "";
+    let title = "";
     switch (selectedComponent) {
       case "h1":
-        setComponent({
-          ...component,
-          id: components.length,
-          type: ComponentTypes.TITLE,
-          title: "Título",
-        });
+        type = ComponentTypes.TITLE;
+        title = "Título";
+      case "h3":
+        type = ComponentTypes.SUBTITLE;
+        title = "Sub Título";
+      case "p":
+        type = ComponentTypes.PARAGRAPH;
+        title = "Párrafo";
     }
-    console.log("a");
-    setComponents([...components, component]);
+    console.log(type);
+    await setComponent({
+      id: uuidv4(),
+      type,
+      title,
+      content: "",
+    });
+    await setComponents([...components, component]);
   };
 
   console.log(component);
@@ -231,8 +255,16 @@ const BlogPostCU = ({ blogPost }: BlogPostCUProps) => {
                   >
                     Título
                   </DropdownMenuItem>
-                  <DropdownMenuItem>Billing</DropdownMenuItem>
-                  <DropdownMenuItem>Team</DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => returnComponent(ComponentTypes.SUBTITLE)}
+                  >
+                    Sub título
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => returnComponent(ComponentTypes.PARAGRAPH)}
+                  >
+                    Párrafo
+                  </DropdownMenuItem>
                   <DropdownMenuItem>Subscription</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
