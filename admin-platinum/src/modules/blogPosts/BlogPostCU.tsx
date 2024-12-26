@@ -1,0 +1,169 @@
+import Layout from "@/components/Layouts/Layout";
+import { Link, useNavigate } from "react-router-dom";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card";
+import { ChevronLeft, PlusCircle } from "lucide-react";
+import { BlogPost } from "@/models/news";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { useMemo, useState } from "react";
+import { Textarea } from "@/components/ui/textarea";
+import { useNews } from "@/hooks/useNews";
+
+type BlogPostCUProps = {
+  blogPost?: BlogPost;
+};
+
+interface FormTypes {
+  title: string;
+  description: string;
+  coverImagePath: string;
+  content: string;
+}
+const FormInitialState = {
+  title: "",
+  description: "",
+  coverImagePath: "",
+  content: "<p>Test</p>",
+};
+
+const BlogPostCU = ({ blogPost }: BlogPostCUProps) => {
+  const { addBlogPost } = useNews();
+  const navigate = useNavigate();
+
+  const [form, setForm] = useState<FormTypes>(FormInitialState);
+
+  const handleFormInput = (e: any) => {
+    const { name, value } = e.target;
+    setForm({
+      ...form,
+      [name]: value,
+    });
+  };
+
+  const validateForm = useMemo(
+    () =>
+      form.title.trim() !== "" &&
+      form.description.trim() !== "" &&
+      form.content.trim() !== "",
+    [form]
+  );
+
+  const handleSubmit = async (form: FormTypes) => {
+    await addBlogPost(form);
+    navigate("/noticias");
+  };
+
+  return (
+    <Layout>
+      <section className="max-w-[1000px] mx-auto">
+        <header className="flex justify-between">
+          <div className="flex items-center gap-4">
+            <Link to="/noticias">
+              <Card className="p-2">
+                <ChevronLeft className="h-4 w-4" />
+              </Card>
+            </Link>
+            <p className="text-2xl font-semibold leading-none tracking-tight">
+              {blogPost ? `${blogPost.title}` : "Nueva Noticia"}
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Link to="/noticias">
+              <Button variant={"outline"}>Cancelar</Button>
+            </Link>
+            {!blogPost ? (
+              <Button
+                size="sm"
+                disabled={!validateForm}
+                className="h-10 px-6 gap-1"
+                onClick={() => handleSubmit(form)}
+              >
+                <PlusCircle className="h-3.5 w-3.5 mr-2" />
+                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                  Agregar Noticia
+                </span>
+              </Button>
+            ) : (
+              <Button disabled size="sm" className="h-10 px-6 gap-1">
+                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                  Actualizar Noticia
+                </span>
+              </Button>
+            )}
+          </div>
+        </header>
+        <Card x-chunk="dashboard-07-chunk-0" className="mt-4">
+          <CardHeader>
+            <CardTitle>Detalles de la Noticia</CardTitle>
+            <CardDescription>
+              Ingrese los detalles de la noticia que desea crear.{" "}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-6">
+              <div className="grid gap-3">
+                <Label htmlFor="title">
+                  <span className="text-redLabel">*</span>Título
+                </Label>
+                <Input
+                  id="title"
+                  name="title"
+                  type="text"
+                  className="w-full"
+                  placeholder="Gamer Gear Pro Controller"
+                  value={blogPost ? blogPost.title : form.title}
+                  onChange={handleFormInput}
+                />
+              </div>
+              <div className="grid gap-3">
+                <Label htmlFor="description">
+                  <span className="text-redLabel">*</span>Descripción
+                </Label>
+                <Textarea
+                  id="description"
+                  name="description"
+                  placeholder="Lorem ipsum dolor sit amet."
+                  value={blogPost ? blogPost.description : form.description}
+                  onChange={handleFormInput}
+                  className="min-h-20"
+                />
+              </div>
+              <div className="grid gap-3">
+                <Label htmlFor="coverImagePath">Imagen de portada</Label>
+                <Input
+                  id="coverImagePath"
+                  name="coverImagePath"
+                  type="text"
+                  placeholder="https://"
+                  className="w-full"
+                  value={
+                    blogPost ? blogPost.coverImagePath : form.coverImagePath
+                  }
+                  onChange={handleFormInput}
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card x-chunk="dashboard-07-chunk-0" className="mt-4">
+          <CardHeader>
+            <CardTitle>Contenido de la Noticia</CardTitle>
+            <CardDescription>
+              Use los bloques para crear el contenido de su noticia.
+            </CardDescription>
+          </CardHeader>
+          <CardContent></CardContent>
+        </Card>
+      </section>
+    </Layout>
+  );
+};
+
+export default BlogPostCU;

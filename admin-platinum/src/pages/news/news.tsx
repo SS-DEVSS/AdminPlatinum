@@ -1,4 +1,4 @@
-import { Search } from "lucide-react";
+import { PlusCircle, Search } from "lucide-react";
 
 import Layout from "@/components/Layouts/Layout";
 import CardSectionLayout from "@/components/Layouts/CardSectionLayout";
@@ -12,11 +12,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { useNews } from "@/hooks/useNews";
 import { BlogPost } from "@/models/news";
+import CardBlogPost from "@/components/CardBlogPost";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 const News = () => {
-  const { blogPosts } = useNews();
+  const { blogPosts, deleteBlogPost } = useNews();
 
-  const filteredBlogPosts = [];
+  const filteredBlogPosts: BlogPost[] = [];
 
   return (
     <Layout>
@@ -39,20 +42,32 @@ const News = () => {
                 className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[336px]"
               />
             </div>
+            <Link to="/noticias/nueva">
+              <Button
+                size="sm"
+                className="h-10 px-6 gap-1"
+                // onClick={() => handleOpenModal()}
+              >
+                <PlusCircle className="h-3.5 w-3.5 mr-2" />
+                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                  Agregar Noticia
+                </span>
+              </Button>
+            </Link>
           </div>
         </CardHeader>
         <CardSectionLayout>
           {blogPosts.length === 0 && filteredBlogPosts.length === 0 ? (
-            <p>No hay marcas disponibles.</p>
+            <p>No hay noticias disponibles.</p>
           ) : (
             (filteredBlogPosts.length > 0 ? filteredBlogPosts : blogPosts).map(
-              (blogPost: BlogPost) => blogPost.title
-              // <CardTemplate
-              //   key={brand.id}
-              //   brand={brand}
-              //   getBrandById={getBrandById}
-              //   getItems={getBrands}
-              // />
+              (blogPost: BlogPost) => (
+                <CardBlogPost
+                  key={blogPost.id}
+                  blogPost={blogPost}
+                  deleteItem={deleteBlogPost}
+                />
+              )
             )
           )}
         </CardSectionLayout>

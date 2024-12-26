@@ -17,6 +17,7 @@ import { AuthProvider } from "./context/auth-context";
 import { Toaster } from "./components/ui/toaster";
 import TechincalSheets from "./pages/techincalSheets";
 import News from "./pages/news/news";
+import NewBlogPost from "./pages/news/newBlogPost";
 
 const router = createBrowserRouter([
   {
@@ -58,6 +59,10 @@ const router = createBrowserRouter([
   {
     path: "/noticias",
     element: <News />,
+  },
+  {
+    path: "/noticias/nueva",
+    element: <NewBlogPost />,
   },
 ]);
 

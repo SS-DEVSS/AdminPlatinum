@@ -10,13 +10,39 @@ export const useNews = () => {
   const { toast } = useToast();
 
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
-  const [newsItem, setBrand] = useState<BlogPost | null>({} as BlogPost);
+  const [blogPost, setBlogPost] = useState<BlogPost | null>({} as BlogPost);
   const [loading, setLoading] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
     getBlogPosts();
   }, []);
+
+  const addBlogPost = async (BlogPost: BlogPost) => {
+    try {
+      const headers = {
+        "Content-Type": "application/json",
+      };
+      setLoading(true);
+      await client.post("/blog/posts", BlogPost, { headers });
+      await getBlogPosts();
+      toast({
+        title: "Noticia creada correctamente.",
+        variant: "success",
+      });
+    } catch (error: any) {
+      console.log(error);
+      setErrorMsg(error.response.data.error);
+      toast({
+        title: "Error al crear noticia",
+        variant: "destructive",
+        description: errorMsg,
+      });
+    } finally {
+      setLoading(false);
+      setErrorMsg("");
+    }
+  };
 
   const getBlogPosts = async () => {
     try {
@@ -45,53 +71,27 @@ export const useNews = () => {
   //     }
   //   };
 
-  //   const deleteBrand = async (id: Brand["id"]) => {
-  //     try {
-  //       setLoading(true);
-  //       const response = await client.delete(`/brands/${id}`);
-  //       toast({
-  //         title: "Marca eliminada correctamente.",
-  //         variant: "success",
-  //         description: response.data.message,
-  //       });
-  //     } catch (error: any) {
-  //       setErrorMsg(error.response.data.error);
-  //       toast({
-  //         title: "Error al eliminar marca",
-  //         variant: "destructive",
-  //         description: errorMsg,
-  //       });
-  //     } finally {
-  //       setLoading(false);
-  //       setErrorMsg("");
-  //     }
-  //   };
-
-  //   const addBrand = async (brand: Omit<Brand, "id">) => {
-  //     try {
-  //       const headers = {
-  //         "Content-Type": "application/json",
-  //       };
-  //       setLoading(true);
-  //       const response = await client.post("/brands/", brand, { headers });
-  //       toast({
-  //         title: "Marca eliminada correctamente.",
-  //         variant: "success",
-  //         description: response.data.message,
-  //       });
-  //     } catch (error: any) {
-  //       console.log(error);
-  //       setErrorMsg(error.response.data.error);
-  //       toast({
-  //         title: "Error al eliminar marca",
-  //         variant: "destructive",
-  //         description: errorMsg,
-  //       });
-  //     } finally {
-  //       setLoading(false);
-  //       setErrorMsg("");
-  //     }
-  //   };
+  const deleteBlogPost = async (id: BlogPost["id"]) => {
+    try {
+      setLoading(true);
+      await client.delete(`/blog/posts/${id}`);
+      await getBlogPosts();
+      toast({
+        title: "Noticia eliminada correctamente.",
+        variant: "success",
+      });
+    } catch (error: any) {
+      setErrorMsg(error.response.data.error);
+      toast({
+        title: "Error al eliminar noticia",
+        variant: "destructive",
+        description: errorMsg,
+      });
+    } finally {
+      setLoading(false);
+      setErrorMsg("");
+    }
+  };
 
   //   const updateBrand = async (brand: Brand) => {
   //     try {
@@ -122,13 +122,13 @@ export const useNews = () => {
   //   };
 
   return {
+    loading,
     //   brand,
     blogPosts,
-    // loading,
+    addBlogPost,
     getBlogPosts,
     // getBrandById,
-    // deleteBrand,
-    // addBrand,
+    deleteBlogPost,
     // updateBrand,
   };
 };
