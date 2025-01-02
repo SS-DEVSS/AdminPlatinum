@@ -41,10 +41,11 @@ const FormInitialState = {
   title: "",
   description: "",
   coverImagePath: "",
-  content: "<p>Test</p>",
+  content: "",
 };
 
 enum ComponentTypes {
+  NONE = "",
   TITLE = "h1",
   SUBTITLE = "h3",
   PARAGRAPH = "p",
@@ -63,7 +64,6 @@ const BlogPostCU = ({ blogPost }: BlogPostCUProps) => {
   const navigate = useNavigate();
 
   const [form, setForm] = useState<FormTypes>(FormInitialState);
-  const [component, setComponent] = useState<Component>({} as Component);
   const [components, setComponents] = useState<Component[]>([]);
 
   const handleFormInput = (e: any) => {
@@ -74,56 +74,53 @@ const BlogPostCU = ({ blogPost }: BlogPostCUProps) => {
     });
   };
 
-  const convertContentToString = () => {
-    components.forEach((component) => {
-      setForm({
-        ...form,
-        content: `${form.content}<${component.type}>${component.content}</${component.type}>`,
-      });
-    });
-  };
-
   const validateForm = useMemo(
-    () =>
-      form.title.trim() !== "" &&
-      form.description.trim() !== "" &&
-      form.content.trim() !== "",
+    () => form.title.trim() !== "" && form.description.trim() !== "",
     [form]
   );
 
-  const handleSubmit = async (form: FormTypes) => {
-    convertContentToString();
-    await addBlogPost(form);
+  const handleSubmit = async () => {
+    let contentString = "";
+    components.forEach((component) => {
+      contentString += `<${component.type}>${component.content}</${component.type}>`;
+    });
+
+    const updatedForm = { ...form, content: contentString };
+
+    await addBlogPost(updatedForm);
     navigate("/noticias");
   };
 
   console.log(form);
 
   const returnComponent = async (selectedComponent: ComponentTypes) => {
-    let type: ComponentTypes = "";
+    let type: ComponentTypes = ComponentTypes.NONE;
     let title = "";
     switch (selectedComponent) {
       case "h1":
         type = ComponentTypes.TITLE;
         title = "Título";
+        break;
       case "h3":
         type = ComponentTypes.SUBTITLE;
         title = "Sub Título";
+        break;
       case "p":
         type = ComponentTypes.PARAGRAPH;
         title = "Párrafo";
+        break;
     }
-    console.log(type);
-    await setComponent({
+
+    const newComponent = {
       id: uuidv4(),
       type,
       title,
       content: "",
-    });
-    await setComponents([...components, component]);
+    };
+
+    setComponents([...components, newComponent]);
   };
 
-  console.log(component);
   console.log(components);
 
   return (
@@ -149,7 +146,7 @@ const BlogPostCU = ({ blogPost }: BlogPostCUProps) => {
                 size="sm"
                 disabled={!validateForm}
                 className="h-10 px-6 gap-1"
-                onClick={() => handleSubmit(form)}
+                onClick={handleSubmit}
               >
                 <PlusCircle className="h-3.5 w-3.5 mr-2" />
                 <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">

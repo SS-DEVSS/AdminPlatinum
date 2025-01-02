@@ -1,9 +1,8 @@
-import { GripVertical, Pencil, XCircle } from "lucide-react";
+import { GripVertical, XCircle } from "lucide-react";
 
 import { Card, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "./ui/input";
 import { Component } from "@/modules/blogPosts/BlogPostCU";
-import { useState } from "react";
 
 type NewsComponentProps = {
   component: Component;
@@ -16,29 +15,35 @@ const NewsComponent = ({
   components,
   setComponents,
 }: NewsComponentProps) => {
-  const [editedComponent, setEditedComponent] = useState<string>();
-  console.log(editedComponent);
-
   const deleteNewsComponent = (id: Component["id"]) => {
-    let tempArray = components.filter(
-      (component: Component) => component.id !== id
-    );
-    setComponents(tempArray);
+    const filteredComponents = components.filter((comp) => comp.id !== id);
+    setComponents(filteredComponents);
   };
 
   return (
     <Card className="flex justify-between pt-6">
-      <CardContent>
+      <CardContent className="flex-grow">
         <CardTitle>{component.title}</CardTitle>
         <Input
-          placeholder="Test"
-          className="rounded-none border border-t-0 border-s-0 border-e-0 p-0 mt-2 focus-visible:ring-0 border-b disabled:border-none"
-          disabled={editedComponent !== component.id}
+          placeholder={component.content || "Type here..."}
+          value={component.content}
+          onChange={(e) => {
+            const updatedComponents = components.map((comp) =>
+              comp.id === component.id
+                ? { ...comp, content: e.target.value }
+                : comp
+            );
+            setComponents(updatedComponents);
+          }}
+          className="rounded-none border border-t-0 border-s-0 border-e-0 p-0 mt-2 focus-visible:ring-0 border-b"
+          // disabled={currentlyEditing !== component.id}
         />
       </CardContent>
       <CardContent className="flex gap-3">
-        <Pencil onClick={() => setEditedComponent(component.id)} />
-        <XCircle onClick={() => deleteNewsComponent(component.id)} />
+        <XCircle
+          className="hover:cursor-pointer"
+          onClick={() => deleteNewsComponent(component.id)}
+        />
         <GripVertical />
       </CardContent>
     </Card>
