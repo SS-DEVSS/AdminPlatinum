@@ -10,14 +10,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { useNews } from "@/hooks/useNews";
 import { BlogPost } from "@/models/news";
 import CardBlogPost from "@/components/CardBlogPost";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { newsContext } from "@/context/news-context";
 
 const News = () => {
-  const { blogPosts, deleteBlogPost } = useNews();
+  const { blogPosts, deleteBlogPost } = newsContext();
 
   const filteredBlogPosts: BlogPost[] = [];
 

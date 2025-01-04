@@ -36,7 +36,6 @@ const NewsComponent = ({
             setComponents(updatedComponents);
           }}
           className="rounded-none border border-t-0 border-s-0 border-e-0 p-0 mt-2 focus-visible:ring-0 border-b"
-          // disabled={currentlyEditing !== component.id}
         />
       </CardContent>
       <CardContent className="flex gap-3">

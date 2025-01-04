@@ -1,11 +1,10 @@
 import { v4 as uuidv4 } from "uuid";
 import { Link, useNavigate } from "react-router-dom";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Layout from "@/components/Layouts/Layout";
 import { ChevronDown, ChevronLeft, PlusCircle, SquarePlus } from "lucide-react";
 import { BlogPost } from "@/models/news";
-import { useNews } from "@/hooks/useNews";
 import {
   Card,
   CardHeader,
@@ -26,9 +25,10 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import NewsComponent from "@/components/NewsComponent";
+import { newsContext } from "@/context/news-context";
 
 type BlogPostCUProps = {
-  blogPost?: BlogPost;
+  blogPost?: BlogPost | null;
 };
 
 interface FormTypes {
@@ -60,7 +60,7 @@ export interface Component {
 }
 
 const BlogPostCU = ({ blogPost }: BlogPostCUProps) => {
-  const { addBlogPost } = useNews();
+  const { addBlogPost } = newsContext();
   const navigate = useNavigate();
 
   const [form, setForm] = useState<FormTypes>(FormInitialState);
@@ -91,8 +91,6 @@ const BlogPostCU = ({ blogPost }: BlogPostCUProps) => {
     navigate("/noticias");
   };
 
-  console.log(form);
-
   const returnComponent = async (selectedComponent: ComponentTypes) => {
     let type: ComponentTypes = ComponentTypes.NONE;
     let title = "";
@@ -118,10 +116,36 @@ const BlogPostCU = ({ blogPost }: BlogPostCUProps) => {
       content: "",
     };
 
-    setComponents([...components, newComponent]);
+    setComponents((prevComponents) => [...prevComponents, newComponent]);
   };
 
-  console.log(components);
+  const parseContentToComponents = (contentString: string): Component[] => {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(contentString, "text/html");
+    const nodes = Array.from(doc.body.childNodes);
+
+    return nodes.map((node) => {
+      const type = node.nodeName.toLowerCase() as ComponentTypes;
+      const content = node.textContent || "";
+      return {
+        id: uuidv4(),
+        type,
+        title:
+          type === "h1" ? "Título" : type === "h3" ? "Sub Título" : "Párrafo",
+        content,
+      };
+    });
+  };
+
+  useEffect(() => {
+    if (blogPost) {
+      setForm(blogPost);
+      const parsedComponents = parseContentToComponents(blogPost.content);
+      setComponents(parsedComponents);
+    }
+  }, [blogPost, parseContentToComponents]);
+
+  console.log(form);
 
   return (
     <Layout>
@@ -227,6 +251,7 @@ const BlogPostCU = ({ blogPost }: BlogPostCUProps) => {
               {components &&
                 components.map((component: Component) => (
                   <NewsComponent
+                    key={component.id}
                     component={component}
                     components={components}
                     setComponents={setComponents}

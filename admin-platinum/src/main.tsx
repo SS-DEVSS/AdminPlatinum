@@ -18,6 +18,8 @@ import { Toaster } from "./components/ui/toaster";
 import TechincalSheets from "./pages/techincalSheets";
 import News from "./pages/news/news";
 import NewBlogPost from "./pages/news/newBlogPost";
+import EditBlogPost from "./pages/news/editBlogPost";
+import { NewsProvider } from "./context/news-context";
 
 const router = createBrowserRouter([
   {
@@ -64,6 +66,10 @@ const router = createBrowserRouter([
     path: "/noticias/nueva",
     element: <NewBlogPost />,
   },
+  {
+    path: "/noticias/editar",
+    element: <EditBlogPost />,
+  },
 ]);
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
@@ -71,9 +77,11 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <AuthProvider>
       <DeleteModalProvider>
         <BrandProvider>
-          <DeleteModal />
-          <RouterProvider router={router} />
-          <Toaster />
+          <NewsProvider>
+            <DeleteModal />
+            <RouterProvider router={router} />
+            <Toaster />
+          </NewsProvider>
         </BrandProvider>
       </DeleteModalProvider>
     </AuthProvider>

@@ -12,25 +12,20 @@ import {
 import { Link } from "react-router-dom";
 import { useDeleteModal } from "@/context/delete-context";
 import { BlogPost } from "@/models/news";
+import { newsContext } from "@/context/news-context";
 
 type CardTemplateProps = {
   blogPost?: BlogPost;
   getItems?: () => void;
   deleteItem?: (id: BlogPost["id"]) => void;
-  getCategoryById?: any;
 };
 
-const CardBlogPost = ({
-  blogPost,
-  deleteItem,
-  getCategoryById,
-}: CardTemplateProps) => {
+const CardBlogPost = ({ blogPost, deleteItem }: CardTemplateProps) => {
   const { openModal } = useDeleteModal();
+  const { getBlogPostById } = newsContext();
 
-  const handleEditCategory = async (id: BlogPost["id"]) => {
-    await getCategoryById(id);
-    // const data = await getCategoryById("bd3dcd72-961a-49fc-ab5d-21a2243c1c44");
-    // console.log("Direct Data Returned:", data);
+  const handleEditBlogPost = async (id: BlogPost["id"]) => {
+    await getBlogPostById(id);
   };
 
   const handleDeleteBlogPost = async () => {
@@ -59,9 +54,9 @@ const CardBlogPost = ({
                 <DropdownMenuSeparator />
 
                 <DropdownMenuGroup>
-                  <Link to="/categorias/editar">
+                  <Link to="/noticias/editar">
                     <DropdownMenuItem
-                      onClick={() => handleEditCategory(blogPost?.id!)}
+                      onClick={() => handleEditBlogPost(blogPost?.id!)}
                     >
                       <Pencil className="mr-2 h-4 w-4" />
                       <span>Editar Noticia</span>
