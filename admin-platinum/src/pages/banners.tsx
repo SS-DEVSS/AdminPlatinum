@@ -7,14 +7,23 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { useBanners } from "@/hooks/useBanners";
+import { Banner } from "@/models/banner";
+import { GripVertical, XCircle } from "lucide-react";
 import { useState } from "react";
 import S3 from "react-aws-s3-typescript";
 
 const Banners = () => {
   const [image, setImage] = useState(null);
 
+  const { banners, deleteBanner } = useBanners();
+
   const handleImageFile = (e: any) => {
     setImage(e.target.files[0]);
+  };
+
+  const cleanPath = (path: Banner["desktopUrl"]) => {
+    return path.slice(66);
   };
 
   const handleUpload = () => {
@@ -51,16 +60,30 @@ const Banners = () => {
               Revisa, elimina y cambia el orden de los banners de la plataforma
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Card className="flex">
-              <CardHeader>
-                <div className="">
-                  <img src="" alt="" className="" />
-                </div>
-              </CardHeader>
-              <CardContent></CardContent>
-              <CardFooter></CardFooter>
-            </Card>
+          <CardContent className="flex flex-col gap-4">
+            {banners.map((banner: Banner) => (
+              <Card key={banner.id} className="bg-[#EEEEEE] flex items-center">
+                <CardHeader className="p-3 px-4">
+                  <div className="border rounded-lg">
+                    <img
+                      src={banner.desktopUrl}
+                      alt={banner.desktopUrl}
+                      className="rounded-lg w-20"
+                    />
+                  </div>
+                </CardHeader>
+                <CardContent className="my-auto p-0">
+                  {cleanPath(banner.desktopUrl)}
+                </CardContent>
+                <CardFooter className="block space-y-3 justify-end py-0 ml-auto">
+                  <XCircle
+                    className="hover:cursor-pointer text-[#707F95]"
+                    onClick={() => deleteBanner(banner.id)}
+                  />
+                  <GripVertical className="hover:cursor-pointer text-[#707F95]" />
+                </CardFooter>
+              </Card>
+            ))}
           </CardContent>
         </Card>
       </section>
