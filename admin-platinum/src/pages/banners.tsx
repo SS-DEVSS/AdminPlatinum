@@ -7,8 +7,29 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { useState } from "react";
+import S3 from "react-aws-s3-typescript";
 
 const Banners = () => {
+  const [image, setImage] = useState(null);
+
+  const handleImageFile = (e: any) => {
+    setImage(e.target.files[0]);
+  };
+
+  const handleUpload = () => {
+    const ReactS3Client = new S3({
+      accessKeyId: import.meta.env.VITE_AWS_ACCESS_KEY_ID,
+      secretAccessKey: import.meta.env.VITE_AWS_SECRET_ACCESS_KEY,
+      bucketName: import.meta.env.VITE_AWS_S3_BUCKET_NAME,
+      s3Url: import.meta.env.VITE_AWS_S3_BUCKET_PUBLIC_URL,
+      region: import.meta.env.VITE_AWS_REGION,
+    });
+    ReactS3Client.uploadFile(image!)
+      .then((data) => console.log(data))
+      .catch((e) => console.log(e));
+  };
+
   return (
     <Layout>
       <section className="max-w-[1000px] mx-auto">
@@ -18,6 +39,10 @@ const Banners = () => {
             <CardTitle>Agregar nuevo banner</CardTitle>
             <CardDescription>Ingrese el nuevo banner deseado.</CardDescription>
           </CardHeader>
+          <CardContent>
+            <input type="file" onChange={handleImageFile} />
+            <button onClick={handleUpload}>a</button>
+          </CardContent>
         </Card>
         <Card className="mt-4">
           <CardHeader>
