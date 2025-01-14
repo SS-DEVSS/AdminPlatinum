@@ -1,5 +1,6 @@
 import CardSectionLayout from "@/components/Layouts/CardSectionLayout";
 import Layout from "@/components/Layouts/Layout";
+import NoData from "@/components/NoData";
 import TsCard from "@/components/TsCard";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,7 +24,7 @@ import { Label } from "@/components/ui/label";
 import { useTs } from "@/hooks/useTs";
 import { Variant } from "@/models/item";
 import { TechnicalSheet } from "@/models/technicalSheet";
-import { PlusCircle, Search } from "lucide-react";
+import { AlertTriangle, PlusCircle, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 export interface TSFormType {
@@ -126,7 +127,7 @@ const TechincalSheets = () => {
 
   return (
     <Layout>
-      <Card className="border-0 shadow-none">
+      <Card className="border-0 shadow-none flex flex-col">
         <CardHeader className="flex flex-row p-0 m-0">
           <div className="flex flex-col gap-3">
             <CardTitle>Boletínes</CardTitle>
@@ -225,12 +226,20 @@ const TechincalSheets = () => {
             </Dialog>
           </div>
         </CardHeader>
-        <CardContent className="p-0">
-          <CardSectionLayout>
-            {technicalSheets.length === 0 && filteredTs.length === 0 ? (
-              <p>No hay marcas disponibles.</p>
-            ) : (
-              (filteredTs.length > 0 ? filteredTs : technicalSheets).map(
+        <CardContent className="flex flex-col flex-grow p-0">
+          {technicalSheets.length === 0 && filteredTs.length === 0 ? (
+            <div className="mt-4">
+              <NoData>
+                <AlertTriangle className="text-[#4E5154]" />
+                <p className="text-[#4E5154]">No se ha creado ningún boletín</p>
+                <p className="text-[#94A3B8] font-semibold text-sm">
+                  Agrega uno en la parte posterior
+                </p>
+              </NoData>
+            </div>
+          ) : (
+            <CardSectionLayout>
+              {(filteredTs.length > 0 ? filteredTs : technicalSheets).map(
                 (ts: TechnicalSheet) => (
                   <TsCard
                     key={ts.id}
@@ -241,9 +250,9 @@ const TechincalSheets = () => {
                     setTsForm={setTsForm}
                   />
                 )
-              )
-            )}
-          </CardSectionLayout>
+              )}
+            </CardSectionLayout>
+          )}
         </CardContent>
       </Card>
     </Layout>

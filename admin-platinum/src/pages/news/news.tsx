@@ -1,10 +1,11 @@
-import { PlusCircle, Search } from "lucide-react";
+import { AlertTriangle, PlusCircle, Search } from "lucide-react";
 
 import Layout from "@/components/Layouts/Layout";
 import CardSectionLayout from "@/components/Layouts/CardSectionLayout";
 
 import {
   Card,
+  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
@@ -15,6 +16,7 @@ import CardBlogPost from "@/components/CardBlogPost";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { newsContext } from "@/context/news-context";
+import NoData from "@/components/NoData";
 
 const News = () => {
   const { blogPosts, deleteBlogPost } = newsContext();
@@ -56,21 +58,34 @@ const News = () => {
             </Link>
           </div>
         </CardHeader>
-        <CardSectionLayout>
+        <CardContent className="p-0">
           {blogPosts.length === 0 && filteredBlogPosts.length === 0 ? (
-            <p>No hay noticias disponibles.</p>
+            <div className="mt-4">
+              <NoData>
+                <AlertTriangle className="text-[#4E5154]" />
+                <p className="text-[#4E5154]">
+                  No se ha creado ninguna noticia
+                </p>
+                <p className="text-[#94A3B8] font-semibold text-sm">
+                  Agrega uno en la parte posterior
+                </p>
+              </NoData>
+            </div>
           ) : (
-            (filteredBlogPosts.length > 0 ? filteredBlogPosts : blogPosts).map(
-              (blogPost: BlogPost) => (
+            <CardSectionLayout>
+              {(filteredBlogPosts.length > 0
+                ? filteredBlogPosts
+                : blogPosts
+              ).map((blogPost: BlogPost) => (
                 <CardBlogPost
                   key={blogPost.id}
                   blogPost={blogPost}
                   deleteItem={deleteBlogPost}
                 />
-              )
-            )
+              ))}
+            </CardSectionLayout>
           )}
-        </CardSectionLayout>
+        </CardContent>
       </Card>
     </Layout>
   );

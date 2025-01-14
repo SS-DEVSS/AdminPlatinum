@@ -1,4 +1,5 @@
 import Layout from "@/components/Layouts/Layout";
+import NoData from "@/components/NoData";
 import {
   Card,
   CardContent,
@@ -9,7 +10,7 @@ import {
 } from "@/components/ui/card";
 import { useBanners } from "@/hooks/useBanners";
 import { Banner } from "@/models/banner";
-import { GripVertical, XCircle } from "lucide-react";
+import { AlertTriangle, GripVertical, XCircle } from "lucide-react";
 import { useState } from "react";
 import S3 from "react-aws-s3-typescript";
 
@@ -61,29 +62,42 @@ const Banners = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
-            {banners.map((banner: Banner) => (
-              <Card key={banner.id} className="bg-[#EEEEEE] flex items-center">
-                <CardHeader className="p-3 px-4">
-                  <div className="border rounded-lg">
-                    <img
-                      src={banner.desktopUrl}
-                      alt={banner.desktopUrl}
-                      className="rounded-lg w-20"
+            {banners.length && banners.length !== 0 ? (
+              banners.map((banner: Banner) => (
+                <Card
+                  key={banner.id}
+                  className="bg-[#EEEEEE] flex items-center"
+                >
+                  <CardHeader className="p-3 px-4">
+                    <div className="border rounded-lg">
+                      <img
+                        src={banner.desktopUrl}
+                        alt={banner.desktopUrl}
+                        className="rounded-lg w-20"
+                      />
+                    </div>
+                  </CardHeader>
+                  <CardContent className="my-auto p-0">
+                    {cleanPath(banner.desktopUrl)}
+                  </CardContent>
+                  <CardFooter className="block space-y-3 justify-end py-0 ml-auto">
+                    <XCircle
+                      className="hover:cursor-pointer text-[#707F95]"
+                      onClick={() => deleteBanner(banner.id)}
                     />
-                  </div>
-                </CardHeader>
-                <CardContent className="my-auto p-0">
-                  {cleanPath(banner.desktopUrl)}
-                </CardContent>
-                <CardFooter className="block space-y-3 justify-end py-0 ml-auto">
-                  <XCircle
-                    className="hover:cursor-pointer text-[#707F95]"
-                    onClick={() => deleteBanner(banner.id)}
-                  />
-                  <GripVertical className="hover:cursor-pointer text-[#707F95]" />
-                </CardFooter>
-              </Card>
-            ))}
+                    <GripVertical className="hover:cursor-pointer text-[#707F95]" />
+                  </CardFooter>
+                </Card>
+              ))
+            ) : (
+              <NoData>
+                <AlertTriangle className="text-[#4E5154]" />
+                <p className="text-[#4E5154]">No se ha creado ningún banner</p>
+                <p className="text-[#94A3B8] font-semibold text-sm">
+                  Agrega uno en la parte posterior
+                </p>
+              </NoData>
+            )}
           </CardContent>
         </Card>
       </section>
