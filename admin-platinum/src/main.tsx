@@ -20,6 +20,7 @@ import News from "./pages/news/news";
 import NewBlogPost from "./pages/news/newBlogPost";
 import EditBlogPost from "./pages/news/editBlogPost";
 import { NewsProvider } from "./context/news-context";
+import Banners from "./pages/banners";
 
 const router = createBrowserRouter([
   {
@@ -69,6 +70,10 @@ const router = createBrowserRouter([
   {
     path: "/noticias/editar",
     element: <EditBlogPost />,
+  },
+  {
+    path: "/banners",
+    element: <Banners />,
   },
 ]);
 

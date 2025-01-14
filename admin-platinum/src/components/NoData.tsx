@@ -7,7 +7,7 @@ type NoDataProps = {
 
 const NoData = ({ children }: NoDataProps) => {
   return (
-    <Card className="flex flex-col gap-2 items-center justify-center py-10">
+    <Card className="flex flex-col flex-grow gap-2 items-center justify-center py-10 h-full">
       {children}
     </Card>
   );

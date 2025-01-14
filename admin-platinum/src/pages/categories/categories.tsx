@@ -7,7 +7,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { PlusCircle, Search } from "lucide-react";
+import { AlertTriangle, PlusCircle, Search } from "lucide-react";
 import CardSectionLayout from "@/components/Layouts/CardSectionLayout";
 import CardTemplate from "@/components/Layouts/CardTemplate";
 import {
@@ -26,6 +26,7 @@ import { useBrands } from "@/hooks/useBrands";
 import { Brand } from "@/models/brand";
 import { useState } from "react";
 import { useMemo } from "react";
+import NoData from "@/components/NoData";
 
 const Categorias = () => {
   const { categories, getCategories, deleteCategory, getCategoryById } =
@@ -100,11 +101,21 @@ const Categorias = () => {
               </Link>
             </div>
           </CardHeader>
-          <CardSectionLayout>
-            {categories.length === 0 && filteredCategories.length === 0 ? (
-              <>No hay categorías por mostrar.</>
-            ) : (
-              (filteredCategories.length > 0
+          {categories.length === 0 && filteredCategories.length === 0 ? (
+            <div className="mt-4">
+              <NoData>
+                <AlertTriangle className="text-[#4E5154]" />
+                <p className="text-[#4E5154]">
+                  No se ha creado ninguna categoría
+                </p>
+                <p className="text-[#94A3B8] font-semibold text-sm">
+                  Agrega uno en la parte posterior
+                </p>
+              </NoData>
+            </div>
+          ) : (
+            <CardSectionLayout>
+              {(filteredCategories.length > 0
                 ? filteredCategories
                 : categories
               ).map((categoria: Category) => (
@@ -115,9 +126,9 @@ const Categorias = () => {
                   deleteCategory={deleteCategory}
                   getCategoryById={getCategoryById}
                 />
-              ))
-            )}
-          </CardSectionLayout>
+              ))}
+            </CardSectionLayout>
+          )}
         </Card>
       </div>
     </Layout>

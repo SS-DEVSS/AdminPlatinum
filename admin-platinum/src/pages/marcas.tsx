@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { PlusCircle, Search } from "lucide-react";
+import { AlertTriangle, PlusCircle, Search } from "lucide-react";
 import CardSectionLayout from "@/components/Layouts/CardSectionLayout";
 import CardTemplate from "@/components/Layouts/CardTemplate";
 import { useBrandModal } from "@/context/brand-context";
@@ -25,6 +25,7 @@ import { useBrands } from "@/hooks/useBrands";
 import { Textarea } from "@/components/ui/textarea";
 import { useMemo } from "react";
 import { Brand } from "@/models/brand";
+import NoData from "@/components/NoData";
 
 const Marcas = () => {
   const { brands, brand, addBrand, updateBrand, getBrands, getBrandById } =
@@ -248,7 +249,17 @@ const Marcas = () => {
           </CardHeader>
           <CardSectionLayout>
             {brands.length && filterBrands.length === 0 ? (
-              <p>No hay marcas disponibles.</p>
+              <div className="mt-4">
+                <NoData>
+                  <AlertTriangle className="text-[#4E5154]" />
+                  <p className="text-[#4E5154]">
+                    No se ha creado ninguna marca
+                  </p>
+                  <p className="text-[#94A3B8] font-semibold text-sm">
+                    Agrega uno en la parte posterior
+                  </p>
+                </NoData>
+              </div>
             ) : (
               (filterBrands.length > 0 ? filterBrands : brands).map((brand) => (
                 <CardTemplate
