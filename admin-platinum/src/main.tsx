@@ -11,7 +11,6 @@ import NewCategory from "./pages/categories/newCategory";
 import ForgotPassword from "./pages/auth/forgotPassword";
 import Login from "./pages/auth/login";
 import Marcas from "./pages/marcas";
-import Root from "./pages/root";
 import { BrandProvider } from "./context/brand-context";
 import { AuthProvider } from "./context/auth-context";
 import { Toaster } from "./components/ui/toaster";
@@ -21,6 +20,7 @@ import NewBlogPost from "./pages/news/newBlogPost";
 import EditBlogPost from "./pages/news/editBlogPost";
 import { NewsProvider } from "./context/news-context";
 import Banners from "./pages/banners";
+import Products from "./pages/products/products";
 
 const router = createBrowserRouter([
   {
@@ -37,7 +37,7 @@ const router = createBrowserRouter([
   },
   {
     path: "/productos",
-    element: <Root />,
+    element: <Products />,
   },
   {
     path: "/marcas",

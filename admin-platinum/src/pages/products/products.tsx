@@ -1,0 +1,254 @@
+import Layout from "@/components/Layouts/Layout";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Download,
+  File,
+  Import,
+  PlusCircle,
+  Search,
+  Share,
+} from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Link } from "react-router-dom";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { useState } from "react";
+import { Category } from "@/models/category";
+import { useCategories } from "@/hooks/useCategories";
+import { Checkbox } from "@/components/ui/checkbox";
+
+const Products = () => {
+  const { categories } = useCategories();
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalOpenExport, setModalOpenExport] = useState(false);
+  const [fileImport, setFileImport] = useState("");
+  const [selectedCategories, setSelectedCategories] = useState<Category[]>([]);
+  const [checkedAll, setCheckedAll] = useState(false);
+
+  const handleCheckAll = (isChecked: boolean) => {
+    setCheckedAll(isChecked);
+    if (isChecked) {
+      setSelectedCategories(categories);
+    } else {
+      setSelectedCategories([]);
+    }
+  };
+
+  const handleFileChange = (e: any) => {
+    const file = e.target.files[0];
+    if (file) {
+      setFileImport(file);
+    } else {
+      setFileImport("");
+    }
+  };
+
+  return (
+    <Layout>
+      <div>
+        <Card className="border-0 shadow-none">
+          <CardHeader className="flex flex-row items-end p-0 m-0">
+            <div className="flex flex-col gap-3">
+              <CardTitle>Productos</CardTitle>
+              <div className="flex gap-3">
+                <div className="relative ml-0 flex-1 md:grow-0">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="search"
+                    placeholder="Buscar Producto..."
+                    className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[336px]"
+                  />
+                </div>
+                <Select>
+                  <SelectTrigger className="w-[280px]">
+                    <SelectValue placeholder="Selecciona una marca" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectLabel>Marcas</SelectLabel>
+                      {categories.map((category) => (
+                        <SelectItem value={category.id}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="ml-auto flex items-center gap-3">
+              <div className="rounded-lg flex bg-[#F4F4F5]">
+                <div
+                  onClick={() => setModalOpen(true)}
+                  className="flex hover:cursor-pointer gap-3 items-center hover:bg-primary hover:text-white hover:[&>svg]:text-white rounded-lg m-1 px-3"
+                >
+                  <Import />
+                  <Button className="hover:bg-none" variant={"ghost"}>
+                    Importar
+                  </Button>
+                </div>
+                <div
+                  onClick={() => setModalOpenExport(true)}
+                  className="flex hover:cursor-pointer gap-3 items-center hover:bg-primary hover:text-white hover:[&>svg]:text-white rounded-lg m-1 px-3"
+                >
+                  <Share />
+                  <Button className="hover:bg-none" variant={"ghost"}>
+                    Exportar
+                  </Button>
+                </div>
+              </div>
+              <Link to="/producto/new-product">
+                <Button size="sm" className="h-10 px-6 gap-1">
+                  <PlusCircle className="h-3.5 w-3.5 mr-2" />
+                  <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                    Agregar Producto
+                  </span>
+                </Button>
+              </Link>
+            </div>
+          </CardHeader>
+          <div>aaa</div>
+        </Card>
+      </div>
+      <Dialog
+        open={modalOpen}
+        onOpenChange={(open: boolean) => !open && setModalOpen(false)}
+      >
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="mb-2">Importar Productos</DialogTitle>
+          </DialogHeader>
+          <input type="file" onChange={handleFileChange} />
+          <DialogDescription>Formatos permitidos: csv</DialogDescription>
+          <Card className="border-[#94A3B8] bg-[#F9FAFB]">
+            <CardHeader className="flex flex-row gap-3 items-center p-3">
+              <File className="mt-2" />
+              <CardTitle className="text-lg mt-0">
+                Plantilla de Productos
+              </CardTitle>
+            </CardHeader>
+            <CardFooter>
+              <CardDescription>
+                Descarga la plantilla de ejemplo para usarla como una base.
+              </CardDescription>
+              <Download className="hover:cursor-pointer" />
+            </CardFooter>
+          </Card>
+          <DialogFooter>
+            <Button onClick={() => setModalOpen(false)} variant="outline">
+              Cancelar
+            </Button>
+            <Button disabled={!fileImport}>Importar Archivo</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={modalOpenExport}
+        onOpenChange={(open: boolean) => !open && setModalOpenExport(false)}
+      >
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="mb-2">Exportar Productos</DialogTitle>
+            <DialogDescription>
+              Selecciona las categorías que deseas exportar.
+            </DialogDescription>
+          </DialogHeader>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>
+                  <Checkbox
+                    checked={checkedAll}
+                    onCheckedChange={(prev) => handleCheckAll(prev)}
+                    className="border-[#d0d2d6] mt-1"
+                  />
+                </TableHead>
+                <TableHead>Categoría</TableHead>
+                <TableHead>Número de Productos</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {categories.map((category) => (
+                <TableRow>
+                  <TableCell>
+                    <Checkbox
+                      checked={
+                        checkedAll || selectedCategories.includes(category)
+                      }
+                      onCheckedChange={() => {
+                        const updatedSelection = selectedCategories.includes(
+                          category
+                        )
+                          ? selectedCategories.filter(
+                              (c) => c.id !== category.id
+                            )
+                          : [...selectedCategories, category];
+                        setSelectedCategories(updatedSelection);
+                        if (updatedSelection.length === categories.length) {
+                          setCheckedAll(true);
+                        } else {
+                          setCheckedAll(false);
+                        }
+                      }}
+                      className="border-[#d0d2d6] mt-1"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <p className="text-[#71717A] font-medium">
+                      {category.name}
+                    </p>
+                  </TableCell>
+                  <TableCell>
+                    <p className="text-[#71717A] font-medium">
+                      {category.products?.length}
+                    </p>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          <DialogFooter>
+            <Button onClick={() => setModalOpenExport(false)} variant="outline">
+              Cancelar
+            </Button>
+            <Button disabled={selectedCategories.length === 0}>
+              Exportar Productos
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </Layout>
+  );
+};
+
+export default Products;
