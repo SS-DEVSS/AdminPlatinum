@@ -16,7 +16,10 @@ const DeleteModal = () => {
   const { isOpen, title, description, pathname, handleDelete } = modalState;
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && closeModal()}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open: boolean) => !open && closeModal()}
+    >
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="mb-2">Eliminar {title}</DialogTitle>
@@ -39,7 +42,9 @@ const DeleteModal = () => {
           </Button>
           <Button
             onClick={() => {
-              handleDelete();
+              if (handleDelete) {
+                handleDelete();
+              }
               closeModal();
             }}
           >

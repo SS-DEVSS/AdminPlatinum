@@ -5,7 +5,7 @@ type ModalState = {
   title: string;
   description: string;
   pathname?: string;
-  handleDelete: () => void;
+  handleDelete?: () => void;
 };
 
 const DeleteContext = createContext<{

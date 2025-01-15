@@ -8,7 +8,6 @@ import { toast } from "./use-toast";
 export const useBanners = () => {
   const [banners, setBanners] = useState<Banner[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
   const { authState } = useAuthContext();
   const client = axiosClient(authState.authKey);
@@ -46,5 +45,5 @@ export const useBanners = () => {
     }
   };
 
-  return { banners, deleteBanner };
+  return { loading, banners, deleteBanner };
 };

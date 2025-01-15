@@ -46,6 +46,7 @@ import { useState } from "react";
 import { Category } from "@/models/category";
 import { useCategories } from "@/hooks/useCategories";
 import { Checkbox } from "@/components/ui/checkbox";
+import DataTable from "@/modules/products/ProductsTable";
 
 const Products = () => {
   const { categories } = useCategories();
@@ -113,7 +114,10 @@ const Products = () => {
                   className="flex hover:cursor-pointer gap-3 items-center hover:bg-primary hover:text-white hover:[&>svg]:text-white rounded-lg m-1 px-3"
                 >
                   <Import />
-                  <Button className="hover:bg-none" variant={"ghost"}>
+                  <Button
+                    className="hover:bg-transparent hover:text-white"
+                    variant={"ghost"}
+                  >
                     Importar
                   </Button>
                 </div>
@@ -122,7 +126,10 @@ const Products = () => {
                   className="flex hover:cursor-pointer gap-3 items-center hover:bg-primary hover:text-white hover:[&>svg]:text-white rounded-lg m-1 px-3"
                 >
                   <Share />
-                  <Button className="hover:bg-none" variant={"ghost"}>
+                  <Button
+                    className="hover:bg-transparent hover:text-white"
+                    variant={"ghost"}
+                  >
                     Exportar
                   </Button>
                 </div>
@@ -137,7 +144,9 @@ const Products = () => {
               </Link>
             </div>
           </CardHeader>
-          <div>aaa</div>
+          <div>
+            <DataTable />
+          </div>
         </Card>
       </div>
       <Dialog
@@ -189,7 +198,7 @@ const Products = () => {
                 <TableHead>
                   <Checkbox
                     checked={checkedAll}
-                    onCheckedChange={(prev) => handleCheckAll(prev)}
+                    onCheckedChange={(prev: boolean) => handleCheckAll(prev)}
                     className="border-[#d0d2d6] mt-1"
                   />
                 </TableHead>
