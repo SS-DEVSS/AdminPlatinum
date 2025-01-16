@@ -7,13 +7,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Dialog, DialogTrigger } from "@radix-ui/react-dialog";
 import {
+  Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -161,7 +162,7 @@ const Marcas = () => {
               </div>
               <Dialog
                 open={isOpen}
-                onOpenChange={(open) => {
+                onOpenChange={(open: boolean) => {
                   if (!open) {
                     setForm({
                       name: "",

@@ -33,17 +33,26 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useCategories } from "@/hooks/useCategories";
 
 interface DataTableProps {
   category?: Category | null;
+  searchFilter?: string;
 }
 
-const DataTable = ({ category }: DataTableProps) => {
+const DataTable = ({ category, searchFilter }: DataTableProps) => {
+  console.log(searchFilter);
   const [mappedData, setMappedData] = useState<Variant[]>([]);
 
-  const { attributes } = category || {};
+  let { attributes } = category || {};
   const { openModal } = useDeleteModal();
   const { products, deleteProduct } = useProducts();
+  const { categories } = useCategories();
+
+  if (!attributes && categories.length > 0) {
+    // attributes = categories[0].attributes;
+    attributes = categories[0].attributes;
+  }
 
   const handleDeleteProduct = async (id: Item["id"]) => {
     await deleteProduct(id);
@@ -84,7 +93,7 @@ const DataTable = ({ category }: DataTableProps) => {
         accessorKey: "images",
         header: "",
         cell: ({ row }: { row: any }) => (
-          <div className="w-20 h-20 bg-muted">
+          <div className="w-20 h-20 bg-slate-300 rounded-lg">
             <img
               className="m-auto aspect-square p-2"
               src={row.getValue("images")[0].url}
@@ -106,6 +115,7 @@ const DataTable = ({ category }: DataTableProps) => {
         accessorKey: "type",
         header: "Tipo",
         cell: ({ row }: { row: any }) => {
+          //   console.log(row.original);
           return (
             <div>
               {row.getValue("type") === "SINGLE" ? "Componente" : "Kit"}
@@ -113,6 +123,9 @@ const DataTable = ({ category }: DataTableProps) => {
           );
         },
       },
+    ];
+
+    const actionColumn = [
       {
         id: "actions",
         enableHiding: false,
@@ -136,7 +149,7 @@ const DataTable = ({ category }: DataTableProps) => {
                       title: "Borrar Producto",
                       description:
                         "Estas seguro que deseas eliminar este producto?",
-                      handleDelete: handleDeleteProduct(row.original.id),
+                      handleDelete: () => handleDeleteProduct(row.original.id),
                     });
                   }}
                 >
@@ -151,14 +164,17 @@ const DataTable = ({ category }: DataTableProps) => {
 
     const getColumns = (attributeType: string) => {
       const getAttributeValues = (row: any, attribute: any) => {
-        const attributeValues =
-          attributeType === "product"
-            ? row.original?.productAttributeValues
-            : row.original?.attributeValues || [];
+        let attributeCollection = [];
+        const productAttributeValues = row.original?.productAttributeValues;
+        const attributeValues = row.original?.attributeValues;
 
-        return attributeValues.find(
-          (attrValue: AttributeValue) => attrValue.idAttribute === attribute.id
-        );
+        attributeCollection = [productAttributeValues, attributeValues];
+        return attributeCollection
+          .flat()
+          .find(
+            (attrValue: AttributeValue) =>
+              attrValue.idAttribute === attribute.id
+          );
       };
 
       const getDisplayValue = (value: AttributeValue | undefined) =>
@@ -169,14 +185,17 @@ const DataTable = ({ category }: DataTableProps) => {
         "N/A";
 
       return (
-        attributes?.[attributeType]?.map((attribute: any) => ({
-          accessorKey: attribute.id,
-          header: attribute.name,
-          cell: ({ row }: { row: any }) => {
-            const value = getAttributeValues(row, attribute);
-            return <div>{getDisplayValue(value)}</div>;
-          },
-        })) || []
+        attributes?.[attributeType]?.map((attribute: any) => {
+          console.log(attribute);
+          return {
+            accessorKey: attribute.id,
+            header: attribute.name,
+            cell: ({ row }: { row: any }) => {
+              const value = getAttributeValues(row, attribute);
+              return <div>{getDisplayValue(value)}</div>;
+            },
+          };
+        }) || []
       );
     };
 
@@ -187,13 +206,26 @@ const DataTable = ({ category }: DataTableProps) => {
       ...initialColumns,
       ...dynamicColumnsProduct,
       ...dynamicColumnsVariant,
+      ...actionColumn,
     ];
-  }, [attributes, location]);
+  }, [attributes]);
 
   useEffect(() => {
-    const flattenedData = flattenVariants(products);
+    const filteredProducts = products.filter(
+      (product: Item) => product.category.id === category?.id
+    );
+    const flattenedData = flattenVariants(filteredProducts);
     setMappedData(flattenedData ?? []);
-  }, [products, location]);
+  }, [products, category]);
+
+  const searchFilteredProducts = useMemo(() => {
+    const test = mappedData.filter(
+      (variant: Variant) =>
+        variant.name.toLowerCase().includes(searchFilter!.toLowerCase()) ||
+        variant.sku.toLowerCase().includes(searchFilter!.toLowerCase())
+    );
+    return test;
+  }, [searchFilter]);
 
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -201,7 +233,7 @@ const DataTable = ({ category }: DataTableProps) => {
   const [rowSelection, setRowSelection] = useState({});
 
   const table = useReactTable<Variant>({
-    data: mappedData,
+    data: searchFilter ? searchFilteredProducts : mappedData,
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
