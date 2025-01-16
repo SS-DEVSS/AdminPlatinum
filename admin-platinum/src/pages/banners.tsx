@@ -15,7 +15,9 @@ import { useState } from "react";
 import S3 from "react-aws-s3-typescript";
 
 const Banners = () => {
-  const [image, setImage] = useState(null);
+  const [image, setImage] = useState({
+    name: "",
+  });
 
   const { banners, deleteBanner } = useBanners();
 
@@ -23,21 +25,34 @@ const Banners = () => {
     setImage(e.target.files[0]);
   };
 
+  console.log(image);
+
   const cleanPath = (path: Banner["desktopUrl"]) => {
     return path.slice(66);
   };
 
   const handleUpload = () => {
+    if (!image) {
+      console.error("No image selected");
+      return;
+    }
+
     const ReactS3Client = new S3({
       accessKeyId: import.meta.env.VITE_AWS_ACCESS_KEY_ID,
       secretAccessKey: import.meta.env.VITE_AWS_SECRET_ACCESS_KEY,
       bucketName: import.meta.env.VITE_AWS_S3_BUCKET_NAME,
-      s3Url: import.meta.env.VITE_AWS_S3_BUCKET_PUBLIC_URL,
       region: import.meta.env.VITE_AWS_REGION,
     });
-    ReactS3Client.uploadFile(image!)
+
+    const cleanedFileName = image.name
+      .replace(/\s+/g, "")
+      .replace(/\.[^/.]+$/, "");
+
+    const filePath = `uploads/images/${cleanedFileName}`;
+
+    ReactS3Client.uploadFile(image, filePath)
       .then((data) => console.log(data))
-      .catch((e) => console.log(e));
+      .catch((e) => console.error(e));
   };
 
   return (

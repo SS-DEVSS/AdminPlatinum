@@ -146,7 +146,7 @@ const TechincalSheets = () => {
             </div>
             <Dialog
               open={isOpen}
-              onOpenChange={(open) => {
+              onOpenChange={(open: boolean) => {
                 if (!open) {
                   setTsForm(TsFormInitialState);
                   setIsEditMode(false);
