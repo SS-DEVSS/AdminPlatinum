@@ -19,13 +19,11 @@ const Banners = () => {
     name: "",
   });
 
-  const { banners, deleteBanner } = useBanners();
+  const { banners, addBanner, deleteBanner } = useBanners();
 
   const handleImageFile = (e: any) => {
     setImage(e.target.files[0]);
   };
-
-  console.log(image);
 
   const cleanPath = (path: Banner["desktopUrl"]) => {
     return path.slice(66);
@@ -47,11 +45,10 @@ const Banners = () => {
     const cleanedFileName = image.name
       .replace(/\s+/g, "")
       .replace(/\.[^/.]+$/, "");
-
     const filePath = `uploads/images/${cleanedFileName}`;
 
     ReactS3Client.uploadFile(image, filePath)
-      .then((data) => console.log(data))
+      .then((data) => addBanner(data.key))
       .catch((e) => console.error(e));
   };
 
