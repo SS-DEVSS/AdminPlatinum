@@ -1,5 +1,7 @@
+import MyDropzone from "@/components/Dropzone";
 import Layout from "@/components/Layouts/Layout";
 import NoData from "@/components/NoData";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -19,37 +21,45 @@ const Banners = () => {
     name: "",
   });
 
-  const { banners, addBanner, deleteBanner } = useBanners();
-
-  const handleImageFile = (e: any) => {
-    setImage(e.target.files[0]);
-  };
+  const { loading, banners, addBanner, deleteBanner } = useBanners();
 
   const cleanPath = (path: Banner["desktopUrl"]) => {
-    return path.slice(66);
+    return decodeURIComponent(path.slice(66));
   };
 
+  const cleanPathKey = (path: Banner["desktopUrl"]) => {
+    return path.slice(51);
+  };
+
+  const ReactS3Client = new S3({
+    accessKeyId: import.meta.env.VITE_AWS_ACCESS_KEY_ID,
+    secretAccessKey: import.meta.env.VITE_AWS_SECRET_ACCESS_KEY,
+    bucketName: import.meta.env.VITE_AWS_S3_BUCKET_NAME,
+    region: import.meta.env.VITE_AWS_REGION,
+  });
+
   const handleUpload = () => {
-    if (!image) {
-      console.error("No image selected");
-      return;
-    }
-
-    const ReactS3Client = new S3({
-      accessKeyId: import.meta.env.VITE_AWS_ACCESS_KEY_ID,
-      secretAccessKey: import.meta.env.VITE_AWS_SECRET_ACCESS_KEY,
-      bucketName: import.meta.env.VITE_AWS_S3_BUCKET_NAME,
-      region: import.meta.env.VITE_AWS_REGION,
-    });
-
     const cleanedFileName = image.name
-      .replace(/\s+/g, "")
-      .replace(/\.[^/.]+$/, "");
+      .replace(/\s+/g, "") // Remove spaces
+      .replace(/\.[^/.]+$/, "") // Remove file extension
+      .replace(/[()]/g, ""); // Remove parentheses
     const filePath = `uploads/images/${cleanedFileName}`;
 
     ReactS3Client.uploadFile(image, filePath)
-      .then((data) => addBanner(data.key))
+      .then((data) => {
+        addBanner(data.key);
+        setImage({ name: "" });
+      })
       .catch((e) => console.error(e));
+  };
+
+  const handleDeleteBanner = (banner: Banner) => {
+    ReactS3Client.deleteFile(cleanPathKey(banner.desktopUrl))
+      .then((data) => {
+        deleteBanner(banner.id);
+        console.log("success", data);
+      })
+      .catch((error) => console.log(error));
   };
 
   return (
@@ -62,8 +72,20 @@ const Banners = () => {
             <CardDescription>Ingrese el nuevo banner deseado.</CardDescription>
           </CardHeader>
           <CardContent>
-            <input type="file" onChange={handleImageFile} />
-            <button onClick={handleUpload}>a</button>
+            <MyDropzone file={image} fileSetter={setImage} />
+            {image.name && (
+              <div className="flex justify-center mt-3 gap-2">
+                <Button
+                  onClick={() => setImage({ name: "" })}
+                  variant="outline"
+                >
+                  Cancelar
+                </Button>
+                <Button disabled={loading} onClick={handleUpload}>
+                  Subir Imagen
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
         <Card className="mt-4">
@@ -85,17 +107,17 @@ const Banners = () => {
                       <img
                         src={banner.desktopUrl}
                         alt={banner.desktopUrl}
-                        className="rounded-lg w-20"
+                        className="rounded-lg w-20 h-20 object-cover"
                       />
                     </div>
                   </CardHeader>
                   <CardContent className="my-auto p-0">
                     {cleanPath(banner.desktopUrl)}
                   </CardContent>
-                  <CardFooter className="block space-y-3 justify-end py-0 ml-auto">
+                  <CardFooter className="block space-y-3 justify-end py-3 ml-auto">
                     <XCircle
                       className="hover:cursor-pointer text-[#707F95]"
-                      onClick={() => deleteBanner(banner.id)}
+                      onClick={() => handleDeleteBanner(banner)}
                     />
                     <GripVertical className="hover:cursor-pointer text-[#707F95]" />
                   </CardFooter>

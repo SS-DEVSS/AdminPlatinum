@@ -31,11 +31,10 @@ export const useBanners = () => {
 
   const addBanner = async (path: any) => {
     try {
+      setLoading(true);
       const headers = {
         "Content-Type": "application/json",
       };
-      console.log(path);
-      setLoading(true);
       const response = await client.post(
         `/banners/`,
         { desktopPath: path },

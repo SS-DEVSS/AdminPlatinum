@@ -19,7 +19,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [authState, setAuthState] = useState<AuthContextTypes>({
     isAuthenticated: true,
     authKey:
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjFkZjc5MzJhLTdiMDEtNDMyZS1hZjc3LTk2NDljYTE2ZThhYiIsIm5hbWUiOiJTZWJhc3RpYW4gRmxvcmVzIiwicm9sZSI6IjFhY2FhNDdlLWYyMjktNDgwYy04MGVhLWM4MmE3NjI5MDk1YiIsInJhbmRvbUhhc2giOiJjYTM3NWRlYi04YmU0LTRlZmYtYjEyZS02Y2Y1NmNkNjJjZTAiLCJpYXQiOjE3MzcwMjgwNTUsImV4cCI6MTczNzA1ODA1NX0.Jx_VVIMGyYUdRb_uPZOW8EyHzJTPLxyD4sLkABxVNs0",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjFkZjc5MzJhLTdiMDEtNDMyZS1hZjc3LTk2NDljYTE2ZThhYiIsIm5hbWUiOiJTZWJhc3RpYW4gRmxvcmVzIiwicm9sZSI6IjFhY2FhNDdlLWYyMjktNDgwYy04MGVhLWM4MmE3NjI5MDk1YiIsInJhbmRvbUhhc2giOiI2MmYwMGUyNi03YzJmLTRjM2YtYWQyNS05NGE2MDhlYTNlNWMiLCJpYXQiOjE3MzcxNjc0NjUsImV4cCI6MTczNzE5NzQ2NX0.UylkY0EBMmODjqAieBkm_VKjU1l1FjFhv0tgp28RGOA",
   });
 
   const authenticate = (authKey: string) => {
