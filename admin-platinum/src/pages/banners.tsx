@@ -11,55 +11,30 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useBanners } from "@/hooks/useBanners";
+import { useS3FileManager } from "@/hooks/useS3FileManager";
 import { Banner } from "@/models/banner";
 import { AlertTriangle, GripVertical, XCircle } from "lucide-react";
 import { useState } from "react";
-import S3 from "react-aws-s3-typescript";
 
 const Banners = () => {
-  const [image, setImage] = useState({
-    name: "",
-  });
+  const [image, setImage] = useState<File>({} as File);
 
   const { loading, banners, addBanner, deleteBanner } = useBanners();
-
-  const cleanPath = (path: Banner["desktopUrl"]) => {
-    return decodeURIComponent(path.slice(66));
-  };
-
-  const cleanPathKey = (path: Banner["desktopUrl"]) => {
-    return path.slice(51);
-  };
-
-  const ReactS3Client = new S3({
-    accessKeyId: import.meta.env.VITE_AWS_ACCESS_KEY_ID,
-    secretAccessKey: import.meta.env.VITE_AWS_SECRET_ACCESS_KEY,
-    bucketName: import.meta.env.VITE_AWS_S3_BUCKET_NAME,
-    region: import.meta.env.VITE_AWS_REGION,
-  });
+  const { uploadFile, deleteFile } = useS3FileManager();
 
   const handleUpload = () => {
-    const cleanedFileName = image.name
-      .replace(/\s+/g, "") // Remove spaces
-      .replace(/\.[^/.]+$/, "") // Remove file extension
-      .replace(/[()]/g, ""); // Remove parentheses
-    const filePath = `uploads/images/${cleanedFileName}`;
-
-    ReactS3Client.uploadFile(image, filePath)
-      .then((data) => {
-        addBanner(data.key);
-        setImage({ name: "" });
-      })
-      .catch((e) => console.error(e));
+    if (image) {
+      uploadFile(image, (key) => {
+        addBanner(key);
+        setImage({} as File);
+      });
+    }
   };
 
   const handleDeleteBanner = (banner: Banner) => {
-    ReactS3Client.deleteFile(cleanPathKey(banner.desktopUrl))
-      .then((data) => {
-        deleteBanner(banner.id);
-        console.log("success", data);
-      })
-      .catch((error) => console.log(error));
+    deleteFile(banner.desktopUrl, () => {
+      deleteBanner(banner.id);
+    });
   };
 
   return (
@@ -75,10 +50,7 @@ const Banners = () => {
             <MyDropzone file={image} fileSetter={setImage} />
             {image.name && (
               <div className="flex justify-center mt-3 gap-2">
-                <Button
-                  onClick={() => setImage({ name: "" })}
-                  variant="outline"
-                >
+                <Button onClick={() => setImage({} as File)} variant="outline">
                   Cancelar
                 </Button>
                 <Button disabled={loading} onClick={handleUpload}>
@@ -112,7 +84,7 @@ const Banners = () => {
                     </div>
                   </CardHeader>
                   <CardContent className="my-auto p-0">
-                    {cleanPath(banner.desktopUrl)}
+                    {banner.desktopUrl.split("/").pop()}
                   </CardContent>
                   <CardFooter className="block space-y-3 justify-end py-3 ml-auto">
                     <XCircle

@@ -29,7 +29,7 @@ export const useBanners = () => {
     }
   };
 
-  const addBanner = async (path: any) => {
+  const addBanner = async (path: string) => {
     try {
       setLoading(true);
       const headers = {

@@ -26,6 +26,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import NewsComponent from "@/components/NewsComponent";
 import { newsContext } from "@/context/news-context";
+import MyDropzone from "@/components/Dropzone";
 
 type BlogPostCUProps = {
   blogPost?: BlogPost | null;
@@ -64,7 +65,15 @@ const BlogPostCU = ({ blogPost }: BlogPostCUProps) => {
   const navigate = useNavigate();
 
   const [form, setForm] = useState<FormTypes>(FormInitialState);
+  const [image, setImage] = useState({ name: "" });
   const [components, setComponents] = useState<Component[]>([]);
+
+  useEffect(() => {
+    setForm({
+      ...form,
+      coverImagePath: image.name,
+    });
+  }, [form, image]);
 
   const handleFormInput = (e: any) => {
     const { name, value } = e.target;
@@ -224,7 +233,7 @@ const BlogPostCU = ({ blogPost }: BlogPostCUProps) => {
               </div>
               <div className="grid gap-3">
                 <Label htmlFor="coverImagePath">Imagen de portada</Label>
-                <Input
+                {/* <Input
                   id="coverImagePath"
                   name="coverImagePath"
                   type="text"
@@ -234,7 +243,8 @@ const BlogPostCU = ({ blogPost }: BlogPostCUProps) => {
                     blogPost ? blogPost.coverImagePath : form.coverImagePath
                   }
                   onChange={handleFormInput}
-                />
+                /> */}
+                <MyDropzone file={image} fileSetter={setImage} />
               </div>
             </div>
           </CardContent>

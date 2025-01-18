@@ -2,8 +2,8 @@ import { Dispatch, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 
 interface MyDropzoneProps {
-  file: { name: string };
-  fileSetter: Dispatch<React.SetStateAction<{ name: string }>>;
+  file: File;
+  fileSetter: Dispatch<React.SetStateAction<File>>;
 }
 
 const MyDropzone = ({ file, fileSetter }: MyDropzoneProps) => {
