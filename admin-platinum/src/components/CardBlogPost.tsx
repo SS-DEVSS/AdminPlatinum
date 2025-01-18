@@ -13,6 +13,7 @@ import { Link } from "react-router-dom";
 import { useDeleteModal } from "@/context/delete-context";
 import { BlogPost } from "@/models/news";
 import { newsContext } from "@/context/news-context";
+import { useS3FileManager } from "@/hooks/useS3FileManager";
 
 type CardTemplateProps = {
   blogPost?: BlogPost;
@@ -23,14 +24,17 @@ type CardTemplateProps = {
 const CardBlogPost = ({ blogPost, deleteItem }: CardTemplateProps) => {
   const { openModal } = useDeleteModal();
   const { getBlogPostById } = newsContext();
+  const { deleteFile } = useS3FileManager();
 
   const handleEditBlogPost = async (id: BlogPost["id"]) => {
     await getBlogPostById(id);
   };
 
-  const handleDeleteBlogPost = async () => {
+  const handleDeleteBlogPost = () => {
     if (deleteItem) {
-      await deleteItem(blogPost?.id!);
+      deleteFile(blogPost?.coverImagePath, () => {
+        deleteItem(blogPost?.id!);
+      });
     }
   };
 
@@ -38,7 +42,7 @@ const CardBlogPost = ({ blogPost, deleteItem }: CardTemplateProps) => {
     <>
       <Card className="w-full">
         <img
-          src={blogPost?.coverImagePath}
+          src={blogPost!.coverImagePath}
           alt={`${blogPost?.title} image`}
           className="h-[300px] object-cover rounded-t-lg bg-[#D9D9D9] mx-auto"
         />
