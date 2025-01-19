@@ -7,7 +7,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { AlertTriangle, PlusCircle, Search } from "lucide-react";
+import { AlertTriangle, CodeSquare, PlusCircle, Search } from "lucide-react";
 import CardSectionLayout from "@/components/Layouts/CardSectionLayout";
 import CardTemplate from "@/components/Layouts/CardTemplate";
 import {
@@ -24,17 +24,27 @@ import { Category } from "@/models/category";
 import { useCategories } from "@/hooks/useCategories";
 import { useBrands } from "@/hooks/useBrands";
 import { Brand } from "@/models/brand";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMemo } from "react";
 import NoData from "@/components/NoData";
+import { useBrandContext } from "@/context/brand-context";
 
 const Categorias = () => {
+  const { selectedBrand, setSelectedBrand } = useBrandContext();
   const { categories, getCategories, deleteCategory, getCategoryById } =
     useCategories();
   const { brands } = useBrands();
 
   const [searchFilter, setSearchFilter] = useState("");
   const [brandFilter, setBrandFilter] = useState<Brand["id"]>("");
+
+  useEffect(() => {
+    if (selectedBrand) {
+      setBrandFilter(selectedBrand);
+      console.log(brandFilter);
+      setSelectedBrand(null);
+    }
+  }, []);
 
   const handleSearchFilter = (e: any) => {
     const { value } = e.target;

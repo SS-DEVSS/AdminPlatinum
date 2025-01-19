@@ -19,7 +19,6 @@ export const useBrands = () => {
   }, []);
 
   const getBrands = async () => {
-    console.log("a");
     try {
       setLoading(true);
       const data = await client.get("/brands");

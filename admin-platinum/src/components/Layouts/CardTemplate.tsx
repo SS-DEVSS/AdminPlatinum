@@ -17,11 +17,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Brand } from "@/models/brand";
 import { useLocation } from "react-router-dom";
 import { useDeleteModal } from "@/context/delete-context";
-import { useBrandModal } from "@/context/brand-context";
+import { useBrandContext } from "@/context/brand-context";
 import { useBrands } from "@/hooks/useBrands";
 import { Category } from "@/models/category";
 import { Separator } from "../ui/separator";
@@ -29,6 +29,7 @@ import { cleanFilePath } from "@/services/S3FileManager";
 import { Button } from "../ui/button";
 import { toast } from "@/hooks/use-toast";
 import { useS3FileManager } from "@/hooks/useS3FileManager";
+import { useCategoryContext } from "@/context/categories-context";
 
 type CardTemplateProps = {
   category?: Category;
@@ -47,14 +48,20 @@ const CardTemplate = ({
   deleteCategory,
   getCategoryById,
 }: CardTemplateProps) => {
+  const { setSelectedCategory } = useCategoryContext();
+
   const { openModal } = useDeleteModal();
-  const { openModal: openModalBrand } = useBrandModal();
-  const { deleteFile } = useS3FileManager();
-
+  const { setSelectedBrand, openModal: openModalBrand } = useBrandContext();
   const { deleteBrand } = useBrands();
-
+  const { deleteFile } = useS3FileManager();
   const location = useLocation();
   const { pathname } = location;
+  const navigate = useNavigate();
+
+  const viewCategoriesFromBrand = (id: Brand["id"]) => {
+    setSelectedBrand(id);
+    navigate("/categorias");
+  };
 
   const handleEditBrand = () => {
     if (getBrandById) {
@@ -168,7 +175,7 @@ const CardTemplate = ({
           </div>
           {category && category!.brands && (
             <div className="mb-3 rounded-md py-1">
-              {category!.brands.map((brand) => (
+              {category!.brands.map((brand: any) => (
                 <Badge key={brand!.id}>{brand!.name}</Badge>
               ))}
             </div>
@@ -187,7 +194,8 @@ const CardTemplate = ({
               {brand?.categories?.map((category: Category) => (
                 <Badge
                   key={category.id}
-                  className="px-4 py-1 mr-3 hover:underline"
+                  onClick={() => viewCategoriesFromBrand(brand.id)}
+                  className="px-4 py-1 mr-3 hover:underline hover:cursor-pointer"
                 >
                   {category.name} <ExternalLink className="ml-2 w-5" />
                 </Badge>

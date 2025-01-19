@@ -21,7 +21,7 @@ import { Input } from "@/components/ui/input";
 import { AlertTriangle, PlusCircle, Search } from "lucide-react";
 import CardSectionLayout from "@/components/Layouts/CardSectionLayout";
 import CardTemplate from "@/components/Layouts/CardTemplate";
-import { useBrandModal } from "@/context/brand-context";
+import { useBrandContext } from "@/context/brand-context";
 import { useBrands } from "@/hooks/useBrands";
 import { Textarea } from "@/components/ui/textarea";
 import { useMemo } from "react";
@@ -33,7 +33,7 @@ import { useS3FileManager } from "@/hooks/useS3FileManager";
 const Marcas = () => {
   const { brands, brand, addBrand, updateBrand, getBrands, getBrandById } =
     useBrands();
-  const { modalState, closeModal, openModal } = useBrandModal();
+  const { modalState, closeModal, openModal } = useBrandContext();
   const { uploadFile } = useS3FileManager();
   const { isOpen, title, description } = modalState;
   const [image, setImage] = useState<File>({} as File);
