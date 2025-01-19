@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { useBrandContext } from "@/context/brand-context";
 import { useBrands } from "@/hooks/useBrands";
 import { Category, CategoryAtributes } from "@/models/category";
 import {
@@ -19,7 +20,7 @@ import {
   PlusCircleIcon,
   XCircleIcon,
 } from "lucide-react";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import CardAtributesVariants from "./CardAtributesVariants";
@@ -38,6 +39,7 @@ export interface formTypes {
 }
 
 const CategoryCU = ({ category, addCategory }: CategoryCUProps) => {
+  const { selectedBrand } = useBrandContext();
   const { brands } = useBrands();
   const navigate = useNavigate();
 
@@ -52,7 +54,23 @@ const CategoryCU = ({ category, addCategory }: CategoryCUProps) => {
     attributes: [],
   });
 
-  console.log(form);
+  // console.log(form);
+
+  console.log(selectedBrand);
+
+  useEffect(() => {
+    if (selectedBrand) {
+      setSelectedBrandIds((prev) => {
+        const newSet = new Set(prev);
+        newSet.add(selectedBrand);
+        return newSet;
+      });
+      setForm({
+        ...form,
+        brands: [...form.brands, selectedBrand],
+      });
+    }
+  }, []);
 
   const handleFormInput = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>

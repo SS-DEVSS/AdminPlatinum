@@ -126,7 +126,7 @@ const CardAtributesVariants = ({
     );
   }, [attributeForm]);
 
-  console.log(currentAttribute);
+  // console.log(currentAttribute);
 
   const handleAddClick = () => {
     setCurrentAttribute(null);
@@ -138,7 +138,7 @@ const CardAtributesVariants = ({
     setDialogMode("edit");
     setIsDialogOpen(true);
 
-    console.log(attribute);
+    // console.log(attribute);
     setCurrentAttribute(attribute);
 
     setAttributeForm({
@@ -154,8 +154,8 @@ const CardAtributesVariants = ({
     console.log("attributeForm updated:", attributeForm);
   }, [attributeForm]);
 
-  console.log(attributes);
-  console.log(form.attributes);
+  // console.log(attributes);
+  // console.log(form.attributes);
 
   const handleDeleteClick = (name: string) => {
     const tempList = (

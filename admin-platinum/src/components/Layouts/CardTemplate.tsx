@@ -29,7 +29,6 @@ import { cleanFilePath } from "@/services/S3FileManager";
 import { Button } from "../ui/button";
 import { toast } from "@/hooks/use-toast";
 import { useS3FileManager } from "@/hooks/useS3FileManager";
-import { useCategoryContext } from "@/context/categories-context";
 
 type CardTemplateProps = {
   category?: Category;
@@ -48,8 +47,6 @@ const CardTemplate = ({
   deleteCategory,
   getCategoryById,
 }: CardTemplateProps) => {
-  const { setSelectedCategory } = useCategoryContext();
-
   const { openModal } = useDeleteModal();
   const { setSelectedBrand, openModal: openModalBrand } = useBrandContext();
   const { deleteBrand } = useBrands();
@@ -61,6 +58,11 @@ const CardTemplate = ({
   const viewCategoriesFromBrand = (id: Brand["id"]) => {
     setSelectedBrand(id);
     navigate("/categorias");
+  };
+
+  const navigateCreateCategory = (id: Brand["id"]) => {
+    setSelectedBrand(id);
+    navigate("/categorias/nueva");
   };
 
   const handleEditBrand = () => {
@@ -205,7 +207,11 @@ const CardTemplate = ({
         )}
         {brand && (
           <CardContent>
-            <Button variant="outline" className="rounded-full flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => navigateCreateCategory(brand.id)}
+              className="rounded-full flex gap-2"
+            >
               Agregar Categoría <PlusCircle />
             </Button>
           </CardContent>
