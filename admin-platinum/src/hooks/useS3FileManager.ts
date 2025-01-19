@@ -1,16 +1,31 @@
 import { useState } from "react";
 import { deleteFileFromS3, uploadFileToS3 } from "@/services/S3FileManager";
+import { toast } from "./use-toast";
 
 export const useS3FileManager = () => {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const uploadFile = async (file: File, onSuccess: (key: string) => void) => {
+  const uploadFile = async (
+    file: File,
+    onSuccess: (key: string, location: string) => void
+  ) => {
     setUploading(true);
     setError(null);
+    const fileNameLen = file.name.length + 66;
+    if (fileNameLen > 255) {
+      toast({
+        title: "El nombre de la imagen tiene que ser menor a 255 characteres.",
+        variant: "destructive",
+      });
+      throw new Error(
+        "El nombre de la imagen tiene que ser menor a 255 characteres"
+      );
+    }
     try {
       const data = await uploadFileToS3(file);
-      onSuccess(data.key);
+      console.log(data);
+      onSuccess(data.key, data.location);
     } catch (e: any) {
       setError(e.message || "Error uploading file");
       console.error(e);

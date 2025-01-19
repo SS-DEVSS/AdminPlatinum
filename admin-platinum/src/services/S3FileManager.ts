@@ -27,6 +27,5 @@ export const uploadFileToS3 = async (
 };
 
 export const deleteFileFromS3 = async (path: string) => {
-  const filePath = path.slice(51);
-  return ReactS3Client.deleteFile(filePath);
+  return ReactS3Client.deleteFile(path);
 };

@@ -32,7 +32,7 @@ const CardBlogPost = ({ blogPost, deleteItem }: CardTemplateProps) => {
 
   const handleDeleteBlogPost = () => {
     if (deleteItem) {
-      deleteFile(blogPost?.coverImagePath, () => {
+      deleteFile(blogPost!.coverImagePath, () => {
         deleteItem(blogPost?.id!);
       });
     }
@@ -44,7 +44,7 @@ const CardBlogPost = ({ blogPost, deleteItem }: CardTemplateProps) => {
         <img
           src={blogPost!.coverImagePath}
           alt={`${blogPost?.title} image`}
-          className="h-[300px] object-cover rounded-t-lg bg-[#D9D9D9] mx-auto"
+          className="h-[340px] w-full object-cover rounded-t-lg bg-[#D9D9D9] mx-auto"
         />
         <CardContent className="border-t">
           <div className="flex justify-between items-center">

@@ -1,4 +1,5 @@
-import { Dispatch, useCallback } from "react";
+import { cleanFilePath } from "@/services/S3FileManager";
+import { Dispatch, useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 
 interface MyDropzoneProps {
@@ -7,18 +8,37 @@ interface MyDropzoneProps {
 }
 
 const MyDropzone = ({ file, fileSetter }: MyDropzoneProps) => {
-  const onDrop = useCallback((acceptedFiles: any) => {
-    const sanitizedFiles = acceptedFiles.map((file: File) => {
-      const sanitizedFile = new File([file], file.name.replace(/[()]/g, ""), {
-        type: file.type,
-      });
-      return sanitizedFile;
-    });
-    fileSetter(sanitizedFiles[0]);
-  }, []);
+  const [error, setError] = useState<string | null>(null);
+
+  const onDrop = useCallback(
+    (acceptedFiles: File[], rejectedFiles: any) => {
+      setError(null);
+      if (rejectedFiles.length > 0) {
+        setError("Please upload a valid image file.");
+        return;
+      }
+
+      if (acceptedFiles.length > 0) {
+        const sanitizedFiles = acceptedFiles.map((file) => {
+          const sanitizedFile = new File(
+            [file],
+            file.name.replace(/[()]/g, ""),
+            {
+              type: file.type,
+            }
+          );
+          return sanitizedFile;
+        });
+        fileSetter(sanitizedFiles[0]);
+      }
+    },
+    [fileSetter]
+  );
+
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: { "image/jpeg": [], "image/png": [] },
+    accept: { "image/*": [] },
+    maxSize: 5000 * 1000,
   });
 
   return (
@@ -48,9 +68,9 @@ const MyDropzone = ({ file, fileSetter }: MyDropzoneProps) => {
               <p
                 className={`${
                   isDragActive ? "text-[#4E5154]" : "text-[#94A3B8]"
-                } text-center`}
+                } text-center overflow-ellipsis`}
               >
-                {file.name}
+                {cleanFilePath(file.name, 0)}
               </p>
               <p className="text-center text-[#94A3B8] mt-4 underline hover:cursor-pointer">
                 Click to select another file
@@ -70,6 +90,8 @@ const MyDropzone = ({ file, fileSetter }: MyDropzoneProps) => {
           )}
         </>
       )}
+
+      {error && <p className="text-center text-red-500 mt-4">{error}</p>}
     </div>
   );
 };

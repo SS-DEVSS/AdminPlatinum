@@ -1,4 +1,11 @@
-import { Box, ExternalLink, MoreHorizontal, Pencil, Trash } from "lucide-react";
+import {
+  Box,
+  ExternalLink,
+  MoreHorizontal,
+  Pencil,
+  PlusCircle,
+  Trash,
+} from "lucide-react";
 import { Badge } from "../ui/badge";
 import { Card, CardContent, CardDescription, CardTitle } from "../ui/card";
 import {
@@ -18,29 +25,31 @@ import { useBrandModal } from "@/context/brand-context";
 import { useBrands } from "@/hooks/useBrands";
 import { Category } from "@/models/category";
 import { Separator } from "../ui/separator";
+import { cleanFilePath } from "@/services/S3FileManager";
+import { Button } from "../ui/button";
+import { toast } from "@/hooks/use-toast";
+import { useS3FileManager } from "@/hooks/useS3FileManager";
 
 type CardTemplateProps = {
-  brands?: Brand[];
   category?: Category;
   brand?: Brand;
   date?: Date;
-  getItems: () => void;
+  getItems?: () => void;
   getBrandById?: (id: Brand["id"]) => void;
   deleteCategory?: any;
   getCategoryById?: any;
 };
 
 const CardTemplate = ({
-  brands,
   brand,
   category,
   getBrandById,
-  getItems,
   deleteCategory,
   getCategoryById,
 }: CardTemplateProps) => {
   const { openModal } = useDeleteModal();
   const { openModal: openModalBrand } = useBrandModal();
+  const { deleteFile } = useS3FileManager();
 
   const { deleteBrand } = useBrands();
 
@@ -59,8 +68,9 @@ const CardTemplate = ({
   };
 
   const handleDeleteBrand = async () => {
-    await deleteBrand(brand?.id!);
-    await getItems();
+    deleteFile(cleanFilePath(brand!.logoImgUrl, 61), async () => {
+      await deleteBrand(brand?.id!);
+    });
   };
 
   const handleEditCategory = async (id: Category["id"]) => {
@@ -71,16 +81,18 @@ const CardTemplate = ({
 
   const handleDeleteCategory = async () => {
     await deleteCategory(category?.id!);
-    await getItems();
+    // await getItems();
   };
 
   return (
     <>
       <Card className="w-full">
         <img
-          src={brand ? brand?.logoImgUrl : category?.imgUrl}
+          src={`${import.meta.env.VITE_AWS_S3_BUCKET_PUBLIC_URL}${
+            brand ? cleanFilePath(brand?.logoImgUrl, 76) : category?.imgUrl
+          }`}
           alt={`${brand ? brand?.name : category?.name} image`}
-          className="h-[300px] object-cover rounded-t-lg bg-[#D9D9D9] mx-auto"
+          className="h-[300px] w-full object-cover rounded-t-lg bg-[#D9D9D9] mx-auto"
         />
         <CardContent className="border-t">
           <div className="flex justify-between items-center">
@@ -129,14 +141,22 @@ const CardTemplate = ({
                       <span>Editar Marca</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      onClick={() =>
+                      onClick={() => {
+                        if (brand?.categories?.length) {
+                          toast({
+                            title:
+                              "Elimina todas las categorías asociadas a la marca.",
+                            variant: "destructive",
+                          });
+                          return;
+                        }
                         openModal({
                           title: "Marca",
                           description:
                             "Estas seguro que deseas eliminar esta marca?",
                           handleDelete: handleDeleteBrand,
-                        })
-                      }
+                        });
+                      }}
                     >
                       <Trash className="mr-2 h-4 w-4" />
                       <span>Eliminar</span>
@@ -146,13 +166,14 @@ const CardTemplate = ({
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-          {brands && (
+          {category && category!.brands && (
             <div className="mb-3 rounded-md py-1">
-              {brands.map((brand) => (
-                <Badge key={brand.id}>{brand.name}</Badge>
+              {category!.brands.map((brand) => (
+                <Badge key={brand!.id}>{brand!.name}</Badge>
               ))}
             </div>
           )}
+
           <CardDescription className="leading-7">
             {brand ? brand?.description : category?.description}
           </CardDescription>
@@ -173,6 +194,13 @@ const CardTemplate = ({
               ))}
             </CardContent>
           </>
+        )}
+        {brand && (
+          <CardContent>
+            <Button variant="outline" className="rounded-full flex gap-2">
+              Agregar Categoría <PlusCircle />
+            </Button>
+          </CardContent>
         )}
       </Card>
     </>
