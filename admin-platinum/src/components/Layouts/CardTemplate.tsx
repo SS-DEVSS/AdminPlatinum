@@ -1,6 +1,7 @@
 import {
   Box,
   ExternalLink,
+  EyeIcon,
   MoreHorizontal,
   Pencil,
   PlusCircle,
@@ -89,8 +90,10 @@ const CardTemplate = ({
   };
 
   const handleDeleteCategory = async () => {
-    await deleteCategory(category?.id!);
-    // await getItems();
+    deleteFile(cleanFilePath(category!.imgUrl, 61), async () => {
+      await deleteCategory(category?.id!);
+      // await getItems();
+    });
   };
 
   return (
@@ -98,7 +101,9 @@ const CardTemplate = ({
       <Card className="w-full">
         <img
           src={`${import.meta.env.VITE_AWS_S3_BUCKET_PUBLIC_URL}${
-            brand ? cleanFilePath(brand?.logoImgUrl, 76) : category?.imgUrl
+            brand
+              ? cleanFilePath(brand?.logoImgUrl, 76)
+              : cleanFilePath(category!.imgUrl, 76)
           }`}
           alt={`${brand ? brand?.name : category?.name} image`}
           className="h-[300px] w-full object-cover rounded-t-lg bg-[#D9D9D9] mx-auto"
@@ -125,18 +130,26 @@ const CardTemplate = ({
                       <DropdownMenuItem
                         onClick={() => handleEditCategory(category?.id)}
                       >
-                        <Pencil className="mr-2 h-4 w-4" />
-                        <span>Editar Categoría</span>
+                        <EyeIcon className="mr-2 h-4 w-4" />
+                        <span>Ver Categoría</span>
                       </DropdownMenuItem>
                     </Link>
                     <DropdownMenuItem
-                      onClick={() =>
+                      onClick={() => {
+                        if (category?.products?.length) {
+                          toast({
+                            title:
+                              "Elimina todos los productos asociados a la categoría.",
+                            variant: "destructive",
+                          });
+                          return;
+                        }
                         openModal({
                           title: "Categoría",
                           description: "Estas seguro que deseas eliminar esta?",
                           handleDelete: handleDeleteCategory,
-                        })
-                      }
+                        });
+                      }}
                     >
                       <Trash className="mr-2 h-4 w-4" />
                       <span>Eliminar</span>
@@ -175,18 +188,28 @@ const CardTemplate = ({
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-          {category && category!.brands && (
-            <div className="mb-3 rounded-md py-1">
-              {category!.brands.map((brand: any) => (
-                <Badge key={brand!.id}>{brand!.name}</Badge>
-              ))}
-            </div>
-          )}
-
           <CardDescription className="leading-7">
             {brand ? brand?.description : category?.description}
           </CardDescription>
         </CardContent>
+        {category && category!.brands && (
+          <section>
+            <Separator />
+            <CardContent className="mt-4">
+              <p className="font-bold">Marcas Asociadas</p>
+              <div className="rounded-md my-3 py-1">
+                {category!.brands.map((brand: any) => (
+                  <Badge className="mr-3" key={brand!.id}>
+                    {brand!.name}
+                  </Badge>
+                ))}
+              </div>
+              <p className="font-medium text-sm text-slate-400">
+                {category.products?.length} productos asociados a la categoría.
+              </p>
+            </CardContent>
+          </section>
+        )}
         {brand?.categories?.length! > 0 && (
           <>
             <Separator />

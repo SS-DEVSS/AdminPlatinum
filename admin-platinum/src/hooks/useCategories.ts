@@ -65,6 +65,7 @@ export const useCategories = () => {
         variant: "success",
         description: response.data.message,
       });
+      await getCategories();
     } catch (error: any) {
       console.log(error);
       setErrorMsg(error.response.data.error);
