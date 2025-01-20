@@ -5,9 +5,10 @@ import { useDropzone } from "react-dropzone";
 interface MyDropzoneProps {
   file: File;
   fileSetter: Dispatch<React.SetStateAction<File>>;
+  className?: string;
 }
 
-const MyDropzone = ({ file, fileSetter }: MyDropzoneProps) => {
+const MyDropzone = ({ file, fileSetter, className }: MyDropzoneProps) => {
   const [error, setError] = useState<string | null>(null);
 
   const onDrop = useCallback(
@@ -50,7 +51,7 @@ const MyDropzone = ({ file, fileSetter }: MyDropzoneProps) => {
           : file.name
           ? "bg-green-50 border-green-400"
           : ""
-      } p-16 border border-dashed rounded-lg`}
+      } border border-dashed rounded-lg ${className}`}
     >
       <input {...getInputProps()} />
       {isDragActive ? (

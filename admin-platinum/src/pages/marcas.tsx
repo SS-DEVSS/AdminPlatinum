@@ -243,7 +243,11 @@ const Marcas = () => {
                   <Label htmlFor="logoImgUrl">
                     <span className="text-redLabel">*</span> Imagen
                   </Label>
-                  <MyDropzone file={image} fileSetter={setImage} />
+                  <MyDropzone
+                    file={image}
+                    fileSetter={setImage}
+                    className={`p-8`}
+                  />
                   <DialogDescription>
                     Formatos Válidos: jpg, png, jpeg
                   </DialogDescription>

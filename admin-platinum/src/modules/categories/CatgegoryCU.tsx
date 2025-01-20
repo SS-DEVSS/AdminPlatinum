@@ -1,3 +1,4 @@
+import MyDropzone from "@/components/Dropzone";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,6 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { useBrandContext } from "@/context/brand-context";
 import { useBrands } from "@/hooks/useBrands";
+import { useS3FileManager } from "@/hooks/useS3FileManager";
 import { Category, CategoryAtributes } from "@/models/category";
 import {
   ChevronLeft,
@@ -41,11 +43,13 @@ export interface formTypes {
 const CategoryCU = ({ category, addCategory }: CategoryCUProps) => {
   const { selectedBrand } = useBrandContext();
   const { brands } = useBrands();
+  const { uploadFile } = useS3FileManager();
   const navigate = useNavigate();
 
   const [selectedBrandIds, setSelectedBrandIds] = useState<Set<string>>(
     new Set()
   );
+  const [image, setImage] = useState<File>({ name: "" } as File);
   const [form, setForm] = useState<formTypes>({
     name: "",
     description: "",
@@ -54,7 +58,7 @@ const CategoryCU = ({ category, addCategory }: CategoryCUProps) => {
     attributes: [],
   });
 
-  // console.log(form);
+  console.log(form);
 
   console.log(selectedBrand);
 
@@ -71,6 +75,15 @@ const CategoryCU = ({ category, addCategory }: CategoryCUProps) => {
       });
     }
   }, []);
+
+  useEffect(() => {
+    if (image.name !== form.imgUrl) {
+      setForm({
+        ...form,
+        imgUrl: image.name,
+      });
+    }
+  }, [image]);
 
   const handleFormInput = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -103,7 +116,6 @@ const CategoryCU = ({ category, addCategory }: CategoryCUProps) => {
       form.name.trim() != "" &&
       form.description.trim() != "" &&
       form.imgUrl.trim() !== "" &&
-      form.imgUrl.includes("https://") &&
       form.brands.length > 0 &&
       form.attributes.length > 0,
     [form]
@@ -111,13 +123,16 @@ const CategoryCU = ({ category, addCategory }: CategoryCUProps) => {
 
   const handleSubmit = async (form: formTypes) => {
     try {
-      if (addCategory) {
-        const response = (await addCategory(form)) as
-          | { id: string }
-          | undefined;
-        if (response && response.id) {
-          navigate("/categorias");
-        }
+      if (addCategory && image) {
+        uploadFile(image, async (_, location) => {
+          const response = (await addCategory({
+            ...form,
+            imgUrl: location,
+          })) as { id: string } | undefined;
+          if (response && response.id) {
+            navigate("/categorias");
+          }
+        });
       }
     } catch (error) {
       console.error("Error in handleSubmit:", error);
@@ -183,6 +198,7 @@ const CategoryCU = ({ category, addCategory }: CategoryCUProps) => {
                     placeholder="Gamer Gear Pro Controller"
                     onChange={handleFormInput}
                     value={category ? category.name : form.name}
+                    maxLength={255}
                   />
                 </div>
                 <div className="grid gap-3">
@@ -194,11 +210,12 @@ const CategoryCU = ({ category, addCategory }: CategoryCUProps) => {
                     onChange={handleFormInput}
                     value={category ? category.description : form.description}
                     className="min-h-20"
+                    maxLength={255}
                   />
                 </div>
                 <div className="grid gap-3">
                   <Label htmlFor="image">Imagen de la Categoría</Label>
-                  <Input
+                  {/* <Input
                     id="imgUrl"
                     name="imgUrl"
                     type="text"
@@ -206,6 +223,11 @@ const CategoryCU = ({ category, addCategory }: CategoryCUProps) => {
                     className="w-full"
                     onChange={handleFormInput}
                     value={category ? category.imgUrl : form.imgUrl}
+                  /> */}
+                  <MyDropzone
+                    file={image}
+                    fileSetter={setImage}
+                    className={"p-6"}
                   />
                 </div>
               </div>

@@ -111,7 +111,7 @@ const Categorias = () => {
               </Link>
             </div>
           </CardHeader>
-          {categories.length === 0 && filteredCategories.length === 0 ? (
+          {categories.length === 0 || filteredCategories.length === 0 ? (
             <div className="mt-4">
               <NoData>
                 <AlertTriangle className="text-[#4E5154]" />
