@@ -215,15 +215,6 @@ const CategoryCU = ({ category, addCategory }: CategoryCUProps) => {
                 </div>
                 <div className="grid gap-3">
                   <Label htmlFor="image">Imagen de la Categoría</Label>
-                  {/* <Input
-                    id="imgUrl"
-                    name="imgUrl"
-                    type="text"
-                    placeholder="https://"
-                    className="w-full"
-                    onChange={handleFormInput}
-                    value={category ? category.imgUrl : form.imgUrl}
-                  /> */}
                   <MyDropzone
                     file={image}
                     fileSetter={setImage}

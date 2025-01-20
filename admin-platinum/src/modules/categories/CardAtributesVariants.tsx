@@ -272,17 +272,32 @@ const CardAtributesVariants = ({
       <CardFooter className="justify-center border-t p-4">
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="gap-1"
-              onClick={handleAddClick}
-            >
-              <PlusCircle className="h-3.5 w-3.5" />
-              {title === "Atributos de Categoría"
-                ? "Agregar Atributos de Categoría"
-                : "Agregar Atributos de Variantes"}
-            </Button>
+            <>
+              {title === "Atributos de Categoría" && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="gap-1"
+                  onClick={handleAddClick}
+                  disabled={attributes.productAttributes.length >= 20}
+                >
+                  <PlusCircle className="h-3.5 w-3.5" />
+                  Agregar Atributos de Categoría
+                </Button>
+              )}
+              {title === "Atributos de Variantes" && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="gap-1"
+                  onClick={handleAddClick}
+                  disabled={attributes.productAttributes.length >= 20}
+                >
+                  <PlusCircle className="h-3.5 w-3.5" />
+                  Agregar Atributos de Variantes
+                </Button>
+              )}
+            </>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
@@ -371,7 +386,9 @@ const CardAtributesVariants = ({
 
             <DialogFooter>
               <Button
-                disabled={!validateForm}
+                disabled={
+                  !validateForm || attributes.productAttributes.length >= 20
+                }
                 type="submit"
                 onClick={handleSubmit}
               >
