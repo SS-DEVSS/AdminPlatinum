@@ -250,7 +250,7 @@ const TechincalSheets = () => {
         <CardContent className="flex flex-col flex-grow p-0">
           {loading ? (
             <p>Loading...</p>
-          ) : (technicalSheets.length === 0 || filteredTs.length) === 0 ? (
+          ) : technicalSheets.length === 0 || filteredTs.length === 0 ? (
             <div className="mt-4">
               <NoData>
                 <AlertTriangle className="text-[#4E5154]" />

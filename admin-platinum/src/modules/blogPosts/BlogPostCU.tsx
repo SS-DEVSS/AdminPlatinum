@@ -97,8 +97,12 @@ const BlogPostCU = ({ blogPost }: BlogPostCUProps) => {
   };
 
   const validateForm = useMemo(
-    () => form.title.trim() !== "" && form.description.trim() !== "",
-    [form]
+    () =>
+      form.title.trim() !== "" &&
+      form.description.trim() !== "" &&
+      components.length > 0 &&
+      components.every((component: Component) => component.content !== ""),
+    [form, components]
   );
 
   const handleSubmit = async () => {
@@ -220,6 +224,7 @@ const BlogPostCU = ({ blogPost }: BlogPostCUProps) => {
                   className="w-full"
                   placeholder="Gamer Gear Pro Controller"
                   value={blogPost ? blogPost.title : form.title}
+                  maxLength={255}
                   onChange={handleFormInput}
                 />
               </div>
@@ -233,12 +238,17 @@ const BlogPostCU = ({ blogPost }: BlogPostCUProps) => {
                   placeholder="Lorem ipsum dolor sit amet."
                   value={blogPost ? blogPost.description : form.description}
                   onChange={handleFormInput}
+                  maxLength={526}
                   className="min-h-20"
                 />
               </div>
               <div className="grid gap-3">
                 <Label htmlFor="coverImagePath">Imagen de portada</Label>
-                <MyDropzone file={image} fileSetter={setImage} />
+                <MyDropzone
+                  className="p-10"
+                  file={image}
+                  fileSetter={setImage}
+                />
               </div>
             </div>
           </CardContent>

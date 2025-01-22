@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { TSFormType } from "@/pages/techincalSheets";
+import { useS3FileManager } from "@/hooks/useS3FileManager";
 
 type TsCardProps = {
   ts: TechnicalSheet;
@@ -31,6 +32,7 @@ const TsCard = ({
   setTsForm,
 }: TsCardProps) => {
   const { openModal } = useDeleteModal();
+  const { deleteFile } = useS3FileManager();
 
   const handleEditPrep = async () => {
     setIsEditMode(true);
@@ -44,7 +46,9 @@ const TsCard = ({
   };
 
   const handleDeleteTS = async () => {
-    await deleteTechnicalSheet(ts.id);
+    deleteFile(ts.url!, async () => {
+      await deleteTechnicalSheet(ts.id);
+    });
   };
 
   return (
