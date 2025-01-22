@@ -1,21 +1,23 @@
 import { cleanFilePath } from "@/services/S3FileManager";
+import { type } from "os";
 import { Dispatch, useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 
 interface MyDropzoneProps {
   file: File;
   fileSetter: Dispatch<React.SetStateAction<File>>;
+  type?: "document" | "image";
   className?: string;
 }
 
-const MyDropzone = ({ file, fileSetter, className }: MyDropzoneProps) => {
+const MyDropzone = ({ file, fileSetter, type, className }: MyDropzoneProps) => {
   const [error, setError] = useState<string | null>(null);
 
   const onDrop = useCallback(
     (acceptedFiles: File[], rejectedFiles: any) => {
       setError(null);
       if (rejectedFiles.length > 0) {
-        setError("Please upload a valid image file.");
+        setError("Selecciona un archivo válido.");
         return;
       }
 
@@ -38,9 +40,16 @@ const MyDropzone = ({ file, fileSetter, className }: MyDropzoneProps) => {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: { "image/*": [] },
+    accept:
+      type === "document"
+        ? { "application/pdf": [] }
+        : { "image/png": [], "image/jpeg": [], "image/jpg": [] },
     maxSize: 5000 * 1000,
   });
+
+  const test = (path: string): string => {
+    return path.includes("https") ? path.split("/uploads/")[1] : path;
+  };
 
   return (
     <div
@@ -71,7 +80,7 @@ const MyDropzone = ({ file, fileSetter, className }: MyDropzoneProps) => {
                   isDragActive ? "text-[#4E5154]" : "text-[#94A3B8]"
                 } text-center overflow-ellipsis`}
               >
-                {cleanFilePath(file.name, 0)}
+                {test(file.name)}
               </p>
               <p className="text-center text-[#94A3B8] mt-4 underline hover:cursor-pointer">
                 Click to select another file

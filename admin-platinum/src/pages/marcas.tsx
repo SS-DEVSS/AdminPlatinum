@@ -264,11 +264,13 @@ const Marcas = () => {
               </Dialog>
             </div>
           </CardHeader>
-          {brands.length && filterBrands.length === 0 ? (
+          {brands.length === 0 || filterBrands.length === 0 ? (
             <div className="mt-4">
               <NoData>
                 <AlertTriangle className="text-[#4E5154]" />
-                <p className="text-[#4E5154]">No se ha creado ninguna marca</p>
+                <p className="text-[#4E5154]">
+                  No se ha encontrado ninguna marca
+                </p>
                 <p className="text-[#94A3B8] font-semibold text-sm">
                   Agrega uno en la parte posterior
                 </p>

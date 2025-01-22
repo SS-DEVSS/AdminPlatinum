@@ -1,3 +1,4 @@
+import MyDropzone from "@/components/Dropzone";
 import CardSectionLayout from "@/components/Layouts/CardSectionLayout";
 import Layout from "@/components/Layouts/Layout";
 import NoData from "@/components/NoData";
@@ -21,6 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useS3FileManager } from "@/hooks/useS3FileManager";
 import { useTs } from "@/hooks/useTs";
 import { Variant } from "@/models/item";
 import { TechnicalSheet } from "@/models/technicalSheet";
@@ -45,45 +47,60 @@ const TsFormInitialState = {
 
 const TechincalSheets = () => {
   const {
+    loading,
     technicalSheet,
     technicalSheets,
     addTechnicalSheet,
     getTsById,
     deleteTechnicalSheet,
   } = useTs();
+  const { uploadFile } = useS3FileManager();
 
   const [searchFilter, setSearchFilter] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [tsForm, setTsForm] = useState<TSFormType>(TsFormInitialState);
+  const [file, setFile] = useState<File>({ name: "" } as File);
 
-  const toggleModal = () => {
+  const toggleModal = async () => {
     setIsOpen(!isOpen);
+    if (!isEditMode) {
+      await setTsForm({ ...TsFormInitialState, path: "" });
+    }
   };
 
   //   Crear
 
-  const validateForm = () => {};
+  useEffect(() => {
+    setFile({} as File);
+  }, [isEditMode]);
 
-  //   const validateForm = useMemo(
-  //     () =>
-  //       tsForm.title.trim() !== "" &&
-  //       tsForm.description.trim() !== "" &&
-  //       tsForm.path.includes("https://") &&
-  //       tsForm.path.includes(".pdf"),
-  //     [tsForm]
-  //   );
+  useEffect(() => {
+    if (file?.name && tsForm.path !== file.name) {
+      setTsForm((prev) => ({ ...prev, path: file.name }));
+    }
+  }, [file, tsForm.path]);
+
+  const validateForm = useMemo(
+    () =>
+      tsForm.title.trim() !== "" &&
+      tsForm.description.trim() !== "" &&
+      tsForm!.path!.trim() !== "",
+    [tsForm]
+  );
 
   const handleSubmit = async (payload: TechnicalSheet) => {
     try {
       if (!isEditMode) {
-        await addTechnicalSheet(payload);
-        setTsForm(TsFormInitialState);
+        uploadFile(file, async (key) => {
+          await addTechnicalSheet({ ...payload, path: key });
+        });
       }
     } catch (error) {
       console.log(error);
     } finally {
       setTsForm(TsFormInitialState);
+      setFile({} as File);
       setIsEditMode(false);
       toggleModal();
     }
@@ -99,16 +116,12 @@ const TechincalSheets = () => {
 
   useEffect(() => {
     if (isEditMode && technicalSheet) {
-      setTsForm({
-        title: technicalSheet.title,
-        path: technicalSheet.url,
-        description: technicalSheet.description,
-        variant: technicalSheet.variant,
-      });
+      console.log(technicalSheet);
+      setFile({ name: technicalSheet.url });
       setIsEditMode(true);
       setIsOpen(true);
     }
-  }, [isEditMode]);
+  }, [technicalSheet]);
 
   //   Read
 
@@ -120,9 +133,9 @@ const TechincalSheets = () => {
   const filteredTs = useMemo(
     () =>
       technicalSheets.filter((ts: TechnicalSheet) =>
-        ts.title.toLocaleLowerCase().includes(searchFilter.toLowerCase())
+        ts.title.toLowerCase().includes(searchFilter.toLocaleLowerCase())
       ),
-    [searchFilter]
+    [searchFilter, technicalSheets]
   );
 
   return (
@@ -185,18 +198,7 @@ const TechincalSheets = () => {
                   placeholder="ej. Platinum"
                   value={tsForm.title}
                   onChange={handleForm}
-                  required
-                />
-                <Label htmlFor="path">
-                  <span className="text-redLabel">*</span> Documento
-                </Label>
-                <Input
-                  id="path"
-                  name="path"
-                  type="text"
-                  placeholder="ej. Platinum"
-                  value={tsForm.path}
-                  onChange={handleForm}
+                  maxLength={255}
                   required
                 />
                 <Label htmlFor="description">
@@ -209,7 +211,26 @@ const TechincalSheets = () => {
                   placeholder="ej. Platinum"
                   value={tsForm.description}
                   onChange={handleForm}
+                  maxLength={526}
                   required
+                />
+                <Label htmlFor="path">
+                  <span className="text-redLabel">*</span> Documento
+                </Label>
+                {/* <Input
+                  id="path"
+                  name="path"
+                  type="text"
+                  placeholder="ej. Platinum"
+                  value={tsForm.path}
+                  onChange={handleForm}
+                  required
+                /> */}
+                <MyDropzone
+                  className={"p-8"}
+                  file={file}
+                  fileSetter={setFile}
+                  type={"document"}
                 />
                 <Label htmlFor="logoImgUrl">Variante</Label>
 
@@ -227,7 +248,9 @@ const TechincalSheets = () => {
           </div>
         </CardHeader>
         <CardContent className="flex flex-col flex-grow p-0">
-          {technicalSheets.length === 0 && filteredTs.length === 0 ? (
+          {loading ? (
+            <p>Loading...</p>
+          ) : (technicalSheets.length === 0 || filteredTs.length) === 0 ? (
             <div className="mt-4">
               <NoData>
                 <AlertTriangle className="text-[#4E5154]" />
@@ -239,7 +262,7 @@ const TechincalSheets = () => {
             </div>
           ) : (
             <CardSectionLayout>
-              {(filteredTs.length > 0 ? filteredTs : technicalSheets).map(
+              {(searchFilter.length > 0 ? filteredTs : technicalSheets).map(
                 (ts: TechnicalSheet) => (
                   <TsCard
                     key={ts.id}

@@ -23,7 +23,13 @@ export const useS3FileManager = () => {
       );
     }
     try {
-      const data = await uploadFileToS3(file);
+      const extension = file.type.split("/")[1];
+      let data = {};
+      if (extension === "pdf") {
+        data = await uploadFileToS3(file, "uploads/documents/");
+      } else {
+        data = await uploadFileToS3(file);
+      }
       console.log(data);
       onSuccess(data.key, data.location);
     } catch (e: any) {
