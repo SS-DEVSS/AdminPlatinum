@@ -47,7 +47,7 @@ const Banners = () => {
             <CardDescription>Ingrese el nuevo banner deseado.</CardDescription>
           </CardHeader>
           <CardContent>
-            <MyDropzone file={image} fileSetter={setImage} />
+            <MyDropzone className="p-16" file={image} fileSetter={setImage} />
             {image.name && (
               <div className="flex justify-center mt-3 gap-2">
                 <Button onClick={() => setImage({} as File)} variant="outline">

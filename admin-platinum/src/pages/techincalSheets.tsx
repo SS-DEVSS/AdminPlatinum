@@ -33,6 +33,7 @@ export interface TSFormType {
   title: string;
   path?: string;
   url?: string;
+  imgUrl?: string | null;
   description: string;
   variant?: Variant | null;
 }
@@ -41,6 +42,7 @@ const TsFormInitialState = {
   title: "",
   path: "",
   url: "",
+  imgUrl: null,
   description: "",
   variant: {} as Variant,
 };
@@ -61,6 +63,7 @@ const TechincalSheets = () => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [tsForm, setTsForm] = useState<TSFormType>(TsFormInitialState);
   const [file, setFile] = useState<File>({ name: "" } as File);
+  const [image, setImage] = useState<File | null>({} as File);
 
   const toggleModal = async () => {
     setIsOpen(!isOpen);
@@ -73,6 +76,7 @@ const TechincalSheets = () => {
 
   useEffect(() => {
     setFile({} as File);
+    setImage({} as File);
   }, [isEditMode]);
 
   useEffect(() => {
@@ -89,18 +93,46 @@ const TechincalSheets = () => {
     [tsForm]
   );
 
-  const handleSubmit = async (payload: TechnicalSheet) => {
+  const handleFileUpload = async (
+    file: File | null
+  ): Promise<string | null> => {
+    if (!file || file.name === undefined) {
+      return null;
+    }
+    return new Promise((resolve, reject) => {
+      uploadFile(file, (key) => resolve(key)).catch((error) => reject(error));
+    });
+  };
+
+  console.log(tsForm);
+  console.log(image);
+  console.log(file.name === "");
+  console.log(file.name);
+
+  const handleSubmit = async () => {
     try {
       if (!isEditMode) {
-        uploadFile(file, async (key) => {
-          await addTechnicalSheet({ ...payload, path: key });
-        });
+        const [fileKey, imageKey] = await Promise.all([
+          handleFileUpload(file),
+          handleFileUpload(image),
+        ]);
+
+        console.log(imageKey);
+
+        const payload = {
+          ...tsForm,
+          path: fileKey || null,
+          imgUrl: imageKey || null,
+        };
+        console.log(payload);
+        await addTechnicalSheet(payload);
       }
     } catch (error) {
-      console.log(error);
+      console.error("Error during file upload or submit:", error);
     } finally {
       setTsForm(TsFormInitialState);
       setFile({} as File);
+      setImage({} as File);
       setIsEditMode(false);
       toggleModal();
     }
@@ -217,27 +249,25 @@ const TechincalSheets = () => {
                 <Label htmlFor="path">
                   <span className="text-redLabel">*</span> Documento
                 </Label>
-                {/* <Input
-                  id="path"
-                  name="path"
-                  type="text"
-                  placeholder="ej. Platinum"
-                  value={tsForm.path}
-                  onChange={handleForm}
-                  required
-                /> */}
                 <MyDropzone
                   className={"p-8"}
                   file={file}
                   fileSetter={setFile}
                   type={"document"}
                 />
+                <Label htmlFor="path">
+                  <span className="text-redLabel"></span> Imágen de Portada
+                </Label>
+                <MyDropzone
+                  className={"p-8"}
+                  file={image}
+                  fileSetter={setImage}
+                />
                 <Label htmlFor="logoImgUrl">Variante</Label>
-
                 <DialogFooter>
                   <Button
                     disabled={!validateForm}
-                    onClick={() => handleSubmit(tsForm)}
+                    onClick={handleSubmit}
                     type="submit"
                   >
                     {isEditMode ? "Actualizar Marca" : "Agregar Marca"}

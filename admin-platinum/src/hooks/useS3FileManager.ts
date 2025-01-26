@@ -10,6 +10,7 @@ export const useS3FileManager = () => {
     file: File,
     onSuccess: (key: string, location: string) => void
   ) => {
+    if (!file || !file.type) return null;
     setUploading(true);
     setError(null);
     const fileNameLen = file.name.length + 66;
