@@ -11,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -22,12 +23,64 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import { useS3FileManager } from "@/hooks/useS3FileManager";
 import { useTs } from "@/hooks/useTs";
 import { Variant } from "@/models/item";
 import { TechnicalSheet } from "@/models/technicalSheet";
 import { AlertTriangle, PlusCircle, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+
+const dummy: Variant[] = [
+  {
+    id: "b7161ff2-6da6-412c-9f0b-cd315bb84a49",
+    idProduct: "f608614e-f5ef-42ec-949d-fd9013e4711b",
+    name: "ENGINE001",
+    sku: "ENG001",
+    price: 123,
+    stockQuantity: 5,
+
+    images: [
+      {
+        id: "bc567f41-a788-48c2-a11e-55599e5f7eb0",
+        url: "https://ss-platinum-driveline-api.s3.amazonaws.com/uploads/images/f1ef5864-44a6-4b91-8937-faf719a4a109.jpg",
+        order: 1,
+      },
+    ],
+  },
+  {
+    id: "b7161ff2-6da6-412c-9f0b-cd315bb84a48",
+    idProduct: "f608614e-f5ef-42ec-949d-fd9013e4711b",
+    name: "ENGINE001",
+    sku: "ENG001",
+    price: 123,
+    stockQuantity: 5,
+
+    images: [
+      {
+        id: "bc567f41-a788-48c2-a11e-55599e5f7eb0",
+        url: "https://ss-platinum-driveline-api.s3.amazonaws.com/uploads/images/f1ef5864-44a6-4b91-8937-faf719a4a109.jpg",
+        order: 1,
+      },
+    ],
+  },
+  {
+    id: "b7161ff2-6da6-412c-9f0b-cd315bb84a47",
+    idProduct: "f608614e-f5ef-42ec-949d-fd9013e4711b",
+    name: "ENGINE001",
+    sku: "ENG001",
+    price: 123,
+    stockQuantity: 5,
+
+    images: [
+      {
+        id: "bc567f41-a788-48c2-a11e-55599e5f7eb0",
+        url: "https://ss-platinum-driveline-api.s3.amazonaws.com/uploads/images/f1ef5864-44a6-4b91-8937-faf719a4a109.jpg",
+        order: 1,
+      },
+    ],
+  },
+];
 
 export interface TSFormType {
   title: string;
@@ -44,7 +97,7 @@ const TsFormInitialState = {
   url: "",
   imgUrl: null,
   description: "",
-  variant: {} as Variant,
+  variant: null,
 };
 
 const TechincalSheets = () => {
@@ -59,11 +112,12 @@ const TechincalSheets = () => {
   const { uploadFile } = useS3FileManager();
 
   const [searchFilter, setSearchFilter] = useState("");
+  const [variantFilter, setVariantFilter] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [tsForm, setTsForm] = useState<TSFormType>(TsFormInitialState);
   const [file, setFile] = useState<File>({ name: "" } as File);
-  const [image, setImage] = useState<File | null>({} as File);
+  const [image, setImage] = useState<File>({} as File);
 
   const toggleModal = async () => {
     setIsOpen(!isOpen);
@@ -105,9 +159,6 @@ const TechincalSheets = () => {
   };
 
   console.log(tsForm);
-  console.log(image);
-  console.log(file.name === "");
-  console.log(file.name);
 
   const handleSubmit = async () => {
     try {
@@ -165,7 +216,7 @@ const TechincalSheets = () => {
   const filteredTs = useMemo(
     () =>
       technicalSheets.filter((ts: TechnicalSheet) =>
-        ts.title.toLowerCase().includes(searchFilter.toLocaleLowerCase())
+        ts.title.toLowerCase().includes(variantFilter.toLocaleLowerCase())
       ),
     [searchFilter, technicalSheets]
   );
@@ -211,7 +262,7 @@ const TechincalSheets = () => {
                   </span>
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
+              <DialogContent className="w-[2000px]">
                 <DialogHeader>
                   <DialogTitle className="mb-2">
                     {isEditMode ? "Editar Boletín" : "Agregar Boletín"}
@@ -220,50 +271,118 @@ const TechincalSheets = () => {
                     {isEditMode ? "Editar Boletín" : "Agregar Boletín"}
                   </DialogDescription>
                 </DialogHeader>
-                <Label htmlFor="title">
-                  <span className="text-redLabel">*</span> Título
-                </Label>
-                <Input
-                  id="title"
-                  name="title"
-                  type="text"
-                  placeholder="ej. Platinum"
-                  value={tsForm.title}
-                  onChange={handleForm}
-                  maxLength={255}
-                  required
-                />
-                <Label htmlFor="description">
-                  <span className="text-redLabel">*</span> Descripción
-                </Label>
+                <section className="w-full flex gap-4">
+                  <div className="w-full">
+                    <Label htmlFor="title" className="block mb-2">
+                      <span className="text-redLabel">*</span> Título
+                    </Label>
+                    <Input
+                      id="title"
+                      name="title"
+                      type="text"
+                      placeholder="ej. Platinum"
+                      value={tsForm.title}
+                      onChange={handleForm}
+                      maxLength={255}
+                      required
+                    />
+                  </div>
+                  <div className="w-full">
+                    <Label htmlFor="description" className="block mb-2">
+                      <span className="text-redLabel">*</span> Descripción
+                    </Label>
+                    <Input
+                      id="description"
+                      name="description"
+                      type="text"
+                      placeholder="ej. Platinum"
+                      value={tsForm.description}
+                      onChange={handleForm}
+                      maxLength={526}
+                      required
+                    />
+                  </div>
+                </section>
+                <section className="flex gap-4">
+                  <div>
+                    <Label htmlFor="path" className="block mb-2">
+                      <span className="text-redLabel">*</span> Documento
+                    </Label>
+                    <MyDropzone
+                      className={"p-8"}
+                      file={file}
+                      fileSetter={setFile}
+                      type={"document"}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="path" className="block mb-2">
+                      <span className="text-redLabel"></span> Imágen de Portada
+                    </Label>
+                    <MyDropzone
+                      className={"p-8"}
+                      file={image}
+                      fileSetter={setImage}
+                    />
+                  </div>
+                </section>
+                <Label htmlFor="logoImgUrl">Variante</Label>
                 <Input
                   id="description"
                   name="description"
                   type="text"
                   placeholder="ej. Platinum"
-                  value={tsForm.description}
-                  onChange={handleForm}
+                  value={variantFilter}
+                  onChange={(e) => setVariantFilter(e.target.value)}
                   maxLength={526}
                   required
                 />
-                <Label htmlFor="path">
-                  <span className="text-redLabel">*</span> Documento
-                </Label>
-                <MyDropzone
-                  className={"p-8"}
-                  file={file}
-                  fileSetter={setFile}
-                  type={"document"}
-                />
-                <Label htmlFor="path">
-                  <span className="text-redLabel"></span> Imágen de Portada
-                </Label>
-                <MyDropzone
-                  className={"p-8"}
-                  file={image}
-                  fileSetter={setImage}
-                />
-                <Label htmlFor="logoImgUrl">Variante</Label>
+
+                {dummy.map((variantDisplay: Variant) => (
+                  <Card
+                    key={variantDisplay.id}
+                    className="flex flex-row items-center"
+                  >
+                    <CardHeader>
+                      <Checkbox
+                        id="variant"
+                        onCheckedChange={(e) => {
+                          if (e === true) {
+                            setTsForm({
+                              ...tsForm,
+                              variant: variantDisplay,
+                            });
+                          } else {
+                            setTsForm({
+                              ...tsForm,
+                              variant: null,
+                            });
+                          }
+                        }}
+                        checked={
+                          tsForm.variant === variantDisplay ? true : false
+                        }
+                        className="border-slate-400"
+                      />
+                    </CardHeader>
+                    <Separator
+                      orientation="vertical"
+                      className="w-0.5 bg-slate-100"
+                    />
+                    <CardContent className="p-3">
+                      <img
+                        className="w-16 aspect-square rounded-sm"
+                        src={variantDisplay.images![0].url}
+                      />
+                    </CardContent>
+                    <CardContent className="mt-2">
+                      <p className="text-slate-400 text-sm font-light">
+                        #{variantDisplay.id}
+                      </p>
+                      <p className="mt-2">{variantDisplay.name}</p>
+                    </CardContent>
+                  </Card>
+                ))}
                 <DialogFooter>
                   <Button
                     disabled={!validateForm}

@@ -1,3 +1,4 @@
+import { Image } from "./image";
 import { TechnicalSheet } from "./technicalSheet";
 
 // export type Variant = {
@@ -21,7 +22,7 @@ export type Variant = {
   price: number | null;
   stockQuantity: number | null;
   attributeValues?: [];
-  images?: [];
+  images?: Image[];
   notes?: [] | null;
   techSheets?: TechnicalSheet[] | null;
   kitItems?: Variant[] | null;
