@@ -9,3 +9,10 @@ export interface TechnicalSheet {
   description: string;
   variant?: Variant | null;
 }
+
+/** **/
+export type Document = {
+  id: string;
+  title: string;
+  document_url?: string;
+};

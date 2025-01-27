@@ -22,6 +22,7 @@ import { NewsProvider } from "./context/news-context";
 import Banners from "@/pages/banners";
 import Products from "@/pages/products/products";
 import { CategoryContextProvider } from "./context/categories-context";
+import NewProduct from "./pages/products/newProduct";
 
 const router = createBrowserRouter([
   {
@@ -39,6 +40,10 @@ const router = createBrowserRouter([
   {
     path: "/productos",
     element: <Products />,
+  },
+  {
+    path: "/producto/new-product",
+    element: <NewProduct />,
   },
   {
     path: "/marcas",

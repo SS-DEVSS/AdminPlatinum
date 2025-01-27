@@ -1,3 +1,4 @@
+import { Category, CategoryAttributesTypes } from "./category";
 import { Image } from "./image";
 import { Note } from "./note";
 import { Reference } from "./reference";
@@ -50,3 +51,25 @@ export interface AttributeValue {
   valueDate?: Date | null;
   idAttribute: string;
 }
+
+/** **/
+export type Product = {
+  id: string;
+  sku: string;
+  description: string;
+  notes: Note[];
+  documents: Document[];
+  idCategory: Category["id"];
+  references: Reference[];
+  variants?: ProductVariant[];
+  attributes?: CategoryAttributesTypes[];
+};
+
+export type ProductVariant = {
+  id: string;
+  img_url: string;
+  name: string;
+  sku: string;
+  price?: number;
+  quantity?: number;
+};
