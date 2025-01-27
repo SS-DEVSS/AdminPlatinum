@@ -377,7 +377,8 @@ const TechincalSheets = () => {
                     </CardContent>
                     <CardContent className="mt-2">
                       <p className="text-slate-400 text-sm font-light">
-                        #{variantDisplay.id}
+                        <span className="select-none">#</span>
+                        {variantDisplay.id}
                       </p>
                       <p className="mt-2">{variantDisplay.name}</p>
                     </CardContent>

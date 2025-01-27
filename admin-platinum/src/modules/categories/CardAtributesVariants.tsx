@@ -41,6 +41,7 @@ import { useMemo } from "react";
 import { Dispatch } from "react";
 import { formTypes } from "./CatgegoryCU";
 import CardAttributeTable from "@/components/CardAttributeTable";
+import { useCategoryContext } from "@/context/categories-context";
 
 type CardAtributesVariantsProps = {
   form: formTypes;
@@ -74,6 +75,7 @@ const CardAtributesVariants = ({
   title,
   description,
 }: CardAtributesVariantsProps) => {
+  const { category } = useCategoryContext();
   const [type, setType] = useState<"VARIANT" | "PRODUCT" | "">("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState("add");
@@ -87,6 +89,8 @@ const CardAtributesVariants = ({
     variantAttributes: [],
   });
 
+  // console.log(attributes);
+
   useEffect(() => {
     if (title === "Atributos de Categoría") {
       setType("PRODUCT");
@@ -96,7 +100,58 @@ const CardAtributesVariants = ({
   }, []);
 
   useEffect(() => {
-    if (form.attributes) {
+    if (category && form.attributes.length) {
+      const tempArray = [
+        form.attributes.product,
+        form.attributes.variant,
+      ].flat();
+
+      const productAttributes: CategoryAtributes[] = [];
+      const variantAttributes: CategoryAtributes[] = [];
+
+      tempArray.forEach((attribute: CategoryAtributes) => {
+        if (attribute.scope === "PRODUCT") {
+          productAttributes.push(attribute);
+        } else {
+          variantAttributes.push(attribute);
+        }
+      });
+
+      setAttributes({
+        ...attributes,
+        productAttributes,
+        variantAttributes,
+      });
+    }
+  }, [category]);
+
+  useEffect(() => {
+    if (category && form?.attributes) {
+      const productAttributes = form.attributes.product || [];
+      const variantAttributes = form.attributes.variant || [];
+
+      const tempArray = [...productAttributes, ...variantAttributes];
+
+      const updatedProductAttributes: CategoryAtributes[] = [];
+      const updatedVariantAttributes: CategoryAtributes[] = [];
+
+      tempArray.forEach((attribute: CategoryAtributes) => {
+        if (attribute.scope === "PRODUCT") {
+          updatedProductAttributes.push(attribute);
+        } else {
+          updatedVariantAttributes.push(attribute);
+        }
+      });
+
+      setAttributes({
+        productAttributes: updatedProductAttributes,
+        variantAttributes: updatedVariantAttributes,
+      });
+    }
+  }, [category, form?.attributes]);
+
+  useEffect(() => {
+    if (form.attributes.length) {
       const productAttrs = form.attributes.filter(
         (attr) => attr.scope === "PRODUCT"
       );
@@ -149,10 +204,6 @@ const CardAtributesVariants = ({
       scope: attribute.scope,
     });
   };
-
-  useEffect(() => {
-    console.log("attributeForm updated:", attributeForm);
-  }, [attributeForm]);
 
   // console.log(attributes);
   // console.log(form.attributes);

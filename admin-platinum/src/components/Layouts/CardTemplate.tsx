@@ -85,14 +85,11 @@ const CardTemplate = ({
 
   const handleEditCategory = async (id: Category["id"]) => {
     await getCategoryById(id);
-    // const data = await getCategoryById("bd3dcd72-961a-49fc-ab5d-21a2243c1c44");
-    // console.log("Direct Data Returned:", data);
   };
 
   const handleDeleteCategory = async () => {
     deleteFile(cleanFilePath(category!.imgUrl, 61), async () => {
       await deleteCategory(category?.id!);
-      // await getItems();
     });
   };
 

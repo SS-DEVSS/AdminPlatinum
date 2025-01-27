@@ -60,8 +60,6 @@ const CategoryCU = ({ category, addCategory }: CategoryCUProps) => {
 
   console.log(form);
 
-  console.log(selectedBrand);
-
   useEffect(() => {
     if (selectedBrand) {
       setSelectedBrandIds((prev) => {
@@ -75,6 +73,20 @@ const CategoryCU = ({ category, addCategory }: CategoryCUProps) => {
       });
     }
   }, []);
+
+  useEffect(() => {
+    if (category) {
+      console.log(category);
+      setForm(category);
+      setImage({ ...image, name: category.imgUrl });
+      const tempSet = new Set();
+
+      category.brands!.map((category: Category) => {
+        tempSet.add(category.id);
+      });
+      setSelectedBrandIds(tempSet);
+    }
+  }, [category]);
 
   useEffect(() => {
     if (image.name !== form.imgUrl) {
@@ -115,7 +127,7 @@ const CategoryCU = ({ category, addCategory }: CategoryCUProps) => {
     () =>
       form.name.trim() != "" &&
       form.description.trim() != "" &&
-      form.imgUrl.trim() !== "" &&
+      form.imgUrl?.trim() !== "" &&
       form.brands.length > 0 &&
       form.attributes.length > 0,
     [form]
