@@ -26,6 +26,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import NewsComponent from "@/components/NewsComponent";
 import { newsContext } from "@/context/news-context";
+import MyDropzone from "@/components/Dropzone";
+import { useS3FileManager } from "@/hooks/useS3FileManager";
 
 type BlogPostCUProps = {
   blogPost?: BlogPost | null;
@@ -62,9 +64,29 @@ export interface Component {
 const BlogPostCU = ({ blogPost }: BlogPostCUProps) => {
   const { addBlogPost } = newsContext();
   const navigate = useNavigate();
+  const { uploadFile } = useS3FileManager();
 
   const [form, setForm] = useState<FormTypes>(FormInitialState);
+  const [image, setImage] = useState<File>({} as File);
   const [components, setComponents] = useState<Component[]>([]);
+
+  useEffect(() => {
+    if (blogPost) {
+      setForm(blogPost);
+      setImage({ name: blogPost.coverImagePath });
+      const parsedComponents = parseContentToComponents(blogPost.content);
+      setComponents(parsedComponents);
+    }
+  }, [blogPost]);
+
+  useEffect(() => {
+    if (image.name !== form.coverImagePath) {
+      setForm((prevForm) => ({
+        ...prevForm,
+        coverImagePath: image.name,
+      }));
+    }
+  }, [image]);
 
   const handleFormInput = (e: any) => {
     const { name, value } = e.target;
@@ -75,8 +97,12 @@ const BlogPostCU = ({ blogPost }: BlogPostCUProps) => {
   };
 
   const validateForm = useMemo(
-    () => form.title.trim() !== "" && form.description.trim() !== "",
-    [form]
+    () =>
+      form.title.trim() !== "" &&
+      form.description.trim() !== "" &&
+      components.length > 0 &&
+      components.every((component: Component) => component.content !== ""),
+    [form, components]
   );
 
   const handleSubmit = async () => {
@@ -87,8 +113,10 @@ const BlogPostCU = ({ blogPost }: BlogPostCUProps) => {
 
     const updatedForm = { ...form, content: contentString };
 
-    await addBlogPost(updatedForm);
-    navigate("/noticias");
+    uploadFile(image, (key) => {
+      addBlogPost({ ...updatedForm, coverImagePath: key });
+      navigate("/noticias");
+    });
   };
 
   const returnComponent = async (selectedComponent: ComponentTypes) => {
@@ -136,16 +164,6 @@ const BlogPostCU = ({ blogPost }: BlogPostCUProps) => {
       };
     });
   };
-
-  useEffect(() => {
-    if (blogPost) {
-      setForm(blogPost);
-      const parsedComponents = parseContentToComponents(blogPost.content);
-      setComponents(parsedComponents);
-    }
-  }, [blogPost, parseContentToComponents]);
-
-  console.log(form);
 
   return (
     <Layout>
@@ -206,6 +224,7 @@ const BlogPostCU = ({ blogPost }: BlogPostCUProps) => {
                   className="w-full"
                   placeholder="Gamer Gear Pro Controller"
                   value={blogPost ? blogPost.title : form.title}
+                  maxLength={255}
                   onChange={handleFormInput}
                 />
               </div>
@@ -219,21 +238,16 @@ const BlogPostCU = ({ blogPost }: BlogPostCUProps) => {
                   placeholder="Lorem ipsum dolor sit amet."
                   value={blogPost ? blogPost.description : form.description}
                   onChange={handleFormInput}
+                  maxLength={526}
                   className="min-h-20"
                 />
               </div>
               <div className="grid gap-3">
                 <Label htmlFor="coverImagePath">Imagen de portada</Label>
-                <Input
-                  id="coverImagePath"
-                  name="coverImagePath"
-                  type="text"
-                  placeholder="https://"
-                  className="w-full"
-                  value={
-                    blogPost ? blogPost.coverImagePath : form.coverImagePath
-                  }
-                  onChange={handleFormInput}
+                <MyDropzone
+                  className="p-10"
+                  file={image}
+                  fileSetter={setImage}
                 />
               </div>
             </div>
@@ -287,7 +301,6 @@ const BlogPostCU = ({ blogPost }: BlogPostCUProps) => {
                   >
                     Párrafo
                   </DropdownMenuItem>
-                  <DropdownMenuItem>Subscription</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>

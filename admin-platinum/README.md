@@ -1,30 +1,52 @@
-# React + TypeScript + Vite
+# Platinum Driveline - Admin Dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Purpose
+The **Admin Platinum** dashboard is a comprehensive administrative interface designed for managing the content and data of the Platinum Driveline ecosystem. It allows administrators to control products, categories, brands, news, and banners that appear on the public website and mobile application.
 
-Currently, two official plugins are available:
+## Features
+- **Product Management**: Create, update, and delete products with detailed specifications.
+- **Catalog Management**: Manage categories, brands, and technical sheets.
+- **Content Management**: Publish news/blog posts and manage homepage banners.
+- **Access Control**: Secure login and authentication for administrative staff.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Tech Stack
+- **Framework**: React (Vite)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS
+- **UI Components**: Shadcn UI
+- **Package Manager**: pnpm
 
-## Expanding the ESLint configuration
+## Installation
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+Ensure you have `node` and `pnpm` installed.
 
-- Configure the top-level `parserOptions` property like this:
+1. Navigate to the project directory:
+   ```bash
+   cd AdminPlatinum/admin-platinum
+   ```
 
-```js
-export default {
-  // other rules...
-  parserOptions: {
-    ecmaVersion: 'latest',
-    sourceType: 'module',
-    project: ['./tsconfig.json', './tsconfig.node.json', './tsconfig.app.json'],
-    tsconfigRootDir: __dirname,
-  },
-}
+2. Install dependencies:
+   ```bash
+   pnpm install
+   ```
+
+## Usage
+
+### Development
+To start the development server with hot reload:
+```bash
+pnpm dev
+```
+The application will typically run on `http://localhost:5173` (check terminal output).
+
+### Build
+To build the application for production:
+```bash
+pnpm build
 ```
 
-- Replace `plugin:@typescript-eslint/recommended` to `plugin:@typescript-eslint/recommended-type-checked` or `plugin:@typescript-eslint/strict-type-checked`
-- Optionally add `plugin:@typescript-eslint/stylistic-type-checked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and add `plugin:react/recommended` & `plugin:react/jsx-runtime` to the `extends` list
+### Linting
+To run the linter:
+```bash
+pnpm lint
+```

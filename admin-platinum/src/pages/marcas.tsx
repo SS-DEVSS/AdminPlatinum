@@ -7,31 +7,36 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Dialog, DialogTrigger } from "@radix-ui/react-dialog";
 import {
+  Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { AlertTriangle, PlusCircle, Search } from "lucide-react";
 import CardSectionLayout from "@/components/Layouts/CardSectionLayout";
 import CardTemplate from "@/components/Layouts/CardTemplate";
-import { useBrandModal } from "@/context/brand-context";
+import { useBrandContext } from "@/context/brand-context";
 import { useBrands } from "@/hooks/useBrands";
 import { Textarea } from "@/components/ui/textarea";
 import { useMemo } from "react";
 import { Brand } from "@/models/brand";
 import NoData from "@/components/NoData";
+import MyDropzone from "@/components/Dropzone";
+import { useS3FileManager } from "@/hooks/useS3FileManager";
 
 const Marcas = () => {
   const { brands, brand, addBrand, updateBrand, getBrands, getBrandById } =
     useBrands();
-  const { modalState, closeModal, openModal } = useBrandModal();
+  const { modalState, closeModal, openModal } = useBrandContext();
+  const { uploadFile } = useS3FileManager();
   const { isOpen, title, description } = modalState;
+  const [image, setImage] = useState<File>({} as File);
 
   const [filterBrandSearch, setFilterBrandSearch] = useState("");
   const [form, setForm] = useState({
@@ -41,6 +46,21 @@ const Marcas = () => {
   });
 
   const [isEditMode, setIsEditMode] = useState(false);
+
+  useEffect(() => {
+    if (image.name !== form.logoImgUrl) {
+      setForm({
+        ...form,
+        logoImgUrl: image.name,
+      });
+    }
+  }, [image]);
+
+  useEffect(() => {
+    if (brand) {
+      setImage({ name: brand.logoImgUrl! });
+    }
+  }, [brand]);
 
   useEffect(() => {
     if (brand) {
@@ -67,6 +87,7 @@ const Marcas = () => {
         description: "",
         logoImgUrl: "",
       });
+      setImage({} as File);
       setIsEditMode(false);
     }
   }, [isOpen]);
@@ -84,9 +105,7 @@ const Marcas = () => {
   };
 
   const validateForm = () => {
-    return (
-      form.name !== "" && form.description !== "" && form.logoImgUrl !== ""
-    );
+    return form.name !== "" && form.description !== "" && form.logoImgUrl;
   };
 
   const handleSearchFilter = (e: any) => {
@@ -101,7 +120,6 @@ const Marcas = () => {
       ),
     [brands, filterBrandSearch]
   );
-  console.log(filterBrands);
 
   const handleSubmit = async () => {
     const brandData = {
@@ -110,12 +128,20 @@ const Marcas = () => {
     };
 
     if (isEditMode) {
-      await updateBrand(brandData);
+      if (image) {
+        uploadFile(image, (_, location) => {
+          updateBrand({ ...brandData, logoImgUrl: location });
+          setImage({} as File);
+        });
+      }
     } else {
-      await addBrand(form);
+      if (image) {
+        uploadFile(image, (_, location) => {
+          addBrand({ ...form, logoImgUrl: location });
+          setImage({} as File);
+        });
+      }
     }
-
-    await getBrands();
     closeModal();
   };
 
@@ -161,7 +187,7 @@ const Marcas = () => {
               </div>
               <Dialog
                 open={isOpen}
-                onOpenChange={(open) => {
+                onOpenChange={(open: boolean) => {
                   if (!open) {
                     setForm({
                       name: "",
@@ -200,6 +226,7 @@ const Marcas = () => {
                     placeholder="ej. Platinum"
                     value={form.name}
                     onChange={handleForm}
+                    maxLength={255}
                     required
                   />
                   <Label htmlFor="description">
@@ -213,23 +240,13 @@ const Marcas = () => {
                     onChange={handleForm}
                     required
                   />
-                  <Label htmlFor="logoImgUrl">Imagen</Label>
-                  {/* <Input
-                    id="logoImgUrl"
-                    name="logoImgUrl"
-                    type="file"
-                    placeholder="Selecciona una imagen"
-                    onChange={handleForm}
-                    required
-                  /> */}
-                  <Input
-                    id="logoImgUrl"
-                    name="logoImgUrl"
-                    type="text"
-                    placeholder="https://"
-                    value={form.logoImgUrl}
-                    onChange={handleForm}
-                    required
+                  <Label htmlFor="logoImgUrl">
+                    <span className="text-redLabel">*</span> Imagen
+                  </Label>
+                  <MyDropzone
+                    file={image}
+                    fileSetter={setImage}
+                    className={`p-8`}
                   />
                   <DialogDescription>
                     Formatos Válidos: jpg, png, jpeg
@@ -247,30 +264,32 @@ const Marcas = () => {
               </Dialog>
             </div>
           </CardHeader>
-          <CardSectionLayout>
-            {brands.length && filterBrands.length === 0 ? (
-              <div className="mt-4">
-                <NoData>
-                  <AlertTriangle className="text-[#4E5154]" />
-                  <p className="text-[#4E5154]">
-                    No se ha creado ninguna marca
-                  </p>
-                  <p className="text-[#94A3B8] font-semibold text-sm">
-                    Agrega uno en la parte posterior
-                  </p>
-                </NoData>
-              </div>
-            ) : (
-              (filterBrands.length > 0 ? filterBrands : brands).map((brand) => (
-                <CardTemplate
-                  key={brand.id}
-                  brand={brand}
-                  getBrandById={getBrandById}
-                  getItems={getBrands}
-                />
-              ))
-            )}
-          </CardSectionLayout>
+          {brands.length === 0 || filterBrands.length === 0 ? (
+            <div className="mt-4">
+              <NoData>
+                <AlertTriangle className="text-[#4E5154]" />
+                <p className="text-[#4E5154]">
+                  No se ha encontrado ninguna marca
+                </p>
+                <p className="text-[#94A3B8] font-semibold text-sm">
+                  Agrega uno en la parte posterior
+                </p>
+              </NoData>
+            </div>
+          ) : (
+            <CardSectionLayout>
+              {(filterBrands.length > 0 ? filterBrands : brands).map(
+                (brand) => (
+                  <CardTemplate
+                    key={brand.id}
+                    brand={brand}
+                    getBrandById={getBrandById}
+                    getItems={getBrands}
+                  />
+                )
+              )}
+            </CardSectionLayout>
+          )}
         </Card>
       </div>
     </Layout>

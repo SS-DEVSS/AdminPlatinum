@@ -8,7 +8,7 @@ import { toast } from "./use-toast";
 export const useBanners = () => {
   const [banners, setBanners] = useState<Banner[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
 
   const { authState } = useAuthContext();
   const client = axiosClient(authState.authKey);
@@ -24,6 +24,36 @@ export const useBanners = () => {
       setBanners(data.banners);
     } catch (error: any) {
       console.log(error.response.data);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addBanner = async (path: string) => {
+    try {
+      setLoading(true);
+      const headers = {
+        "Content-Type": "application/json",
+      };
+      const response = await client.post(
+        `/banners/`,
+        { desktopPath: path },
+        { headers }
+      );
+      toast({
+        title: "Banner agregado correctamente.",
+        variant: "success",
+        description: response.data.message,
+      });
+      await getAllBanners();
+    } catch (error: any) {
+      console.log(error);
+      setErrorMsg(error.response.data.error);
+      toast({
+        title: "Error al crear banner",
+        variant: "destructive",
+        description: errorMsg,
+      });
     } finally {
       setLoading(false);
     }
@@ -46,5 +76,5 @@ export const useBanners = () => {
     }
   };
 
-  return { banners, deleteBanner };
+  return { loading, banners, addBanner, deleteBanner };
 };

@@ -5,6 +5,14 @@ export interface TechnicalSheet {
   title: string;
   path?: string;
   url?: string;
+  imgUrl?: string | null;
   description: string;
   variant?: Variant | null;
 }
+
+/** **/
+export type Document = {
+  id: string;
+  title: string;
+  document_url?: string;
+};

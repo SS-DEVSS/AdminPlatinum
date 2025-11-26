@@ -5,22 +5,25 @@ import App from "./App";
 import DeleteModal from "./components/DeleteModal";
 import { DeleteModalProvider } from "./context/delete-context";
 import "./index.css";
-import Categorias from "./pages/categories/categories";
-import EditCategory from "./pages/categories/editCategory";
-import NewCategory from "./pages/categories/newCategory";
-import ForgotPassword from "./pages/auth/forgotPassword";
-import Login from "./pages/auth/login";
-import Marcas from "./pages/marcas";
-import Root from "./pages/root";
+import Categorias from "@/pages/categories/categories";
+import EditCategory from "@/pages/categories/editCategory";
+import NewCategory from "@/pages/categories/newCategory";
+import ForgotPassword from "@/pages/auth/forgotPassword";
+import Login from "@/pages/auth/login";
+import Marcas from "@/pages/marcas";
 import { BrandProvider } from "./context/brand-context";
 import { AuthProvider } from "./context/auth-context";
 import { Toaster } from "./components/ui/toaster";
-import TechincalSheets from "./pages/techincalSheets";
-import News from "./pages/news/news";
-import NewBlogPost from "./pages/news/newBlogPost";
-import EditBlogPost from "./pages/news/editBlogPost";
+import TechincalSheets from "@/pages/techincalSheets";
+import News from "@/pages/news/news";
+import NewBlogPost from "@/pages/news/newBlogPost";
+import EditBlogPost from "@/pages/news/editBlogPost";
 import { NewsProvider } from "./context/news-context";
-import Banners from "./pages/banners";
+import Banners from "@/pages/banners";
+import Products from "@/pages/products/products";
+import { CategoryContextProvider } from "./context/categories-context";
+import NewProduct from "./pages/products/newProduct";
+import Ajustes from "./pages/ajustes";
 
 const router = createBrowserRouter([
   {
@@ -37,7 +40,15 @@ const router = createBrowserRouter([
   },
   {
     path: "/productos",
-    element: <Root />,
+    element: <Products />,
+  },
+  {
+    path: "/producto/new-product",
+    element: <NewProduct />,
+  },
+  {
+    path: "/producto/:id",
+    element: <NewProduct />,
   },
   {
     path: "/marcas",
@@ -75,6 +86,10 @@ const router = createBrowserRouter([
     path: "/banners",
     element: <Banners />,
   },
+  {
+    path: "/ajustes",
+    element: <Ajustes />,
+  },
 ]);
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
@@ -82,11 +97,14 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <AuthProvider>
       <DeleteModalProvider>
         <BrandProvider>
-          <NewsProvider>
-            <DeleteModal />
-            <RouterProvider router={router} />
-            <Toaster />
-          </NewsProvider>
+          <CategoryContextProvider>
+            <NewsProvider>
+              <DeleteModal />
+
+              <RouterProvider router={router} />
+              <Toaster />
+            </NewsProvider>
+          </CategoryContextProvider>
         </BrandProvider>
       </DeleteModalProvider>
     </AuthProvider>

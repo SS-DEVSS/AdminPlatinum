@@ -47,14 +47,14 @@ export const useBrands = () => {
   const deleteBrand = async (id: Brand["id"]) => {
     try {
       setLoading(true);
-      const response = await client.delete(`/brands/${id}`);
+      await client.delete(`/brands/${id}`);
+      await getBrands();
       toast({
         title: "Marca eliminada correctamente.",
         variant: "success",
-        description: response.data.message,
       });
     } catch (error: any) {
-      setErrorMsg(error.response.data.error);
+      setErrorMsg(error.response?.data?.error || "Error inesperado.");
       toast({
         title: "Error al eliminar marca",
         variant: "destructive",
@@ -66,7 +66,7 @@ export const useBrands = () => {
     }
   };
 
-  const addBrand = async (brand: Omit<Brand, "id">) => {
+  const addBrand = async (brand: Brand) => {
     try {
       const headers = {
         "Content-Type": "application/json",
@@ -74,10 +74,11 @@ export const useBrands = () => {
       setLoading(true);
       const response = await client.post("/brands/", brand, { headers });
       toast({
-        title: "Marca eliminada correctamente.",
+        title: "Marca creada correctamente.",
         variant: "success",
         description: response.data.message,
       });
+      await getBrands();
     } catch (error: any) {
       console.log(error);
       setErrorMsg(error.response.data.error);
@@ -106,6 +107,7 @@ export const useBrands = () => {
         variant: "success",
         description: response.data.message,
       });
+      await getBrands();
     } catch (error: any) {
       console.log(error);
       setErrorMsg(error.response.data.error);

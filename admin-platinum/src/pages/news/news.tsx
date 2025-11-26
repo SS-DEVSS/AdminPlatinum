@@ -17,11 +17,24 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { newsContext } from "@/context/news-context";
 import NoData from "@/components/NoData";
+import { useMemo, useState } from "react";
 
 const News = () => {
   const { blogPosts, deleteBlogPost } = newsContext();
 
-  const filteredBlogPosts: BlogPost[] = [];
+  const [searchFilter, setSearchFilter] = useState("");
+
+  const filteredBlogPosts = useMemo(
+    () =>
+      blogPosts.filter((blogPost: BlogPost) =>
+        blogPost.title.toLowerCase().includes(searchFilter.toLowerCase())
+      ),
+    [searchFilter, blogPosts]
+  );
+
+  const handleSearchFilter = (e: any) => {
+    setSearchFilter(e.target.value);
+  };
 
   return (
     <Layout>
@@ -39,17 +52,13 @@ const News = () => {
               <Input
                 type="search"
                 placeholder="Buscar Noticia..."
-                // onChange={handleSearchFilter}
-                // value={filterBrandSearch}
+                onChange={handleSearchFilter}
+                value={searchFilter}
                 className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[336px]"
               />
             </div>
             <Link to="/noticias/nueva">
-              <Button
-                size="sm"
-                className="h-10 px-6 gap-1"
-                // onClick={() => handleOpenModal()}
-              >
+              <Button size="sm" className="h-10 px-6 gap-1">
                 <PlusCircle className="h-3.5 w-3.5 mr-2" />
                 <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
                   Agregar Noticia
@@ -59,12 +68,12 @@ const News = () => {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          {blogPosts.length === 0 && filteredBlogPosts.length === 0 ? (
+          {filteredBlogPosts.length === 0 ? (
             <div className="mt-4">
               <NoData>
                 <AlertTriangle className="text-[#4E5154]" />
                 <p className="text-[#4E5154]">
-                  No se ha creado ninguna noticia
+                  No se ha creado encontrado ninguna noticia
                 </p>
                 <p className="text-[#94A3B8] font-semibold text-sm">
                   Agrega uno en la parte posterior

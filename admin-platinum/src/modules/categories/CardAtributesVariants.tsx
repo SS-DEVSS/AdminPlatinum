@@ -41,6 +41,7 @@ import { useMemo } from "react";
 import { Dispatch } from "react";
 import { formTypes } from "./CatgegoryCU";
 import CardAttributeTable from "@/components/CardAttributeTable";
+import { useCategoryContext } from "@/context/categories-context";
 
 type CardAtributesVariantsProps = {
   form: formTypes;
@@ -74,6 +75,7 @@ const CardAtributesVariants = ({
   title,
   description,
 }: CardAtributesVariantsProps) => {
+  const { category } = useCategoryContext();
   const [type, setType] = useState<"VARIANT" | "PRODUCT" | "">("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState("add");
@@ -87,6 +89,8 @@ const CardAtributesVariants = ({
     variantAttributes: [],
   });
 
+  // console.log(attributes);
+
   useEffect(() => {
     if (title === "Atributos de Categoría") {
       setType("PRODUCT");
@@ -96,7 +100,58 @@ const CardAtributesVariants = ({
   }, []);
 
   useEffect(() => {
-    if (form.attributes) {
+    if (category && form.attributes.length) {
+      const tempArray = [
+        form.attributes.product,
+        form.attributes.variant,
+      ].flat();
+
+      const productAttributes: CategoryAtributes[] = [];
+      const variantAttributes: CategoryAtributes[] = [];
+
+      tempArray.forEach((attribute: CategoryAtributes) => {
+        if (attribute.scope === "PRODUCT") {
+          productAttributes.push(attribute);
+        } else {
+          variantAttributes.push(attribute);
+        }
+      });
+
+      setAttributes({
+        ...attributes,
+        productAttributes,
+        variantAttributes,
+      });
+    }
+  }, [category]);
+
+  useEffect(() => {
+    if (category && form?.attributes) {
+      const productAttributes = form.attributes.product || [];
+      const variantAttributes = form.attributes.variant || [];
+
+      const tempArray = [...productAttributes, ...variantAttributes];
+
+      const updatedProductAttributes: CategoryAtributes[] = [];
+      const updatedVariantAttributes: CategoryAtributes[] = [];
+
+      tempArray.forEach((attribute: CategoryAtributes) => {
+        if (attribute.scope === "PRODUCT") {
+          updatedProductAttributes.push(attribute);
+        } else {
+          updatedVariantAttributes.push(attribute);
+        }
+      });
+
+      setAttributes({
+        productAttributes: updatedProductAttributes,
+        variantAttributes: updatedVariantAttributes,
+      });
+    }
+  }, [category, form?.attributes]);
+
+  useEffect(() => {
+    if (form.attributes.length) {
       const productAttrs = form.attributes.filter(
         (attr) => attr.scope === "PRODUCT"
       );
@@ -126,7 +181,7 @@ const CardAtributesVariants = ({
     );
   }, [attributeForm]);
 
-  console.log(currentAttribute);
+  // console.log(currentAttribute);
 
   const handleAddClick = () => {
     setCurrentAttribute(null);
@@ -138,7 +193,7 @@ const CardAtributesVariants = ({
     setDialogMode("edit");
     setIsDialogOpen(true);
 
-    console.log(attribute);
+    // console.log(attribute);
     setCurrentAttribute(attribute);
 
     setAttributeForm({
@@ -150,12 +205,8 @@ const CardAtributesVariants = ({
     });
   };
 
-  useEffect(() => {
-    console.log("attributeForm updated:", attributeForm);
-  }, [attributeForm]);
-
-  console.log(attributes);
-  console.log(form.attributes);
+  // console.log(attributes);
+  // console.log(form.attributes);
 
   const handleDeleteClick = (name: string) => {
     const tempList = (
@@ -272,17 +323,32 @@ const CardAtributesVariants = ({
       <CardFooter className="justify-center border-t p-4">
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="gap-1"
-              onClick={handleAddClick}
-            >
-              <PlusCircle className="h-3.5 w-3.5" />
-              {title === "Atributos de Categoría"
-                ? "Agregar Atributos de Categoría"
-                : "Agregar Atributos de Variantes"}
-            </Button>
+            <>
+              {title === "Atributos de Categoría" && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="gap-1"
+                  onClick={handleAddClick}
+                  disabled={attributes.productAttributes.length >= 20}
+                >
+                  <PlusCircle className="h-3.5 w-3.5" />
+                  Agregar Atributos de Categoría
+                </Button>
+              )}
+              {title === "Atributos de Variantes" && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="gap-1"
+                  onClick={handleAddClick}
+                  disabled={attributes.productAttributes.length >= 20}
+                >
+                  <PlusCircle className="h-3.5 w-3.5" />
+                  Agregar Atributos de Variantes
+                </Button>
+              )}
+            </>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
@@ -345,7 +411,13 @@ const CardAtributesVariants = ({
               <span className="text-redLabel">*</span>Opcional?
             </Label>
             <RadioGroup
-              value={attributeForm.required == false ? "false" : "true"}
+              value={
+                attributeForm.required === null
+                  ? ""
+                  : attributeForm.required == true
+                  ? "true"
+                  : "false"
+              }
               onValueChange={(value) =>
                 setAttributeForm({
                   ...attributeForm,
@@ -365,7 +437,9 @@ const CardAtributesVariants = ({
 
             <DialogFooter>
               <Button
-                disabled={!validateForm}
+                disabled={
+                  !validateForm || attributes.productAttributes.length >= 20
+                }
                 type="submit"
                 onClick={handleSubmit}
               >

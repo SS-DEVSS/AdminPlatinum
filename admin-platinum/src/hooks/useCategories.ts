@@ -24,10 +24,6 @@ export const useCategories = () => {
     getCategories();
   }, []);
 
-  useEffect(() => {
-    console.log("Updated Category:", category);
-  }, [category]);
-
   const getCategories = async () => {
     try {
       setLoading(true);
@@ -47,7 +43,6 @@ export const useCategories = () => {
         `/categories/${id}?attributes=true&products=true`
       );
       setCategory(data);
-      console.log("Fetched Data:", data);
       return data;
     } catch (error) {
       console.error("Error fetching category by ID:", error);
@@ -65,6 +60,7 @@ export const useCategories = () => {
         variant: "success",
         description: response.data.message,
       });
+      await getCategories();
     } catch (error: any) {
       console.log(error);
       setErrorMsg(error.response.data.error);
@@ -99,12 +95,11 @@ export const useCategories = () => {
       });
       return response.data;
     } catch (error: any) {
-      console.log(error);
-      setErrorMsg(error.response.data.error);
+      console.log(error.response.data.error);
       toast({
         title: "Error al crear categoría",
         variant: "destructive",
-        description: errorMsg,
+        description: error.response.data.error,
       });
       return null;
     } finally {

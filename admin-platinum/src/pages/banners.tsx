@@ -1,5 +1,7 @@
+import MyDropzone from "@/components/Dropzone";
 import Layout from "@/components/Layouts/Layout";
 import NoData from "@/components/NoData";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -9,35 +11,30 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useBanners } from "@/hooks/useBanners";
+import { useS3FileManager } from "@/hooks/useS3FileManager";
 import { Banner } from "@/models/banner";
 import { AlertTriangle, GripVertical, XCircle } from "lucide-react";
 import { useState } from "react";
-import S3 from "react-aws-s3-typescript";
 
 const Banners = () => {
-  const [image, setImage] = useState(null);
+  const [image, setImage] = useState<File>({} as File);
 
-  const { banners, deleteBanner } = useBanners();
-
-  const handleImageFile = (e: any) => {
-    setImage(e.target.files[0]);
-  };
-
-  const cleanPath = (path: Banner["desktopUrl"]) => {
-    return path.slice(66);
-  };
+  const { loading, banners, addBanner, deleteBanner } = useBanners();
+  const { uploadFile, deleteFile } = useS3FileManager();
 
   const handleUpload = () => {
-    const ReactS3Client = new S3({
-      accessKeyId: import.meta.env.VITE_AWS_ACCESS_KEY_ID,
-      secretAccessKey: import.meta.env.VITE_AWS_SECRET_ACCESS_KEY,
-      bucketName: import.meta.env.VITE_AWS_S3_BUCKET_NAME,
-      s3Url: import.meta.env.VITE_AWS_S3_BUCKET_PUBLIC_URL,
-      region: import.meta.env.VITE_AWS_REGION,
+    if (image) {
+      uploadFile(image, (key) => {
+        addBanner(key);
+        setImage({} as File);
+      });
+    }
+  };
+
+  const handleDeleteBanner = (banner: Banner) => {
+    deleteFile(banner.desktopUrl, () => {
+      deleteBanner(banner.id);
     });
-    ReactS3Client.uploadFile(image!)
-      .then((data) => console.log(data))
-      .catch((e) => console.log(e));
   };
 
   return (
@@ -50,8 +47,17 @@ const Banners = () => {
             <CardDescription>Ingrese el nuevo banner deseado.</CardDescription>
           </CardHeader>
           <CardContent>
-            <input type="file" onChange={handleImageFile} />
-            <button onClick={handleUpload}>a</button>
+            <MyDropzone className="p-16" file={image} fileSetter={setImage} />
+            {image.name && (
+              <div className="flex justify-center mt-3 gap-2">
+                <Button onClick={() => setImage({} as File)} variant="outline">
+                  Cancelar
+                </Button>
+                <Button disabled={loading} onClick={handleUpload}>
+                  Subir Imagen
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
         <Card className="mt-4">
@@ -73,17 +79,17 @@ const Banners = () => {
                       <img
                         src={banner.desktopUrl}
                         alt={banner.desktopUrl}
-                        className="rounded-lg w-20"
+                        className="rounded-lg w-20 h-20 object-cover"
                       />
                     </div>
                   </CardHeader>
                   <CardContent className="my-auto p-0">
-                    {cleanPath(banner.desktopUrl)}
+                    {banner.desktopUrl.split("/").pop()}
                   </CardContent>
-                  <CardFooter className="block space-y-3 justify-end py-0 ml-auto">
+                  <CardFooter className="block space-y-3 justify-end py-3 ml-auto">
                     <XCircle
                       className="hover:cursor-pointer text-[#707F95]"
-                      onClick={() => deleteBanner(banner.id)}
+                      onClick={() => handleDeleteBanner(banner)}
                     />
                     <GripVertical className="hover:cursor-pointer text-[#707F95]" />
                   </CardFooter>

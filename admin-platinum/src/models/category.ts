@@ -5,7 +5,7 @@ export type Category = {
   name: string;
   imgUrl: string;
   description: string;
-  brands?: Brand["id"][];
+  brands?: Brand[];
   attributes?: CategoryAtributes[];
   products?: string[];
 };

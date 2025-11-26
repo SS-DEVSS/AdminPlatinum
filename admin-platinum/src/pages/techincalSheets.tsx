@@ -1,3 +1,4 @@
+import MyDropzone from "@/components/Dropzone";
 import CardSectionLayout from "@/components/Layouts/CardSectionLayout";
 import Layout from "@/components/Layouts/Layout";
 import NoData from "@/components/NoData";
@@ -10,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -21,16 +23,70 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { useS3FileManager } from "@/hooks/useS3FileManager";
 import { useTs } from "@/hooks/useTs";
 import { Variant } from "@/models/item";
 import { TechnicalSheet } from "@/models/technicalSheet";
 import { AlertTriangle, PlusCircle, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
+const dummy: Variant[] = [
+  {
+    id: "b7161ff2-6da6-412c-9f0b-cd315bb84a49",
+    idProduct: "f608614e-f5ef-42ec-949d-fd9013e4711b",
+    name: "ENGINE001",
+    sku: "ENG001",
+    price: 123,
+    stockQuantity: 5,
+
+    images: [
+      {
+        id: "bc567f41-a788-48c2-a11e-55599e5f7eb0",
+        url: "https://ss-platinum-driveline-api.s3.amazonaws.com/uploads/images/f1ef5864-44a6-4b91-8937-faf719a4a109.jpg",
+        order: 1,
+      },
+    ],
+  },
+  {
+    id: "b7161ff2-6da6-412c-9f0b-cd315bb84a48",
+    idProduct: "f608614e-f5ef-42ec-949d-fd9013e4711b",
+    name: "ENGINE001",
+    sku: "ENG001",
+    price: 123,
+    stockQuantity: 5,
+
+    images: [
+      {
+        id: "bc567f41-a788-48c2-a11e-55599e5f7eb0",
+        url: "https://ss-platinum-driveline-api.s3.amazonaws.com/uploads/images/f1ef5864-44a6-4b91-8937-faf719a4a109.jpg",
+        order: 1,
+      },
+    ],
+  },
+  {
+    id: "b7161ff2-6da6-412c-9f0b-cd315bb84a47",
+    idProduct: "f608614e-f5ef-42ec-949d-fd9013e4711b",
+    name: "ENGINE001",
+    sku: "ENG001",
+    price: 123,
+    stockQuantity: 5,
+
+    images: [
+      {
+        id: "bc567f41-a788-48c2-a11e-55599e5f7eb0",
+        url: "https://ss-platinum-driveline-api.s3.amazonaws.com/uploads/images/f1ef5864-44a6-4b91-8937-faf719a4a109.jpg",
+        order: 1,
+      },
+    ],
+  },
+];
+
 export interface TSFormType {
   title: string;
   path?: string;
   url?: string;
+  imgUrl?: string | null;
   description: string;
   variant?: Variant | null;
 }
@@ -39,51 +95,90 @@ const TsFormInitialState = {
   title: "",
   path: "",
   url: "",
+  imgUrl: null,
   description: "",
-  variant: {} as Variant,
+  variant: null,
 };
 
 const TechincalSheets = () => {
   const {
+    loading,
     technicalSheet,
     technicalSheets,
     addTechnicalSheet,
     getTsById,
     deleteTechnicalSheet,
   } = useTs();
+  const { uploadFile } = useS3FileManager();
 
   const [searchFilter, setSearchFilter] = useState("");
+  const [variantFilter, setVariantFilter] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [tsForm, setTsForm] = useState<TSFormType>(TsFormInitialState);
+  const [file, setFile] = useState<File>({ name: "" } as File);
+  const [image, setImage] = useState<File>({} as File);
 
-  const toggleModal = () => {
+  const toggleModal = async () => {
     setIsOpen(!isOpen);
+    if (!isEditMode) {
+      await setTsForm({ ...TsFormInitialState, path: "" });
+    }
   };
 
   //   Crear
 
-  const validateForm = () => {};
+  useEffect(() => {
+    setFile({} as File);
+    setImage({} as File);
+  }, [isEditMode]);
 
-  //   const validateForm = useMemo(
-  //     () =>
-  //       tsForm.title.trim() !== "" &&
-  //       tsForm.description.trim() !== "" &&
-  //       tsForm.path.includes("https://") &&
-  //       tsForm.path.includes(".pdf"),
-  //     [tsForm]
-  //   );
+  useEffect(() => {
+    if (file?.name && tsForm.path !== file.name) {
+      setTsForm((prev) => ({ ...prev, path: file.name }));
+    }
+  }, [file, tsForm.path]);
 
-  const handleSubmit = async (payload: TechnicalSheet) => {
+  const validateForm = useMemo(
+    () =>
+      tsForm.title.trim() !== "" &&
+      tsForm.description.trim() !== "" &&
+      tsForm!.path!.trim() !== "",
+    [tsForm]
+  );
+
+  const handleFileUpload = async (
+    file: File | null
+  ): Promise<string | null> => {
+    if (!file || file.name === undefined) {
+      return null;
+    }
+    return new Promise((resolve, reject) => {
+      uploadFile(file, (key) => resolve(key)).catch((error) => reject(error));
+    });
+  };
+
+  const handleSubmit = async () => {
     try {
       if (!isEditMode) {
+        const [fileKey, imageKey] = await Promise.all([
+          handleFileUpload(file),
+          handleFileUpload(image),
+        ]);
+
+        const payload = {
+          ...tsForm,
+          path: fileKey || null,
+          imgUrl: imageKey || null,
+        };
         await addTechnicalSheet(payload);
-        setTsForm(TsFormInitialState);
       }
     } catch (error) {
-      console.log(error);
+      console.error("Error during file upload or submit:", error);
     } finally {
       setTsForm(TsFormInitialState);
+      setFile({} as File);
+      setImage({} as File);
       setIsEditMode(false);
       toggleModal();
     }
@@ -99,16 +194,11 @@ const TechincalSheets = () => {
 
   useEffect(() => {
     if (isEditMode && technicalSheet) {
-      setTsForm({
-        title: technicalSheet.title,
-        path: technicalSheet.url,
-        description: technicalSheet.description,
-        variant: technicalSheet.variant,
-      });
+      setFile({ name: technicalSheet.url });
       setIsEditMode(true);
       setIsOpen(true);
     }
-  }, [isEditMode]);
+  }, [technicalSheet]);
 
   //   Read
 
@@ -120,9 +210,9 @@ const TechincalSheets = () => {
   const filteredTs = useMemo(
     () =>
       technicalSheets.filter((ts: TechnicalSheet) =>
-        ts.title.toLocaleLowerCase().includes(searchFilter.toLowerCase())
+        ts.title.toLowerCase().includes(variantFilter.toLocaleLowerCase())
       ),
-    [searchFilter]
+    [searchFilter, technicalSheets]
   );
 
   return (
@@ -146,7 +236,7 @@ const TechincalSheets = () => {
             </div>
             <Dialog
               open={isOpen}
-              onOpenChange={(open) => {
+              onOpenChange={(open: boolean) => {
                 if (!open) {
                   setTsForm(TsFormInitialState);
                   setIsEditMode(false);
@@ -166,7 +256,7 @@ const TechincalSheets = () => {
                   </span>
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
+              <DialogContent className="w-[2000px]">
                 <DialogHeader>
                   <DialogTitle className="mb-2">
                     {isEditMode ? "Editar Boletín" : "Agregar Boletín"}
@@ -175,48 +265,123 @@ const TechincalSheets = () => {
                     {isEditMode ? "Editar Boletín" : "Agregar Boletín"}
                   </DialogDescription>
                 </DialogHeader>
-                <Label htmlFor="title">
-                  <span className="text-redLabel">*</span> Título
-                </Label>
-                <Input
-                  id="title"
-                  name="title"
-                  type="text"
-                  placeholder="ej. Platinum"
-                  value={tsForm.title}
-                  onChange={handleForm}
-                  required
-                />
-                <Label htmlFor="path">
-                  <span className="text-redLabel">*</span> Documento
-                </Label>
-                <Input
-                  id="path"
-                  name="path"
-                  type="text"
-                  placeholder="ej. Platinum"
-                  value={tsForm.path}
-                  onChange={handleForm}
-                  required
-                />
-                <Label htmlFor="description">
-                  <span className="text-redLabel">*</span> Descripción
-                </Label>
+                <section className="w-full flex gap-4">
+                  <div className="w-full">
+                    <Label htmlFor="title" className="block mb-2">
+                      <span className="text-redLabel">*</span> Título
+                    </Label>
+                    <Input
+                      id="title"
+                      name="title"
+                      type="text"
+                      placeholder="ej. Platinum"
+                      value={tsForm.title}
+                      onChange={handleForm}
+                      maxLength={255}
+                      required
+                    />
+                  </div>
+                  <div className="w-full">
+                    <Label htmlFor="description" className="block mb-2">
+                      <span className="text-redLabel">*</span> Descripción
+                    </Label>
+                    <Input
+                      id="description"
+                      name="description"
+                      type="text"
+                      placeholder="ej. Platinum"
+                      value={tsForm.description}
+                      onChange={handleForm}
+                      maxLength={526}
+                      required
+                    />
+                  </div>
+                </section>
+                <section className="flex gap-4">
+                  <div>
+                    <Label htmlFor="path" className="block mb-2">
+                      <span className="text-redLabel">*</span> Documento
+                    </Label>
+                    <MyDropzone
+                      className={"p-8"}
+                      file={file}
+                      fileSetter={setFile}
+                      type={"document"}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="path" className="block mb-2">
+                      <span className="text-redLabel"></span> Imágen de Portada
+                    </Label>
+                    <MyDropzone
+                      className={"p-8"}
+                      file={image}
+                      fileSetter={setImage}
+                    />
+                  </div>
+                </section>
+                <Label htmlFor="logoImgUrl">Variante</Label>
                 <Input
                   id="description"
                   name="description"
                   type="text"
                   placeholder="ej. Platinum"
-                  value={tsForm.description}
-                  onChange={handleForm}
+                  value={variantFilter}
+                  onChange={(e) => setVariantFilter(e.target.value)}
+                  maxLength={526}
                   required
                 />
-                <Label htmlFor="logoImgUrl">Variante</Label>
 
+                {dummy.map((variantDisplay: Variant) => (
+                  <Card
+                    key={variantDisplay.id}
+                    className="flex flex-row items-center"
+                  >
+                    <CardHeader>
+                      <Checkbox
+                        id="variant"
+                        onCheckedChange={(e) => {
+                          if (e === true) {
+                            setTsForm({
+                              ...tsForm,
+                              variant: variantDisplay,
+                            });
+                          } else {
+                            setTsForm({
+                              ...tsForm,
+                              variant: null,
+                            });
+                          }
+                        }}
+                        checked={
+                          tsForm.variant === variantDisplay ? true : false
+                        }
+                        className="border-slate-400"
+                      />
+                    </CardHeader>
+                    <Separator
+                      orientation="vertical"
+                      className="w-0.5 bg-slate-100"
+                    />
+                    <CardContent className="p-3">
+                      <img
+                        className="w-16 aspect-square rounded-sm"
+                        src={variantDisplay.images![0].url}
+                      />
+                    </CardContent>
+                    <CardContent className="mt-2">
+                      <p className="text-slate-400 text-sm font-light">
+                        <span className="select-none">#</span>
+                        {variantDisplay.id}
+                      </p>
+                      <p className="mt-2">{variantDisplay.name}</p>
+                    </CardContent>
+                  </Card>
+                ))}
                 <DialogFooter>
                   <Button
                     disabled={!validateForm}
-                    onClick={() => handleSubmit(tsForm)}
+                    onClick={handleSubmit}
                     type="submit"
                   >
                     {isEditMode ? "Actualizar Marca" : "Agregar Marca"}
@@ -227,7 +392,9 @@ const TechincalSheets = () => {
           </div>
         </CardHeader>
         <CardContent className="flex flex-col flex-grow p-0">
-          {technicalSheets.length === 0 && filteredTs.length === 0 ? (
+          {loading ? (
+            <p>Loading...</p>
+          ) : technicalSheets.length === 0 || filteredTs.length === 0 ? (
             <div className="mt-4">
               <NoData>
                 <AlertTriangle className="text-[#4E5154]" />
@@ -239,7 +406,7 @@ const TechincalSheets = () => {
             </div>
           ) : (
             <CardSectionLayout>
-              {(filteredTs.length > 0 ? filteredTs : technicalSheets).map(
+              {(searchFilter.length > 0 ? filteredTs : technicalSheets).map(
                 (ts: TechnicalSheet) => (
                   <TsCard
                     key={ts.id}

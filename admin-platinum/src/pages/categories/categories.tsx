@@ -21,20 +21,30 @@ import {
 } from "@/components/ui/select";
 import { Link } from "react-router-dom";
 import { Category } from "@/models/category";
-import { useCategories } from "@/hooks/useCategories";
 import { useBrands } from "@/hooks/useBrands";
 import { Brand } from "@/models/brand";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMemo } from "react";
 import NoData from "@/components/NoData";
+import { useBrandContext } from "@/context/brand-context";
+import { useCategoryContext } from "@/context/categories-context";
 
 const Categorias = () => {
+  const { selectedBrand, setSelectedBrand } = useBrandContext();
   const { categories, getCategories, deleteCategory, getCategoryById } =
-    useCategories();
+    useCategoryContext();
   const { brands } = useBrands();
 
   const [searchFilter, setSearchFilter] = useState("");
   const [brandFilter, setBrandFilter] = useState<Brand["id"]>("");
+
+  useEffect(() => {
+    if (selectedBrand) {
+      setBrandFilter(selectedBrand);
+      console.log(brandFilter);
+      setSelectedBrand(null);
+    }
+  }, []);
 
   const handleSearchFilter = (e: any) => {
     const { value } = e.target;
@@ -101,7 +111,7 @@ const Categorias = () => {
               </Link>
             </div>
           </CardHeader>
-          {categories.length === 0 && filteredCategories.length === 0 ? (
+          {categories.length === 0 || filteredCategories.length === 0 ? (
             <div className="mt-4">
               <NoData>
                 <AlertTriangle className="text-[#4E5154]" />
