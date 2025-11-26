@@ -1,29 +1,43 @@
 import { Brand } from "./brand";
 
 export type Category = {
-  id: number;
+  id?: string;
   name: string;
-  image: string;
+  imgUrl: string;
   description: string;
   brands?: Brand[];
   attributes?: CategoryAtributes[];
   products?: string[];
 };
 
+export type CategoryResponse = {
+  id?: string;
+  name: string;
+  imgUrl: string;
+  description: string;
+  brands?: Brand[];
+  attributes?: {
+    product: CategoryAtributes[];
+    variant: CategoryAtributes[];
+  };
+  products?: [];
+};
+
 export enum CategoryAttributesTypes {
   STRING = "string",
-  NUMERIC = "numeric",
+  NUMERIC = "number",
   DATE = "date",
+  BOOLEAN = "boolean",
 }
 
 export const typesArray = Object.values(CategoryAttributesTypes);
 
-console.log(typesArray);
-
 export type CategoryAtributes = {
-  id: string;
-  id_category: string;
+  id?: string;
   name: string;
-  type: CategoryAttributesTypes;
   required: boolean;
+  type: CategoryAttributesTypes;
+  order: number;
+  scope: "PRODUCT" | "VARIANT";
+  id_category?: string;
 };

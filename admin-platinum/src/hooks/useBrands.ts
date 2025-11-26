@@ -1,18 +1,135 @@
+import { useAuthContext } from "@/context/auth-context";
 import { Brand } from "@/models/brand";
-import { brandsSample } from "@/sampleData/brands";
+import axiosClient from "@/services/axiosInstance";
 import { useEffect, useState } from "react";
+import { useToast } from "./use-toast";
 
 export const useBrands = () => {
-  const [brands, setBrands] = useState<Brand[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
+  const { authState } = useAuthContext();
+  const client = axiosClient(authState.authKey);
+  const { toast } = useToast();
 
-  const addBrand = (brand: Brand) => {};
-  const updateBrand = (brand: Brand) => {};
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [brand, setBrand] = useState<Brand | null>({} as Brand);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
-    setBrands(brandsSample);
+    getBrands();
   }, []);
 
-  return { brands, loading, error, addBrand, updateBrand };
+  const getBrands = async () => {
+    try {
+      setLoading(true);
+      const data = await client.get("/brands");
+      setBrands(data.data);
+    } catch (error) {
+      console.error("Error fetching brands:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getBrandById = async (id: Brand["id"]) => {
+    try {
+      setLoading(true);
+      const data = await client.get(`/brands/${id}`);
+      setBrand(data.data);
+      return data.data;
+    } catch (error) {
+      console.error("Error fetching brands:", error);
+    } finally {
+      console.log(brand);
+      setLoading(false);
+    }
+  };
+
+  const deleteBrand = async (id: Brand["id"]) => {
+    try {
+      setLoading(true);
+      await client.delete(`/brands/${id}`);
+      await getBrands();
+      toast({
+        title: "Marca eliminada correctamente.",
+        variant: "success",
+      });
+    } catch (error: any) {
+      setErrorMsg(error.response?.data?.error || "Error inesperado.");
+      toast({
+        title: "Error al eliminar marca",
+        variant: "destructive",
+        description: errorMsg,
+      });
+    } finally {
+      setLoading(false);
+      setErrorMsg("");
+    }
+  };
+
+  const addBrand = async (brand: Brand) => {
+    try {
+      const headers = {
+        "Content-Type": "application/json",
+      };
+      setLoading(true);
+      const response = await client.post("/brands/", brand, { headers });
+      toast({
+        title: "Marca creada correctamente.",
+        variant: "success",
+        description: response.data.message,
+      });
+      await getBrands();
+    } catch (error: any) {
+      console.log(error);
+      setErrorMsg(error.response.data.error);
+      toast({
+        title: "Error al eliminar marca",
+        variant: "destructive",
+        description: errorMsg,
+      });
+    } finally {
+      setLoading(false);
+      setErrorMsg("");
+    }
+  };
+
+  const updateBrand = async (brand: Brand) => {
+    try {
+      const headers = {
+        "Content-Type": "application/json",
+      };
+      setLoading(true);
+      const response = await client.patch(`/brands/${brand.id}`, brand, {
+        headers,
+      });
+      toast({
+        title: "Marca actualizada correctamente.",
+        variant: "success",
+        description: response.data.message,
+      });
+      await getBrands();
+    } catch (error: any) {
+      console.log(error);
+      setErrorMsg(error.response.data.error);
+      toast({
+        title: "Error al actualizar marca",
+        variant: "destructive",
+        description: errorMsg,
+      });
+    } finally {
+      setLoading(false);
+      setErrorMsg("");
+    }
+  };
+
+  return {
+    brands,
+    brand,
+    loading,
+    getBrands,
+    getBrandById,
+    deleteBrand,
+    addBrand,
+    updateBrand,
+  };
 };

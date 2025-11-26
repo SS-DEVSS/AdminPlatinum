@@ -7,7 +7,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { PlusCircle, Search } from "lucide-react";
+import { AlertTriangle, PlusCircle, Search } from "lucide-react";
 import CardSectionLayout from "@/components/Layouts/CardSectionLayout";
 import CardTemplate from "@/components/Layouts/CardTemplate";
 import {
@@ -22,31 +22,49 @@ import {
 import { Link } from "react-router-dom";
 import { Category } from "@/models/category";
 import { useBrands } from "@/hooks/useBrands";
+import { Brand } from "@/models/brand";
+import { useEffect, useState } from "react";
+import { useMemo } from "react";
+import NoData from "@/components/NoData";
+import { useBrandContext } from "@/context/brand-context";
+import { useCategoryContext } from "@/context/categories-context";
 
-type Props = {};
-
-const categorias: Category[] = [
-  {
-    id: 1,
-    image:
-      "https://www.platinumdriveline.com/wp-content/uploads/2020/07/NewBoxes-4-2048x1365.jpg",
-    name: "Clutches",
-    description:
-      "Lorem ipsum dolor, sit amet consectetur adipisicing elit. Repellendus rem minus, soluta officia ipsam repudiandae quia rerum voluptatibus ipsum minima",
-    brands: [
-      {
-        id: "1",
-        name: "Platinum Driveline",
-        logo_img_url:
-          "https://www.platinumdriveline.com/wp-content/uploads/2020/07/NewBoxes-4-2048x1365.jpg",
-      },
-    ],
-    products: ["test"],
-  },
-];
-
-const Categorias = (props: Props) => {
+const Categorias = () => {
+  const { selectedBrand, setSelectedBrand } = useBrandContext();
+  const { categories, getCategories, deleteCategory, getCategoryById } =
+    useCategoryContext();
   const { brands } = useBrands();
+
+  const [searchFilter, setSearchFilter] = useState("");
+  const [brandFilter, setBrandFilter] = useState<Brand["id"]>("");
+
+  useEffect(() => {
+    if (selectedBrand) {
+      setBrandFilter(selectedBrand);
+      console.log(brandFilter);
+      setSelectedBrand(null);
+    }
+  }, []);
+
+  const handleSearchFilter = (e: any) => {
+    const { value } = e.target;
+    setSearchFilter(value);
+  };
+
+  const filteredCategories = useMemo(() => {
+    return categories.filter((category: Category) => {
+      const matchesSearch =
+        !searchFilter ||
+        category.name.toLowerCase().includes(searchFilter.toLowerCase());
+      const matchesBrand =
+        !brandFilter ||
+        brandFilter === "-" ||
+        category.brands?.some((brand: any) => brand.id === brandFilter);
+
+      return matchesSearch && matchesBrand;
+    });
+  }, [searchFilter, brandFilter, categories]);
+
   return (
     <Layout>
       <div>
@@ -62,18 +80,23 @@ const Categorias = (props: Props) => {
                 <Input
                   type="search"
                   placeholder="Buscar Categoría..."
+                  value={searchFilter}
+                  onChange={handleSearchFilter}
                   className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[336px]"
                 />
               </div>
-              <Select>
+              <Select value={brandFilter} onValueChange={setBrandFilter}>
                 <SelectTrigger className="w-[280px]">
                   <SelectValue placeholder="Selecciona una marca" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
                     <SelectLabel>Marcas</SelectLabel>
-                    {brands.map((brand) => (
-                      <SelectItem value={brand.id}>{brand.name}</SelectItem>
+                    <SelectItem value={"-"}>Seleccionar</SelectItem>
+                    {brands.map((brand: Brand) => (
+                      <SelectItem key={brand.id} value={brand.id!}>
+                        {brand.name}
+                      </SelectItem>
                     ))}
                   </SelectGroup>
                 </SelectContent>
@@ -88,23 +111,34 @@ const Categorias = (props: Props) => {
               </Link>
             </div>
           </CardHeader>
-          <CardSectionLayout>
-            {categorias.length === 0 ? (
-              <></>
-            ) : (
-              <>
-                {categorias.map((categoria) => (
-                  <CardTemplate
-                    key={categoria.id}
-                    image={categoria.image}
-                    title={categoria.name}
-                    brands={categoria.brands}
-                    description={categoria.description}
-                  />
-                ))}
-              </>
-            )}
-          </CardSectionLayout>
+          {categories.length === 0 || filteredCategories.length === 0 ? (
+            <div className="mt-4">
+              <NoData>
+                <AlertTriangle className="text-[#4E5154]" />
+                <p className="text-[#4E5154]">
+                  No se ha creado ninguna categoría
+                </p>
+                <p className="text-[#94A3B8] font-semibold text-sm">
+                  Agrega uno en la parte posterior
+                </p>
+              </NoData>
+            </div>
+          ) : (
+            <CardSectionLayout>
+              {(filteredCategories.length > 0
+                ? filteredCategories
+                : categories
+              ).map((categoria: Category) => (
+                <CardTemplate
+                  category={categoria}
+                  key={categoria.id}
+                  getItems={getCategories}
+                  deleteCategory={deleteCategory}
+                  getCategoryById={getCategoryById}
+                />
+              ))}
+            </CardSectionLayout>
+          )}
         </Card>
       </div>
     </Layout>

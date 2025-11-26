@@ -9,7 +9,6 @@ import {
   Settings,
   ShoppingCart,
   LogOut,
-  Boxes,
   Newspaper,
   Megaphone,
   Dock,
@@ -25,7 +24,6 @@ import {
 } from "@/components/ui/tooltip";
 
 const menuItems = [
-  { href: "/kits", icon: Boxes, text: "Kits" },
   { href: "/productos", icon: Package, text: "Productos" },
   { href: "/marcas", icon: ShoppingCart, text: "Marcas" },
   { href: "/categorias", icon: LayoutGrid, text: "Categorías" },

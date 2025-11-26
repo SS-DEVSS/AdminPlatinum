@@ -1,3 +1,5 @@
+import MyDropzone from "@/components/Dropzone";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -8,17 +10,147 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { Category } from "@/models/category";
-import { ChevronLeft, PlusCircle } from "lucide-react";
-import { Link } from "react-router-dom";
+import { useBrandContext } from "@/context/brand-context";
+import { useBrands } from "@/hooks/useBrands";
+import { useS3FileManager } from "@/hooks/useS3FileManager";
+import { Category, CategoryAtributes } from "@/models/category";
+import {
+  ChevronLeft,
+  PlusCircle,
+  PlusCircleIcon,
+  XCircleIcon,
+} from "lucide-react";
+import { useEffect, useMemo } from "react";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import CardAtributesVariants from "./CardAtributesVariants";
 
 type CategoryCUProps = {
-  category?: Category;
+  category?: Category | null;
+  addCategory?: (category: Omit<Category, "id">) => void;
 };
 
-const CategoryCU = ({ category }: CategoryCUProps) => {
+export interface formTypes {
+  name: string;
+  description: string;
+  imgUrl: string;
+  brands: string[];
+  attributes: CategoryAtributes[];
+}
+
+const CategoryCU = ({ category, addCategory }: CategoryCUProps) => {
+  const { selectedBrand } = useBrandContext();
+  const { brands } = useBrands();
+  const { uploadFile } = useS3FileManager();
+  const navigate = useNavigate();
+
+  const [selectedBrandIds, setSelectedBrandIds] = useState<Set<string>>(
+    new Set()
+  );
+  const [image, setImage] = useState<File>({ name: "" } as File);
+  const [form, setForm] = useState<formTypes>({
+    name: "",
+    description: "",
+    imgUrl: "",
+    brands: [],
+    attributes: [],
+  });
+
+  console.log(form);
+
+  useEffect(() => {
+    if (selectedBrand) {
+      setSelectedBrandIds((prev) => {
+        const newSet = new Set(prev);
+        newSet.add(selectedBrand);
+        return newSet;
+      });
+      setForm({
+        ...form,
+        brands: [...form.brands, selectedBrand],
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (category) {
+      console.log(category);
+      setForm(category);
+      setImage({ ...image, name: category.imgUrl });
+      const tempSet = new Set();
+
+      category.brands!.map((category: Category) => {
+        tempSet.add(category.id);
+      });
+      setSelectedBrandIds(tempSet);
+    }
+  }, [category]);
+
+  useEffect(() => {
+    if (image.name !== form.imgUrl) {
+      setForm({
+        ...form,
+        imgUrl: image.name,
+      });
+    }
+  }, [image]);
+
+  const handleFormInput = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setForm({
+      ...form,
+      [name]: value,
+    });
+  };
+
+  const toggleBrandSelection = (brandId: string) => {
+    setForm({
+      ...form,
+      brands: [...form.brands, brandId],
+    });
+    setSelectedBrandIds((prev) => {
+      const updatedSet = new Set(prev);
+      if (updatedSet.has(brandId)) {
+        updatedSet.delete(brandId);
+      } else {
+        updatedSet.add(brandId);
+      }
+      return updatedSet;
+    });
+  };
+
+  const validateForm = useMemo(
+    () =>
+      form.name.trim() != "" &&
+      form.description.trim() != "" &&
+      form.imgUrl?.trim() !== "" &&
+      form.brands.length > 0 &&
+      form.attributes.length > 0,
+    [form]
+  );
+
+  const handleSubmit = async (form: formTypes) => {
+    try {
+      if (addCategory && image) {
+        uploadFile(image, async (_, location) => {
+          const response = (await addCategory({
+            ...form,
+            imgUrl: location,
+          })) as { id: string } | undefined;
+          if (response && response.id) {
+            navigate("/categorias");
+          }
+        });
+      }
+    } catch (error) {
+      console.error("Error in handleSubmit:", error);
+    }
+  };
+
   return (
     <main>
       <header className="flex justify-between">
@@ -37,7 +169,12 @@ const CategoryCU = ({ category }: CategoryCUProps) => {
             <Button variant={"outline"}>Cancelar</Button>
           </Link>
           {!category ? (
-            <Button disabled size="sm" className="h-10 px-6 gap-1">
+            <Button
+              size="sm"
+              disabled={!validateForm}
+              className="h-10 px-6 gap-1"
+              onClick={() => handleSubmit(form)}
+            >
               <PlusCircle className="h-3.5 w-3.5 mr-2" />
               <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
                 Agregar Categoría
@@ -54,7 +191,7 @@ const CategoryCU = ({ category }: CategoryCUProps) => {
       </header>
       <section>
         <section className="mt-4 flex flex-col md:flex-row justify-between gap-3 w-full">
-          <Card x-chunk="dashboard-07-chunk-0" className="w-full">
+          <Card x-chunk="dashboard-07-chunk-0" className="w-1/2">
             <CardHeader>
               <CardTitle>Detalles</CardTitle>
               <CardDescription>
@@ -67,46 +204,114 @@ const CategoryCU = ({ category }: CategoryCUProps) => {
                   <Label htmlFor="name">Name</Label>
                   <Input
                     id="name"
+                    name="name"
                     type="text"
                     className="w-full"
                     placeholder="Gamer Gear Pro Controller"
-                    defaultValue={category ? category.name : ""}
+                    onChange={handleFormInput}
+                    value={category ? category.name : form.name}
+                    maxLength={255}
                   />
                 </div>
                 <div className="grid gap-3">
-                  <Label htmlFor="description">Description</Label>
+                  <Label htmlFor="description">Descripción</Label>
                   <Textarea
                     id="description"
+                    name="description"
                     placeholder="Lorem ipsum dolor sit amet."
-                    defaultValue={category ? category.description : ""}
-                    className="min-h-32"
+                    onChange={handleFormInput}
+                    value={category ? category.description : form.description}
+                    className="min-h-20"
+                    maxLength={255}
+                  />
+                </div>
+                <div className="grid gap-3">
+                  <Label htmlFor="image">Imagen de la Categoría</Label>
+                  <MyDropzone
+                    file={image}
+                    fileSetter={setImage}
+                    className={"p-6"}
                   />
                 </div>
               </div>
             </CardContent>
           </Card>
-          <Card x-chunk="dashboard-07-chunk-0" className="w-full">
-            <CardHeader>
-              <CardTitle>Imagen de la Categoría</CardTitle>
-              <CardDescription>Ingrese la imagen deseada.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Input id="name" type="file" className="w-full" />
-            </CardContent>
-          </Card>
+          <section className="w-1/2 flex flex-col justify-between gap-4">
+            <Card x-chunk="dashboard-07-chunk-0" className="flex-grow">
+              <CardHeader>
+                <CardTitle>Asociar a Marcas</CardTitle>
+                <CardDescription>
+                  Selecciones una marca si desea asociarla a la categoría.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <CardTitle className="text-base">Marcas Asociadas:</CardTitle>
+                <section className="flex mt-4 gap-3">
+                  {[...selectedBrandIds].map((id) => {
+                    const brand = brands.find((brand) => brand.id === id);
+                    return brand ? (
+                      <Badge
+                        className="text-base px-5 py-2 flex gap-3"
+                        key={brand.id}
+                      >
+                        {brand.name}
+                        <XCircleIcon
+                          onClick={() => toggleBrandSelection(brand.id!)}
+                          className="hover:cursor-pointer"
+                        />
+                      </Badge>
+                    ) : null;
+                  })}
+                </section>
+              </CardContent>
+              <Separator />
+              <CardContent>
+                <CardTitle className="text-base my-5">
+                  Marcas por explorar:
+                </CardTitle>
+                <section className="flex gap-3 flex-wrap">
+                  {brands.map((brand) => {
+                    const isSelected = selectedBrandIds.has(brand.id!);
+                    return (
+                      <Badge
+                        key={brand.id}
+                        variant={`${isSelected ? "default" : "secondary"}`}
+                        className="text-base px-5 py-2 flex gap-3"
+                      >
+                        {brand.name}
+                        {!isSelected ? (
+                          <PlusCircleIcon
+                            onClick={() => toggleBrandSelection(brand.id!)}
+                            className="hover:cursor-pointer"
+                          />
+                        ) : (
+                          <XCircleIcon
+                            onClick={() => toggleBrandSelection(brand.id!)}
+                            className="hover:cursor-pointer"
+                          />
+                        )}
+                      </Badge>
+                    );
+                  })}
+                </section>
+              </CardContent>
+            </Card>
+          </section>
         </section>
-        <section className="mt-4 flex flex-col md:flex-row justify-between gap-3 w-full">
-          <CardAtributesVariants
-            category={category}
-            title={"Atributos de Categoría"}
-            description={"Ingresa los atributos de la categoría"}
-          />
-          <CardAtributesVariants
-            category={category}
-            title={"Atributos de Variantes"}
-            description={"Ingresa los atributos de la variante"}
-          />
-        </section>
+      </section>
+      <section className="mt-4 flex flex-col md:flex-row justify-between gap-3 w-full">
+        <CardAtributesVariants
+          form={form}
+          setForm={setForm}
+          title={"Atributos de Categoría"}
+          description={"Ingresa los atributos de la categoría"}
+        />
+        <CardAtributesVariants
+          form={form}
+          setForm={setForm}
+          title={"Atributos de Variantes"}
+          description={"Ingresa los atributos de la variante"}
+        />
       </section>
     </main>
   );
