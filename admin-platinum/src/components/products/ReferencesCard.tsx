@@ -24,10 +24,9 @@ type ReferencesCardProps = {
 
 const ReferencesCard = ({ state, setState, product }: ReferencesCardProps) => {
   const [showInput, setShowInput] = useState(false);
-  const [referenceNumber, setReferenceNumber] = useState<number | null>(null);
-  // const [form, setForm] = useState({
-  //   references: product ? product.references : ([] as Reference[]),
-  // });
+  const [referenceNumber, setReferenceNumber] = useState<string | null>(null);
+  const [referenceBrand, setReferenceBrand] = useState<string>("");
+  const [referenceDescription, setReferenceDescription] = useState<string>("");
 
   if (product) {
     setState({
@@ -40,16 +39,23 @@ const ReferencesCard = ({ state, setState, product }: ReferencesCardProps) => {
   };
 
   const handleAddReference = () => {
-    if (referenceNumber !== null) {
+    if (referenceNumber && referenceBrand) {
       const newReference: Reference = {
         id: crypto.randomUUID(),
-        value: referenceNumber,
+        sku: "", // SKU will be linked to product on save
+        referenceBrand: referenceBrand,
+        referenceNumber: referenceNumber,
+        typeOfPart: null,
+        type: "Aftermarket", // Default
+        description: referenceDescription || null,
       };
       setState((prevForm) => ({
         ...prevForm,
         references: [...prevForm.references, newReference],
       }));
-      setReferenceNumber(null);
+      setReferenceNumber("");
+      setReferenceBrand("");
+      setReferenceDescription("");
       setShowInput(false);
     }
   };
@@ -81,31 +87,51 @@ const ReferencesCard = ({ state, setState, product }: ReferencesCardProps) => {
             {state.references.map((reference) => (
               <div
                 key={reference.id}
-                className="bg-black rounded-full text-white p-2 mb-2 flex gap-3 px-6"
+                className="bg-black rounded-full text-white p-2 mb-2 flex gap-3 px-6 items-center"
               >
-                {reference.value}
+                <span>
+                  {reference.referenceBrand && <span className="font-bold mr-1">{reference.referenceBrand}:</span>}
+                  {reference.referenceNumber}
+                </span>
                 <X
                   onClick={() => handleRemoveReference(reference.id)}
-                  className="cursor-pointer"
+                  className="cursor-pointer w-4 h-4"
                 />
               </div>
             ))}
           </section>
         )}
         {showInput && (
-          <div className="flex gap-2 mt-4">
+          <div className="flex flex-col gap-2 mt-4">
+            <div className="flex gap-2">
+              <Input
+                type="text"
+                className="w-1/3"
+                placeholder="Marca (Ej. LUK)"
+                value={referenceBrand}
+                onChange={(e) => setReferenceBrand(e.target.value)}
+              />
+              <Input
+                type="text"
+                className="w-2/3"
+                placeholder="Número de referencia"
+                value={referenceNumber || ""}
+                onChange={(e) => setReferenceNumber(e.target.value)}
+              />
+            </div>
             <Input
-              id="referencia"
-              type="number"
+              type="text"
               className="w-full"
-              placeholder="Número de referencia"
-              value={referenceNumber !== null ? referenceNumber : ""}
-              onChange={(e) => setReferenceNumber(Number(e.target.value))}
+              placeholder="Descripción (Opcional)"
+              value={referenceDescription}
+              onChange={(e) => setReferenceDescription(e.target.value)}
             />
-            <Button variant="outline" onClick={handleAddClick}>
-              Cancelar
-            </Button>
-            <Button onClick={handleAddReference}>Agregar</Button>
+            <div className="flex justify-end gap-2 mt-2">
+              <Button variant="outline" onClick={handleAddClick}>
+                Cancelar
+              </Button>
+              <Button onClick={handleAddReference} disabled={!referenceNumber || !referenceBrand}>Agregar</Button>
+            </div>
           </div>
         )}
       </CardContent>

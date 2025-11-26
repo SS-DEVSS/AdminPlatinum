@@ -120,7 +120,11 @@ const DetailsCard = ({ product, state, setState }: DetailsCardProps) => {
               <Select
                 onValueChange={handleCategoryChange}
                 disabled={state.brand === ""}
-                value={product ? product.idCategory : state.category}
+                value={
+                  typeof state.category === "string"
+                    ? state.category
+                    : state.category?.id || ""
+                }
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Selecciona una categoría" />

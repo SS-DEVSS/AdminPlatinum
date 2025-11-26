@@ -5,6 +5,8 @@ import { useState, useMemo } from "react";
 export interface detailsType {
   id?: string | null;
   name: string;
+  sku: string; // Added SKU
+  brand: string; // Added Brand ID
   type: "SINGLE" | "KIT" | null;
   description: string;
   category: Pick<Category, "id" | "name"> | null;
@@ -13,6 +15,8 @@ export interface detailsType {
 
 export const stateSkeleton = {
   name: "",
+  sku: "",
+  brand: "",
   type: null,
   description: "",
   category: null,
@@ -21,6 +25,7 @@ export const stateSkeleton = {
 
 export const useFormState = () => {
   const [detailsState, setDetailsState] = useState<detailsType>(stateSkeleton);
+  const [attributesState, setAttributesState] = useState<any>({});
   const [referencesState, setReferencesState] = useState({
     references: [] as Reference[],
   });
@@ -40,7 +45,7 @@ export const useFormState = () => {
   useMemo(() => {
     {
       isDetailsValid &&
-        referencesState.references.length > 0 &&
+        // referencesState.references.length > 0 && // Maybe not required for Step 1?
         setCanContinue(true);
     }
   }, [isDetailsValid, isReferencesValid]);
@@ -48,6 +53,8 @@ export const useFormState = () => {
   return {
     detailsState,
     setDetailsState,
+    attributesState,
+    setAttributesState,
     referencesState,
     setReferencesState,
     canContinue,

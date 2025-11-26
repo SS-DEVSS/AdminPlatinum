@@ -16,21 +16,15 @@ type getComponentProps = {
   type: CategoryAttributesTypes;
   name: string;
   required: boolean;
+  value?: any;
+  onChange?: (value: any) => void;
 };
 
-const DynamicComponent = ({ type, name, required }: getComponentProps) => {
-  const [date, setDate] = useState<Date>();
-  const [form, setForm] = useState({});
+const DynamicComponent = ({ type, name, required, value, onChange }: getComponentProps) => {
+  const [date, setDate] = useState<Date | undefined>(value ? new Date(value) : undefined);
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    name: string
-  ) => {
-    const value = e.target.value;
-    setForm((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onChange?.(e.target.value);
   };
 
   switch (type) {
@@ -38,20 +32,22 @@ const DynamicComponent = ({ type, name, required }: getComponentProps) => {
       return (
         <Input
           required={required}
-          className="mt-3"
+          className="mt-1"
           type="number"
           placeholder={`Ingresa ${name}...`}
-          onChange={(e) => handleInputChange(e, name)}
+          value={value || ""}
+          onChange={handleInputChange}
         />
       );
     case CategoryAttributesTypes.STRING:
       return (
         <Input
           required={required}
-          className="mt-3"
+          className="mt-1"
           type="text"
           placeholder={`Ingresa ${name}...`}
-          // onChange={(e) => handleInputChange(e, name)}
+          value={value || ""}
+          onChange={handleInputChange}
         />
       );
     case CategoryAttributesTypes.DATE:
@@ -61,7 +57,7 @@ const DynamicComponent = ({ type, name, required }: getComponentProps) => {
             <Button
               variant={"outline"}
               className={cn(
-                "w-[280px] justify-start text-left font-normal",
+                "w-full justify-start text-left font-normal mt-1",
                 !date && "text-muted-foreground"
               )}
             >
@@ -75,10 +71,7 @@ const DynamicComponent = ({ type, name, required }: getComponentProps) => {
               selected={date}
               onSelect={(selectedDate) => {
                 setDate(selectedDate);
-                setForm((prev) => ({
-                  ...prev,
-                  [name]: selectedDate,
-                }));
+                onChange?.(selectedDate);
               }}
               initialFocus
             />

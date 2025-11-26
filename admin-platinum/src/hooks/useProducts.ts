@@ -20,12 +20,36 @@ export const useProducts = () => {
   const getProducts = async () => {
     try {
       setLoading(true);
-      const { data } = await client.get(
-        `/products?type=all&page=1&pageSize=10`
-      );
-      setProducts(data.products);
+      const firstPage = await client.get(`/products?type=all&page=1&pageSize=100`);
+      
+      const { totalPages, products: firstPageProducts } = firstPage.data;
+      let allProducts = [...firstPageProducts];
+
+      if (totalPages > 1) {
+        for (let page = 2; page <= totalPages; page++) {
+          const pageData = await client.get(
+            `/products?type=all&page=${page}&pageSize=100`
+          );
+          allProducts = [...allProducts, ...pageData.data.products];
+        }
+      }
+      
+      setProducts(allProducts);
     } catch (error) {
       console.log(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getProductById = async (id: string) => {
+    try {
+      setLoading(true);
+      const { data } = await client.get(`/products/${id}`);
+      return data;
+    } catch (error) {
+      console.log(error);
+      return null;
     } finally {
       setLoading(false);
     }
@@ -39,6 +63,7 @@ export const useProducts = () => {
   return {
     loading,
     products,
+    getProductById,
     deleteProduct,
     handleUpdateProduct,
   };

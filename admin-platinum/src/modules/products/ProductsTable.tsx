@@ -41,7 +41,6 @@ interface DataTableProps {
 }
 
 const DataTable = ({ category, searchFilter }: DataTableProps) => {
-  console.log(searchFilter);
   const [mappedData, setMappedData] = useState<Variant[]>([]);
 
   let { attributes } = category || {};
@@ -56,7 +55,6 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
 
   const handleDeleteProduct = async (id: Item["id"]) => {
     await deleteProduct(id);
-    console.log(id);
   };
 
   const flattenVariants = (items: Item[]) => {
@@ -64,7 +62,30 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
       return items.flatMap((item: Item) => {
         const type = item.type;
         const variants = item.variants;
-        return variants?.map((variant: Variant) => ({
+
+        // If no variants (e.g. SINGLE product), map the item itself as a row
+        if (!variants || variants.length === 0) {
+          // Create a pseudo-variant from the main item
+          return [{
+            id: item.id,
+            idProduct: item.id,
+            sku: item.sku,
+            name: item.name,
+            type: type,
+            images: [],
+            productAttributeValues: item.attributeValues,
+            attributeValues: item.attributeValues.map(attr => ({
+              id: attr.id,
+              valueString: attr.valueString,
+              valueNumber: attr.valueNumber,
+              valueBoolean: attr.valueBoolean,
+              valueDate: attr.valueDate,
+              idAttribute: attr.idAttribute,
+            }))
+          }] as unknown as Variant[]; // Cast to match expected type
+        }
+
+        return variants.map((variant: Variant) => ({
           id: variant.id,
           idParent: variant.idProduct,
           sku: variant.sku,
@@ -85,6 +106,7 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
         }));
       });
     }
+    return [];
   };
 
   const columns = useMemo(() => {
@@ -94,10 +116,16 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
         header: "",
         cell: ({ row }: { row: any }) => (
           <div className="w-20 h-20 bg-slate-300 rounded-lg">
-            <img
-              className="m-auto aspect-square p-2"
-              src={row.getValue("images")[0].url}
-            />
+            {row.getValue("images") && row.getValue("images")[0] ? (
+              <img
+                className="m-auto aspect-square p-2"
+                src={row.getValue("images")[0].url}
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-xs text-gray-500">
+                No Img
+              </div>
+            )}
           </div>
         ),
       },
@@ -115,7 +143,6 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
         accessorKey: "type",
         header: "Tipo",
         cell: ({ row }: { row: any }) => {
-          //   console.log(row.original);
           return (
             <div>
               {row.getValue("type") === "SINGLE" ? "Componente" : "Kit"}
@@ -186,7 +213,6 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
 
       return (
         attributes?.[attributeType]?.map((attribute: any) => {
-          console.log(attribute);
           return {
             accessorKey: attribute.id,
             header: attribute.name,
@@ -264,9 +290,9 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
                       {header.isPlaceholder
                         ? null
                         : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
                     </TableHead>
                   );
                 })}

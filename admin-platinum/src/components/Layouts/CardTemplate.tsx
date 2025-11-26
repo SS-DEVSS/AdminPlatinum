@@ -93,18 +93,81 @@ const CardTemplate = ({
     });
   };
 
-  return (
-    <>
-      <Card className="w-full">
+  const getImageUrl = () => {
+    if (brand) {
+      if (brand.logoImgUrl) {
+        return `${import.meta.env.VITE_AWS_S3_BUCKET_PUBLIC_URL}${cleanFilePath(
+          brand.logoImgUrl,
+          76
+        )}`;
+      }
+    } else if (category) {
+      if (category.imgUrl) {
+        return `${import.meta.env.VITE_AWS_S3_BUCKET_PUBLIC_URL}${cleanFilePath(
+          category.imgUrl,
+          76
+        )}`;
+      }
+    }
+    return null;
+  };
+
+  const renderImage = () => {
+    const imageUrl = getImageUrl();
+
+    if (imageUrl) {
+      return (
         <img
-          src={`${import.meta.env.VITE_AWS_S3_BUCKET_PUBLIC_URL}${
-            brand
-              ? cleanFilePath(brand?.logoImgUrl, 76)
-              : cleanFilePath(category!.imgUrl, 76)
-          }`}
+          src={imageUrl}
+          onError={(e) => {
+            e.currentTarget.style.display = "none";
+            e.currentTarget.nextElementSibling?.classList.remove("hidden");
+          }}
           alt={`${brand ? brand?.name : category?.name} image`}
           className="h-[300px] w-full object-cover rounded-t-lg bg-[#D9D9D9] mx-auto"
         />
+      );
+    }
+
+    // Fallback SVG placeholder
+    return (
+      <div className="h-[300px] w-full flex items-center justify-center bg-gray-200 rounded-t-lg mx-auto">
+        <svg
+          className="w-20 h-20 text-gray-400"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+          />
+        </svg>
+      </div>
+    );
+  };
+
+  return (
+    <>
+      <Card className="w-full">
+        {renderImage()}
+        <div className="hidden h-[300px] w-full flex items-center justify-center bg-gray-200 rounded-t-lg mx-auto">
+          <svg
+            className="w-20 h-20 text-gray-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+            />
+          </svg>
+        </div>
         <CardContent className="border-t">
           <div className="flex justify-between items-center">
             <CardTitle className="mt-6 mb-3">

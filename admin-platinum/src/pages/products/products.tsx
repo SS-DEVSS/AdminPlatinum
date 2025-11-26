@@ -86,8 +86,6 @@ const Products = () => {
     }
   };
 
-  console.log(category);
-
   return (
     <Layout>
       <Dialog
@@ -160,8 +158,8 @@ const Products = () => {
                           category
                         )
                           ? selectedCategories.filter(
-                              (c) => c.id !== category.id
-                            )
+                            (c) => c.id !== category.id
+                          )
                           : [...selectedCategories, category];
                         setSelectedCategories(updatedSelection);
                         if (updatedSelection.length === categories.length) {

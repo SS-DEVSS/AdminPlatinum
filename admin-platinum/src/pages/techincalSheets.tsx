@@ -158,8 +158,6 @@ const TechincalSheets = () => {
     });
   };
 
-  console.log(tsForm);
-
   const handleSubmit = async () => {
     try {
       if (!isEditMode) {
@@ -168,14 +166,11 @@ const TechincalSheets = () => {
           handleFileUpload(image),
         ]);
 
-        console.log(imageKey);
-
         const payload = {
           ...tsForm,
           path: fileKey || null,
           imgUrl: imageKey || null,
         };
-        console.log(payload);
         await addTechnicalSheet(payload);
       }
     } catch (error) {
@@ -199,7 +194,6 @@ const TechincalSheets = () => {
 
   useEffect(() => {
     if (isEditMode && technicalSheet) {
-      console.log(technicalSheet);
       setFile({ name: technicalSheet.url });
       setIsEditMode(true);
       setIsOpen(true);

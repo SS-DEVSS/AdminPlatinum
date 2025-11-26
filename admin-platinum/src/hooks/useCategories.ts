@@ -24,10 +24,6 @@ export const useCategories = () => {
     getCategories();
   }, []);
 
-  useEffect(() => {
-    console.log("Updated Category:", category);
-  }, [category]);
-
   const getCategories = async () => {
     try {
       setLoading(true);
@@ -47,7 +43,6 @@ export const useCategories = () => {
         `/categories/${id}?attributes=true&products=true`
       );
       setCategory(data);
-      console.log("Fetched Data:", data);
       return data;
     } catch (error) {
       console.error("Error fetching category by ID:", error);

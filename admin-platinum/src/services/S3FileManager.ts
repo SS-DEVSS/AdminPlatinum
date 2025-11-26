@@ -8,10 +8,13 @@ const ReactS3Client = new S3({
 });
 
 export const cleanFilePath = (
-  path: string,
+  path: string | null | undefined,
   startIndex: number,
   endIndex?: number
-) => decodeURIComponent(path.slice(startIndex, endIndex));
+) => {
+  if (!path) return "";
+  return decodeURIComponent(path.slice(startIndex, endIndex));
+};
 
 export const uploadFileToS3 = async (
   file: File,
