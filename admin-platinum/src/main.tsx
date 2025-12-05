@@ -23,6 +23,7 @@ import Banners from "@/pages/banners";
 import Products from "@/pages/products/products";
 import { CategoryContextProvider } from "./context/categories-context";
 import NewProduct from "./pages/products/newProduct";
+import ImportProduct from "./pages/products/importProduct";
 import Ajustes from "./pages/ajustes";
 
 const router = createBrowserRouter([
@@ -49,6 +50,10 @@ const router = createBrowserRouter([
   {
     path: "/producto/:id",
     element: <NewProduct />,
+  },
+  {
+    path: "/producto/importar",
+    element: <ImportProduct />,
   },
   {
     path: "/marcas",
