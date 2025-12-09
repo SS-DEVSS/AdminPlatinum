@@ -172,15 +172,16 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
     const getColumns = (attributeType: string) => {
       const getAttributeValues = (row: any, attribute: any) => {
         let attributeCollection = [];
-        const productAttributeValues = row.original?.productAttributeValues;
-        const attributeValues = row.original?.attributeValues;
+        const productAttributeValues = row.original?.productAttributeValues || [];
+        const attributeValues = row.original?.attributeValues || [];
 
         attributeCollection = [productAttributeValues, attributeValues];
         return attributeCollection
           .flat()
+          .filter((attrValue: AttributeValue | undefined) => attrValue != null)
           .find(
             (attrValue: AttributeValue) =>
-              attrValue.idAttribute === attribute.id
+              attrValue?.idAttribute === attribute.id
           );
       };
 
