@@ -9,11 +9,22 @@ interface AuthContextTypes {
   loading: boolean;
 }
 
-const AuthContext = createContext<{
+interface AuthContextValue {
   authState: AuthContextTypes;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
-}>({} as any);
+}
+
+const AuthContext = createContext<AuthContextValue>({
+  authState: {
+    isAuthenticated: false,
+    session: null,
+    user: null,
+    loading: true,
+  },
+  signIn: async () => { },
+  signOut: async () => { },
+});
 
 export const useAuthContext = () => useContext(AuthContext);
 
@@ -57,6 +68,58 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     if (error) throw error;
 
+    // Validate that user exists in Users table
+    // The authMiddleware will return 401 if user doesn't exist in Users table
+    const axios = (await import("../services/axiosInstance")).default;
+    const client = axios();
+
+    try {
+      // Use /users endpoint which requires authMiddleware
+      // authMiddleware checks if user exists in Users table - returns 401 if not found
+      const response = await client.get("/users", {
+        validateStatus: (status) => {
+          // Accept 200 (success), 401 (user not found), 403 (no permission)
+          return status === 200 || status === 401 || status === 403;
+        },
+      });
+
+      // If we get 401, it means authMiddleware failed - user doesn't exist in Users table
+      if (response.status === 401) {
+        await supabase.auth.signOut();
+        throw new Error(
+          "Usuario no encontrado en el sistema. Por favor contacte al administrador para crear su cuenta."
+        );
+      }
+
+      // 403 means user exists but lacks permission - that's acceptable, user exists
+      // 200 means user exists and has permission - perfect
+      // In both cases, validation passed and we can proceed
+    } catch (validationError: unknown) {
+      // If it's an Error with our message, re-throw it immediately
+      if (validationError instanceof Error) {
+        if (validationError.message.includes("Usuario no encontrado")) {
+          throw validationError;
+        }
+      }
+
+      // Check if it's an axios error with 401 status
+      const axiosError = validationError as { response?: { status?: number }; message?: string };
+      if (axiosError?.response?.status === 401) {
+        await supabase.auth.signOut();
+        throw new Error(
+          "Usuario no encontrado en el sistema. Por favor contacte al administrador para crear su cuenta."
+        );
+      }
+
+      // For network errors or other issues, block login to be safe
+      // We need explicit confirmation that user exists (200 or 403)
+      await supabase.auth.signOut();
+      throw new Error(
+        "No se pudo validar el usuario en el sistema. Por favor verifique su conexión o contacte al administrador."
+      );
+    }
+
+    // Only set auth state if validation passed (or was skipped due to network issues)
     setAuthState({
       isAuthenticated: !!data.session,
       session: data.session,
