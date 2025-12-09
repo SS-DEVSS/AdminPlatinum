@@ -25,14 +25,18 @@ export const useS3FileManager = () => {
     }
     try {
       const extension = file.type.split("/")[1];
-      let data = {};
+      let data: any;
       if (extension === "pdf") {
         data = await uploadFileToS3(file, "uploads/documents/");
       } else {
         data = await uploadFileToS3(file);
       }
       console.log(data);
-      onSuccess(data.key, data.location);
+      if (data && data.key && data.location) {
+        onSuccess(data.key, data.location);
+      } else {
+        throw new Error("Upload failed: invalid response");
+      }
     } catch (e: any) {
       setError(e.message || "Error uploading file");
       console.error(e);

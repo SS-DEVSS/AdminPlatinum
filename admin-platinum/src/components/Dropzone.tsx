@@ -1,5 +1,3 @@
-import { cleanFilePath } from "@/services/S3FileManager";
-import { type } from "os";
 import { Dispatch, useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 
@@ -54,20 +52,18 @@ const MyDropzone = ({ file, fileSetter, type, className }: MyDropzoneProps) => {
   return (
     <div
       {...getRootProps()}
-      className={`${
-        isDragActive
+      className={`${isDragActive
           ? "bg-[#F5F9FD] border-[#0bbff4]"
           : file.name
-          ? "bg-green-50 border-green-400"
-          : ""
-      } border border-dashed rounded-lg ${className}`}
+            ? "bg-green-50 border-green-400"
+            : ""
+        } border border-dashed rounded-lg ${className}`}
     >
       <input {...getInputProps()} />
       {isDragActive ? (
         <p
-          className={`${
-            isDragActive ? "text-[#4E5154]" : "text-[#94A3B8]"
-          } text-center`}
+          className={`${isDragActive ? "text-[#4E5154]" : "text-[#94A3B8]"
+            } text-center`}
         >
           Drop the files here ...
         </p>
@@ -76,9 +72,8 @@ const MyDropzone = ({ file, fileSetter, type, className }: MyDropzoneProps) => {
           {file.name ? (
             <>
               <p
-                className={`${
-                  isDragActive ? "text-[#4E5154]" : "text-[#94A3B8]"
-                } text-center overflow-ellipsis`}
+                className={`${isDragActive ? "text-[#4E5154]" : "text-[#94A3B8]"
+                  } text-center overflow-ellipsis`}
               >
                 {test(file.name)}
               </p>
@@ -88,9 +83,8 @@ const MyDropzone = ({ file, fileSetter, type, className }: MyDropzoneProps) => {
             </>
           ) : (
             <p
-              className={`${
-                isDragActive ? "text-[#4E5154]" : "text-[#94A3B8]"
-              } text-center leading-8`}
+              className={`${isDragActive ? "text-[#4E5154]" : "text-[#94A3B8]"
+                } text-center leading-8`}
             >
               Drag 'n' drop some files here, <br />{" "}
               <span className="underline hover:cursor-pointer">

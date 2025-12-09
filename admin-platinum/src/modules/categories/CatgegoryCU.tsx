@@ -77,14 +77,20 @@ const CategoryCU = ({ category, addCategory }: CategoryCUProps) => {
   useEffect(() => {
     if (category) {
       console.log(category);
-      setForm(category);
+      setForm({
+        ...category,
+        brands: category.brands?.map(b => b.id).filter((id): id is string => !!id) || [],
+        attributes: category.attributes || [],
+      });
       setImage({ ...image, name: category.imgUrl });
       const tempSet = new Set();
 
-      category.brands!.map((category: Category) => {
-        tempSet.add(category.id);
+      category.brands!.forEach((brand) => {
+        if (brand.id) {
+          tempSet.add(brand.id);
+        }
       });
-      setSelectedBrandIds(tempSet);
+      setSelectedBrandIds(tempSet as Set<string>);
     }
   }, [category]);
 
@@ -140,7 +146,8 @@ const CategoryCU = ({ category, addCategory }: CategoryCUProps) => {
           const response = (await addCategory({
             ...form,
             imgUrl: location,
-          })) as { id: string } | undefined;
+            brands: form.brands.map(id => ({ id } as any)),
+          } as any)) as { id: string } | undefined;
           if (response && response.id) {
             navigate("/categorias");
           }

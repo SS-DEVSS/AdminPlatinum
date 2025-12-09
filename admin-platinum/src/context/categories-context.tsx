@@ -9,7 +9,6 @@ import {
   useEffect,
   useState,
 } from "react";
-import { useAuthContext } from "./auth-context";
 
 interface CategoryRespone {
   id: string;
@@ -39,8 +38,7 @@ export const CategoryContextProvider = ({
 }: {
   children: ReactNode;
 }) => {
-  const { authState } = useAuthContext();
-  const client = axiosClient(authState.authKey);
+  const client = axiosClient();
   const { toast } = useToast();
 
   const [selectedCategory, setSelectedCategory] = useState<

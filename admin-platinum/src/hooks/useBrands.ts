@@ -1,12 +1,10 @@
-import { useAuthContext } from "@/context/auth-context";
 import { Brand } from "@/models/brand";
 import axiosClient from "@/services/axiosInstance";
 import { useEffect, useState } from "react";
 import { useToast } from "./use-toast";
 
 export const useBrands = () => {
-  const { authState } = useAuthContext();
-  const client = axiosClient(authState.authKey);
+  const client = axiosClient();
   const { toast } = useToast();
 
   const [brands, setBrands] = useState<Brand[]>([]);

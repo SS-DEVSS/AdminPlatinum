@@ -57,10 +57,9 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
     await deleteProduct(id);
   };
 
-  const flattenVariants = (items: Item[]) => {
+  const flattenVariants = (items: Item[]): Variant[] => {
     if (items.length) {
-      return items.flatMap((item: Item) => {
-        const type = item.type;
+      return items.flatMap((item: Item): Variant[] => {
         const variants = item.variants;
 
         // If no variants (e.g. SINGLE product), map the item itself as a row
@@ -69,40 +68,21 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
           return [{
             id: item.id,
             idProduct: item.id,
-            sku: item.sku,
+            sku: "",
             name: item.name,
-            type: type,
+            price: 0,
+            stockQuantity: 0,
+            notes: [],
+            technicalSheets: [],
             images: [],
-            productAttributeValues: item.attributeValues,
-            attributeValues: item.attributeValues.map(attr => ({
-              id: attr.id,
-              valueString: attr.valueString,
-              valueNumber: attr.valueNumber,
-              valueBoolean: attr.valueBoolean,
-              valueDate: attr.valueDate,
-              idAttribute: attr.idAttribute,
-            }))
-          }] as unknown as Variant[]; // Cast to match expected type
+            kitItems: [],
+            attributeValues: []
+          } as Variant];
         }
 
-        return variants.map((variant: Variant) => ({
-          id: variant.id,
-          idParent: variant.idProduct,
-          sku: variant.sku,
-          name: variant.name,
-          type: type,
-          images: variant.images,
-          productAttributeValues: item.attributeValues,
-          attributeValues: variant.attributeValues.map(
-            (attribute: AttributeValue) => ({
-              id: attribute.id,
-              valueString: attribute.valueString,
-              valueNumber: attribute.valueNumber,
-              valueBoolean: attribute.valueBoolean,
-              valueDate: attribute.valueDate,
-              idAttribute: attribute.idAttribute,
-            })
-          ),
+        return variants.map((variant: Variant): Variant => ({
+          ...variant,
+          attributeValues: []
         }));
       });
     }
@@ -212,7 +192,7 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
         "N/A";
 
       return (
-        attributes?.[attributeType]?.map((attribute: any) => {
+        (attributes as any)?.[attributeType]?.map((attribute: any) => {
           return {
             accessorKey: attribute.id,
             header: attribute.name,

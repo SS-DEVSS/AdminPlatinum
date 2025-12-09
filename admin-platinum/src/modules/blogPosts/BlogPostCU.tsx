@@ -73,7 +73,7 @@ const BlogPostCU = ({ blogPost }: BlogPostCUProps) => {
   useEffect(() => {
     if (blogPost) {
       setForm(blogPost);
-      setImage({ name: blogPost.coverImagePath });
+      setImage({ name: blogPost.coverImagePath } as File);
       const parsedComponents = parseContentToComponents(blogPost.content);
       setComponents(parsedComponents);
     }

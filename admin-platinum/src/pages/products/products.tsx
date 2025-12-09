@@ -227,7 +227,7 @@ const Products = () => {
                     <SelectGroup>
                       <SelectLabel>Categorías</SelectLabel>
                       {categories.map((category) => (
-                        <SelectItem key={category.id} value={category.id}>
+                        <SelectItem key={category.id} value={category.id || ""}>
                           {category.name}
                         </SelectItem>
                       ))}

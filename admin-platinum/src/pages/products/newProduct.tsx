@@ -72,7 +72,7 @@ const NewProduct = () => {
               // Assuming product.attributeValues has populated attribute info or we can match by ID.
               // If the backend returns { idAttribute, valueString, ... } and we have the category loaded:
 
-              const attributeDef = fullCategory?.attributes?.product?.find((a: any) => a.id === av.idAttribute);
+              const attributeDef = fullCategory?.attributes?.find((a: any) => a.id === av.idAttribute && a.scope === "PRODUCT");
               if (attributeDef) {
                 attrs[attributeDef.name] = av.valueString || av.valueNumber || av.valueBoolean || av.valueDate;
               }

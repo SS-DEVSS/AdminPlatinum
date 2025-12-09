@@ -35,7 +35,7 @@ export const ayudaPorfavor: CategoryResponse[] = [
         name: "Mazda Engine",
         type: "SINGLE",
         description: "My product descriptionn here",
-      },
+      } as any,
     ],
   },
   {
