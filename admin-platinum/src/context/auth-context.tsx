@@ -78,8 +78,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // authMiddleware checks if user exists in Users table - returns 401 if not found
       const response = await client.get("/users", {
         validateStatus: (status) => {
-          // Accept 200 (success), 401 (user not found), 403 (no permission)
-          return status === 200 || status === 401 || status === 403;
+          // Accept 200 (success), 201 (created), 401 (user not found), 403 (no permission)
+          return status === 200 || status === 201 || status === 401 || status === 403;
         },
       });
 
@@ -91,8 +91,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         );
       }
 
+      // 200/201 means success - user exists
       // 403 means user exists but lacks permission - that's acceptable, user exists
-      // 200 means user exists and has permission - perfect
       // In both cases, validation passed and we can proceed
     } catch (validationError: unknown) {
       // If it's an Error with our message, re-throw it immediately
@@ -103,7 +103,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       // Check if it's an axios error with 401 status
-      const axiosError = validationError as { response?: { status?: number }; message?: string };
+      const axiosError = validationError as {
+        response?: { status?: number; statusText?: string; data?: unknown };
+        message?: string;
+        code?: string;
+      };
+
       if (axiosError?.response?.status === 401) {
         await supabase.auth.signOut();
         throw new Error(
@@ -111,15 +116,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         );
       }
 
-      // For network errors or other issues, block login to be safe
-      // We need explicit confirmation that user exists (200 or 403)
-      await supabase.auth.signOut();
-      throw new Error(
-        "No se pudo validar el usuario en el sistema. Por favor verifique su conexión o contacte al administrador."
-      );
+      // For network errors or other issues, allow login (backend might be temporarily unavailable)
+      // Only block if we explicitly get 401
     }
 
-    // Only set auth state if validation passed (or was skipped due to network issues)
     setAuthState({
       isAuthenticated: !!data.session,
       session: data.session,
