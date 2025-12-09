@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, AxiosError, AxiosResponse } from "axios";
+import { supabase } from "./supabase";
 
 const axiosClient = (token: string | null = null): AxiosInstance => {
   const headers = token
@@ -17,11 +18,13 @@ const axiosClient = (token: string | null = null): AxiosInstance => {
     withCredentials: false,
   });
 
-  client.interceptors.request.use((config: any) => {
-    const token = localStorage.getItem("ACCESS_TOKEN");
+  client.interceptors.request.use(async (config: any) => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     config.headers = config.headers || {};
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    if (session?.access_token) {
+      config.headers.Authorization = `Bearer ${session.access_token}`;
     }
     return config;
   });
@@ -30,11 +33,12 @@ const axiosClient = (token: string | null = null): AxiosInstance => {
     (response: AxiosResponse) => {
       return response;
     },
-    (error: AxiosError) => {
+    async (error: AxiosError) => {
       try {
         const { response } = error;
         if (response?.status === 401) {
-          localStorage.removeItem("ACCESS_TOKEN");
+          await supabase.auth.signOut();
+          window.location.href = "/login";
         }
       } catch (e) {
         console.error(e);

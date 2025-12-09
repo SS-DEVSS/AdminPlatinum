@@ -6,11 +6,11 @@ type LoginProps = {
 const CredentialsLayout = ({ children }: LoginProps) => {
   return (
     <div className="w-full lg:grid lg:min-h-[600px] lg:grid-cols-2 xl:min-h-[800px] h-[100vh]">
-      <div className="hidden bg-muted lg:block">
+      <div className="hidden bg-muted lg:flex items-center justify-center">
         <img
-          src="/placeholder.svg"
-          alt="Image"
-          className="h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
+          src="/LOGOPlatinum.png"
+          alt="Platinum Driveline Logo"
+          className="max-w-[80%] max-h-[80%] object-contain"
         />
       </div>
       <div className="flex items-center justify-center py-12">

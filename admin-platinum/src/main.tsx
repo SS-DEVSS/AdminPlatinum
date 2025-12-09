@@ -10,6 +10,7 @@ import EditCategory from "@/pages/categories/editCategory";
 import NewCategory from "@/pages/categories/newCategory";
 import ForgotPassword from "@/pages/auth/forgotPassword";
 import Login from "@/pages/auth/login";
+import ResetPassword from "@/pages/auth/resetPassword";
 import Marcas from "@/pages/marcas";
 import { BrandProvider } from "./context/brand-context";
 import { AuthProvider } from "./context/auth-context";
@@ -24,12 +25,9 @@ import Products from "@/pages/products/products";
 import { CategoryContextProvider } from "./context/categories-context";
 import NewProduct from "./pages/products/newProduct";
 import Ajustes from "./pages/ajustes";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const router = createBrowserRouter([
-  {
-    path: "/",
-    element: <App />,
-  },
   {
     path: "/login",
     element: <Login />,
@@ -39,56 +37,120 @@ const router = createBrowserRouter([
     element: <ForgotPassword />,
   },
   {
+    path: "/reset-password",
+    element: <ResetPassword />,
+  },
+  {
+    path: "/",
+    element: (
+      <ProtectedRoute>
+        <App />
+      </ProtectedRoute>
+    ),
+  },
+  {
     path: "/productos",
-    element: <Products />,
+    element: (
+      <ProtectedRoute>
+        <Products />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/producto/new-product",
-    element: <NewProduct />,
+    element: (
+      <ProtectedRoute>
+        <NewProduct />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/producto/:id",
-    element: <NewProduct />,
+    element: (
+      <ProtectedRoute>
+        <NewProduct />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/marcas",
-    element: <Marcas />,
+    element: (
+      <ProtectedRoute>
+        <Marcas />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/categorias",
-    element: <Categorias />,
+    element: (
+      <ProtectedRoute>
+        <Categorias />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/categorias/nueva",
-    element: <NewCategory />,
+    element: (
+      <ProtectedRoute>
+        <NewCategory />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/categorias/editar",
-    element: <EditCategory />,
+    element: (
+      <ProtectedRoute>
+        <EditCategory />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/boletines",
-    element: <TechincalSheets />,
+    element: (
+      <ProtectedRoute>
+        <TechincalSheets />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/noticias",
-    element: <News />,
+    element: (
+      <ProtectedRoute>
+        <News />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/noticias/nueva",
-    element: <NewBlogPost />,
+    element: (
+      <ProtectedRoute>
+        <NewBlogPost />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/noticias/editar",
-    element: <EditBlogPost />,
+    element: (
+      <ProtectedRoute>
+        <EditBlogPost />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/banners",
-    element: <Banners />,
+    element: (
+      <ProtectedRoute>
+        <Banners />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/ajustes",
-    element: <Ajustes />,
+    element: (
+      <ProtectedRoute>
+        <Ajustes />
+      </ProtectedRoute>
+    ),
   },
 ]);
 
