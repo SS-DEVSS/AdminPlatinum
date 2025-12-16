@@ -58,7 +58,7 @@ const Marcas = () => {
 
   useEffect(() => {
     if (brand) {
-      setImage({ name: brand.logoImgUrl! });
+      setImage({ name: brand.logoImgUrl! } as File);
     }
   }, [brand]);
 

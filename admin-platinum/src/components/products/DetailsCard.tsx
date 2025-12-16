@@ -44,14 +44,15 @@ const DetailsCard = ({ product, state, setState }: DetailsCardProps) => {
     setState((prevForm) => ({
       ...prevForm,
       brand: value,
-      category: "",
+      category: null,
     }));
   };
 
   const handleCategoryChange = (value: string) => {
+    const selectedCategory = categories.find((cat) => cat.id === value);
     setState((prevForm) => ({
       ...prevForm,
-      category: value,
+      category: selectedCategory ? { id: selectedCategory.id, name: selectedCategory.name } : null,
     }));
   };
 
@@ -105,7 +106,7 @@ const DetailsCard = ({ product, state, setState }: DetailsCardProps) => {
                   <SelectGroup>
                     <SelectLabel>Marcas</SelectLabel>
                     {brands.map((brand) => (
-                      <SelectItem key={brand.id} value={brand.id}>
+                      <SelectItem key={brand.id} value={brand.id || ""}>
                         {brand.name}
                       </SelectItem>
                     ))}
@@ -135,7 +136,7 @@ const DetailsCard = ({ product, state, setState }: DetailsCardProps) => {
                     {categories.map((category) => (
                       <SelectItem
                         key={category.id}
-                        value={product ? product.idCategory : category.id}
+                        value={product ? (product.idCategory || "") : (category.id || "")}
                       >
                         {category.name}
                       </SelectItem>

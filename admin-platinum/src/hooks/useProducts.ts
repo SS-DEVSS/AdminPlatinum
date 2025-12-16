@@ -1,12 +1,10 @@
 import { Item } from "@/models/product";
 import axiosClient from "@/services/axiosInstance";
-import { useAuthContext } from "@/context/auth-context";
 // import { productsSample } from "@/sampleData/products";
 import { useEffect, useState } from "react";
 
 export const useProducts = () => {
-  const { authState } = useAuthContext();
-  const client = axiosClient(authState.authKey);
+  const client = axiosClient();
 
   const [products, setProducts] = useState<Item[]>([]);
   const [loading, setLoading] = useState(false);

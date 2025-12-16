@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useMemo, useEffect } from "react";
 import {
   Card,
   CardHeader,
@@ -41,12 +41,13 @@ const Attributes = ({
 
   // Validation logic
   useEffect(() => {
-    if (!selectedCategory?.attributes?.product) {
+    const productAttributes = selectedCategory?.attributes?.filter(attr => attr.scope === "PRODUCT") || [];
+    if (!productAttributes.length) {
       setCanContinue(true); // No attributes to fill
       return;
     }
 
-    const isValid = selectedCategory.attributes.product.every((attr) => {
+    const isValid = productAttributes.every((attr: CategoryAtributes) => {
       if (attr.required) {
         return (
           attributesState[attr.name] !== undefined &&
@@ -78,8 +79,8 @@ const Attributes = ({
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-wrap justify-between gap-4">
-        {selectedCategory?.attributes?.product?.map(
-          (attribute: CategoryAtributes, index: number) => (
+        {selectedCategory?.attributes?.filter(attr => attr.scope === "PRODUCT").map(
+          (attribute: CategoryAtributes) => (
             <div key={attribute.id} className="basis-[48%]">
               <Label className="mb-2 block">
                 {attribute.required && <span className="text-red-500 mr-1">*</span>}
@@ -95,8 +96,8 @@ const Attributes = ({
             </div>
           )
         )}
-        {(!selectedCategory?.attributes?.product ||
-          selectedCategory.attributes.product.length === 0) && (
+        {(!selectedCategory?.attributes?.filter(attr => attr.scope === "PRODUCT").length ||
+          selectedCategory.attributes.filter(attr => attr.scope === "PRODUCT").length === 0) && (
             <p className="text-muted-foreground w-full text-center">
               Esta categoría no tiene atributos definidos.
             </p>

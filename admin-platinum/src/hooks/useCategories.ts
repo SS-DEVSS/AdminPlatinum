@@ -1,4 +1,3 @@
-import { useAuthContext } from "@/context/auth-context";
 import { Category } from "@/models/category";
 import axiosClient from "@/services/axiosInstance";
 import { useEffect } from "react";
@@ -11,8 +10,7 @@ interface CategoryRespone {
 }
 
 export const useCategories = () => {
-  const { authState } = useAuthContext();
-  const client = axiosClient(authState.authKey);
+  const client = axiosClient();
   const { toast } = useToast();
 
   const [categories, setCategories] = useState<Category[]>([]);

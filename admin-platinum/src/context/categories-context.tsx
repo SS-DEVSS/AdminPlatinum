@@ -9,7 +9,6 @@ import {
   useEffect,
   useState,
 } from "react";
-import { useAuthContext } from "./auth-context";
 
 interface CategoryRespone {
   id: string;
@@ -39,8 +38,7 @@ export const CategoryContextProvider = ({
 }: {
   children: ReactNode;
 }) => {
-  const { authState } = useAuthContext();
-  const client = axiosClient(authState.authKey);
+  const client = axiosClient();
   const { toast } = useToast();
 
   const [selectedCategory, setSelectedCategory] = useState<
@@ -58,10 +56,18 @@ export const CategoryContextProvider = ({
   const getCategories = async () => {
     try {
       setLoading(true);
-      const data = await client.get("/categories");
-      setCategories(data.data);
-    } catch (error) {
+      const response = await client.get("/categories");
+      console.log("Categories response:", response.data);
+      if (Array.isArray(response.data)) {
+        setCategories(response.data);
+      } else {
+        console.error("Categories response is not an array:", response.data);
+        setCategories([]);
+      }
+    } catch (error: any) {
       console.error("Error fetching categories:", error);
+      setErrorMsg(error.response?.data?.error || "Error al cargar categorías");
+      setCategories([]);
     } finally {
       setLoading(false);
     }

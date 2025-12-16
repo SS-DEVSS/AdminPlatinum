@@ -11,7 +11,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Product } from "@/models/product";
-import { Document } from "@/models/technicalSheet";
+import { Document as DocumentType } from "@/models/technicalSheet";
 import { PlusCircle, Trash } from "lucide-react";
 import { useState } from "react";
 
@@ -22,8 +22,8 @@ type DocumentsCardProps = {
 const DocumentsCard = ({ product }: DocumentsCardProps) => {
   const [document, setDocument] = useState<string>("");
   const [showInputDocuments, setShowInputDocuments] = useState<boolean>(false);
-  const [formInfo, setFormInfo] = useState({
-    documents: product ? product.documents : ([] as Document[]),
+  const [formInfo, setFormInfo] = useState<{ documents: DocumentType[] }>({
+    documents: product?.documents ? (product.documents as unknown as DocumentType[]) : ([] as DocumentType[]),
   });
 
   const handleAddClickDocuments = () => {
@@ -32,7 +32,7 @@ const DocumentsCard = ({ product }: DocumentsCardProps) => {
 
   const handleAddDocuments = () => {
     if (document !== null) {
-      const newDocument: Document = {
+      const newDocument: DocumentType = {
         id: crypto.randomUUID(),
         title: document,
       };
@@ -48,7 +48,7 @@ const DocumentsCard = ({ product }: DocumentsCardProps) => {
   const handleRemoveDocuments = (id: string) => {
     setFormInfo((prevForm) => ({
       ...prevForm,
-      documents: prevForm.documents.filter((document) => document.id !== id),
+      documents: prevForm.documents.filter((doc) => doc.id !== id),
     }));
   };
 

@@ -18,16 +18,14 @@ import { Label } from "@/components/ui/label";
 import { useDropzone } from "react-dropzone";
 import { useToast } from "@/hooks/use-toast";
 import axiosClient from "@/services/axiosInstance";
-import { useAuthContext } from "@/context/auth-context";
 
 type ImportType = "products" | "references" | "applications";
 
 const ImportProduct = () => {
   const navigate = useNavigate();
   const { categories } = useCategoryContext();
-  const { authState } = useAuthContext();
   const { toast } = useToast();
-  const client = axiosClient(authState.authKey);
+  const client = axiosClient();
 
   const [importType, setImportType] = useState<ImportType | "">("");
   const [categoryId, setCategoryId] = useState<string>("");
@@ -70,20 +68,12 @@ const ImportProduct = () => {
     try {
       setLoading(true);
 
-      // Preferimos el token fresco del contexto; si no, tomamos el de localStorage
-      const authToken = authState.authKey || localStorage.getItem("ACCESS_TOKEN");
-      const headers = authToken
-        ? {
-            Authorization: `Bearer ${authToken}`,
-          }
-        : undefined;
-
       const formData = new FormData();
       formData.append("file", file);
       formData.append("importType", importType);
       formData.append("categoryId", categoryId);
 
-      await client.post("/import", formData, { headers });
+      await client.post("/import", formData);
 
       toast({
         title: "Importación exitosa",

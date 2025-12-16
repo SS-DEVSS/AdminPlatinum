@@ -101,10 +101,7 @@ const CardAtributesVariants = ({
 
   useEffect(() => {
     if (category && form.attributes.length) {
-      const tempArray = [
-        form.attributes.product,
-        form.attributes.variant,
-      ].flat();
+      const tempArray = form.attributes;
 
       const productAttributes: CategoryAtributes[] = [];
       const variantAttributes: CategoryAtributes[] = [];
@@ -127,8 +124,8 @@ const CardAtributesVariants = ({
 
   useEffect(() => {
     if (category && form?.attributes) {
-      const productAttributes = form.attributes.product || [];
-      const variantAttributes = form.attributes.variant || [];
+      const productAttributes = form.attributes.filter(attr => attr.scope === "PRODUCT") || [];
+      const variantAttributes = form.attributes.filter(attr => attr.scope === "VARIANT") || [];
 
       const tempArray = [...productAttributes, ...variantAttributes];
 
@@ -177,7 +174,7 @@ const CardAtributesVariants = ({
     return (
       attributeForm.name.trim() !== "" &&
       typeof attributeForm.required === "boolean" &&
-      typesArray.includes(attributeForm.type)
+      typesArray.includes(attributeForm.type as CategoryAttributesTypes)
     );
   }, [attributeForm]);
 
@@ -239,14 +236,13 @@ const CardAtributesVariants = ({
         ? attributes.productAttributes.length
         : attributes.variantAttributes.length;
 
-    const payload =
-      dialogMode === "add"
-        ? {
-            ...attributeForm,
-            scope: type,
-            order,
-          }
-        : attributeForm;
+    const payload: CategoryAtributes = {
+      ...attributeForm,
+      required: attributeForm.required ?? false,
+      type: attributeForm.type as CategoryAttributesTypes,
+      scope: (dialogMode === "add" ? type : (attributeForm.scope ?? currentAttribute?.scope ?? type)) as "PRODUCT" | "VARIANT",
+      order: dialogMode === "add" ? order : (attributeForm.order ?? currentAttribute?.order ?? 0),
+    };
 
     console.log("payload", payload);
 
@@ -275,15 +271,15 @@ const CardAtributesVariants = ({
         ...prev,
         ...(type === "PRODUCT"
           ? {
-              productAttributes: prev.productAttributes.map((attr) =>
-                attr.name === currentAttribute?.name ? payload : attr
-              ),
-            }
+            productAttributes: prev.productAttributes.map((attr) =>
+              attr.name === currentAttribute?.name ? payload : attr
+            ),
+          }
           : {
-              variantAttributes: prev.variantAttributes.map((attr) =>
-                attr.name === currentAttribute?.name ? payload : attr
-              ),
-            }),
+            variantAttributes: prev.variantAttributes.map((attr) =>
+              attr.name === currentAttribute?.name ? payload : attr
+            ),
+          }),
       }));
     }
 
@@ -358,8 +354,8 @@ const CardAtributesVariants = ({
                     ? "Editar Atributo"
                     : "Editar Variante"
                   : title === "Atributos de Categoría"
-                  ? "Agregar Atributo"
-                  : "Agregar Variante"}
+                    ? "Agregar Atributo"
+                    : "Agregar Variante"}
               </DialogTitle>
               <DialogDescription>
                 {dialogMode === "edit"
@@ -367,8 +363,8 @@ const CardAtributesVariants = ({
                     ? "Editar un atributo existente."
                     : "Editar una variante existente."
                   : title === "Atributos de Categoría"
-                  ? "Agregar un nuevo atributo al sistema."
-                  : "Agregar una nueva variante al sistema."}
+                    ? "Agregar un nuevo atributo al sistema."
+                    : "Agregar una nueva variante al sistema."}
               </DialogDescription>
             </DialogHeader>
             <Label htmlFor="name">
@@ -415,8 +411,8 @@ const CardAtributesVariants = ({
                 attributeForm.required === null
                   ? ""
                   : attributeForm.required == true
-                  ? "true"
-                  : "false"
+                    ? "true"
+                    : "false"
               }
               onValueChange={(value) =>
                 setAttributeForm({
@@ -448,8 +444,8 @@ const CardAtributesVariants = ({
                     ? "Guardar Cambios"
                     : "Guardar Cambios"
                   : title === "Atributos de Categoría"
-                  ? "Agregar Atributo"
-                  : "Agregar Variante"}
+                    ? "Agregar Atributo"
+                    : "Agregar Variante"}
               </Button>
             </DialogFooter>
           </DialogContent>
