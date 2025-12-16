@@ -24,6 +24,7 @@ import Banners from "@/pages/banners";
 import Products from "@/pages/products/products";
 import { CategoryContextProvider } from "./context/categories-context";
 import NewProduct from "./pages/products/newProduct";
+import ImportProduct from "./pages/products/importProduct";
 import Ajustes from "./pages/ajustes";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -63,6 +64,10 @@ const router = createBrowserRouter([
         <NewProduct />
       </ProtectedRoute>
     ),
+  },
+  {
+    path: "/producto/importar",
+    element: <ImportProduct />,
   },
   {
     path: "/producto/:id",

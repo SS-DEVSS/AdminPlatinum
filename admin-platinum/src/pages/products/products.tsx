@@ -25,7 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
@@ -49,11 +49,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import DataTable from "@/modules/products/ProductsTable";
 
 const Products = () => {
+  const navigate = useNavigate();
   const { categories = [] } = useCategories();
   const [category, setCategory] = useState<Category | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
   const [modalOpenExport, setModalOpenExport] = useState(false);
-  const [fileImport, setFileImport] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<Category[]>([]);
   const [checkedAll, setCheckedAll] = useState(false);
   const [searchFilter, setSearchFilter] = useState("");
@@ -77,49 +76,8 @@ const Products = () => {
     }
   };
 
-  const handleFileChange = (e: any) => {
-    const file = e.target.files[0];
-    if (file) {
-      setFileImport(file);
-    } else {
-      setFileImport("");
-    }
-  };
-
   return (
     <Layout>
-      <Dialog
-        open={modalOpen}
-        onOpenChange={(open: boolean) => !open && setModalOpen(false)}
-      >
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle className="mb-2">Importar Productos</DialogTitle>
-          </DialogHeader>
-          <input type="file" onChange={handleFileChange} />
-          <DialogDescription>Formatos permitidos: csv</DialogDescription>
-          <Card className="border-[#94A3B8] bg-[#F9FAFB]">
-            <CardHeader className="flex flex-row gap-3 items-center p-3">
-              <File className="mt-2" />
-              <CardTitle className="text-lg mt-0">
-                Plantilla de Productos
-              </CardTitle>
-            </CardHeader>
-            <CardFooter>
-              <CardDescription>
-                Descarga la plantilla de ejemplo para usarla como una base.
-              </CardDescription>
-              <Download className="hover:cursor-pointer" />
-            </CardFooter>
-          </Card>
-          <DialogFooter>
-            <Button onClick={() => setModalOpen(false)} variant="outline">
-              Cancelar
-            </Button>
-            <Button disabled={!fileImport}>Importar Archivo</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
       <Dialog
         open={modalOpenExport}
         onOpenChange={(open: boolean) => !open && setModalOpenExport(false)}
@@ -239,7 +197,7 @@ const Products = () => {
             <div className="ml-auto flex items-center gap-3">
               <div className="rounded-lg flex bg-[#F4F4F5]">
                 <div
-                  onClick={() => setModalOpen(true)}
+                  onClick={() => navigate("/producto/importar")}
                   className="flex hover:cursor-pointer gap-3 items-center hover:bg-primary hover:text-white hover:[&>svg]:text-white rounded-lg m-1 px-3"
                 >
                   <Import />
