@@ -3,7 +3,7 @@ import { useState } from "react";
 import Layout from "@/components/Layouts/Layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChevronLeft, File, Download } from "lucide-react";
+import { ChevronLeft, File } from "lucide-react";
 import { useCategoryContext } from "@/context/categories-context";
 import {
   Select,
@@ -114,19 +114,6 @@ const ImportProduct = () => {
     }
   };
 
-  const getImportTypeLabel = (type: ImportType) => {
-    switch (type) {
-      case "products":
-        return "Productos";
-      case "references":
-        return "Referencias";
-      case "applications":
-        return "Aplicaciones";
-      default:
-        return "";
-    }
-  };
-
   return (
     <Layout>
       <header className="flex justify-between">
@@ -233,19 +220,6 @@ const ImportProduct = () => {
                 )}
               </div>
             </div>
-
-            <Card className="border-[#94A3B8] bg-[#F9FAFB]">
-              <CardHeader className="flex flex-row gap-3 items-center p-3">
-                <File className="mt-2" />
-                <CardTitle className="text-lg mt-0">Plantilla de {getImportTypeLabel(importType as ImportType) || "Productos"}</CardTitle>
-              </CardHeader>
-              <CardContent className="flex justify-between items-center p-3">
-                <CardDescription>
-                  Descarga la plantilla de ejemplo para usarla como base.
-                </CardDescription>
-                <Download className="hover:cursor-pointer" />
-              </CardContent>
-            </Card>
 
             <div className="flex justify-end gap-3 pt-4">
               <Button

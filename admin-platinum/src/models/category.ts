@@ -20,7 +20,12 @@ export type CategoryResponse = {
     product: CategoryAtributes[];
     variant: CategoryAtributes[];
   };
-  products?: [];
+  products?: Array<{
+    id: string;
+    name: string;
+    type: string;
+    description: string;
+  }>;
 };
 
 export enum CategoryAttributesTypes {
