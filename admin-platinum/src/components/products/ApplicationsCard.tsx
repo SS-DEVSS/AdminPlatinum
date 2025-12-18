@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Product } from "@/models/product";
 import { Reference } from "@/models/reference";
 import { PlusCircle, X } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import NoData from "../NoData";
 import { Button } from "../ui/button";
 
@@ -28,10 +28,15 @@ const ApplicationsCard = ({ state, setState, product }: ApplicationsCardProps) =
   const [applicationBrand, setApplicationBrand] = useState<string>("");
   const [applicationDescription, setApplicationDescription] = useState<string>("");
 
-  if (product) {
-    // If editing, load applications from product if available
-    // For now, applications will be similar to references structure
-  }
+  // Load applications from product when editing (using useEffect to avoid render issues)
+  useEffect(() => {
+    if (product && product.applications) {
+      // Applications are already formatted in newProduct.tsx
+      setState({
+        applications: product.applications,
+      });
+    }
+  }, [product, setState]);
 
   const handleAddClick = () => {
     setShowInput((prevShowInput) => !prevShowInput);
@@ -73,6 +78,13 @@ const ApplicationsCard = ({ state, setState, product }: ApplicationsCardProps) =
         <CardDescription>
           Ingrese las aplicaciones asociadas al producto.
         </CardDescription>
+        <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
+          <p className="text-sm text-blue-800">
+            <strong>Nota:</strong> Cada aplicación muestra información del vehículo (Modelo, Submodelo, Año, etc.) seguida de un identificador único entre paréntesis. 
+            Este identificador corresponde a los últimos 8 caracteres del ID de la aplicación en la base de datos, lo que permite diferenciar cada aplicación y facilitar su búsqueda o referencia si es necesario.
+            Si aparece "BASE" o "Aplicación", significa que esa aplicación no tiene información adicional de vehículo, pero el identificador único permite diferenciarla de las demás.
+          </p>
+        </div>
       </CardHeader>
       <CardContent className="flex-1">
         {state.applications.length === 0 && showInput === false ? (
@@ -83,21 +95,34 @@ const ApplicationsCard = ({ state, setState, product }: ApplicationsCardProps) =
           </NoData>
         ) : (
           <section className="flex gap-4 flex-wrap">
-            {state.applications.map((application) => (
-              <div
-                key={application.id}
-                className="bg-black rounded-full text-white p-2 mb-2 flex gap-3 px-6 items-center"
-              >
-                <span>
-                  {application.referenceBrand && <span className="font-bold mr-1">{application.referenceBrand}:</span>}
-                  {application.referenceNumber}
-                </span>
-                <X
-                  onClick={() => handleRemoveApplication(application.id)}
-                  className="cursor-pointer w-4 h-4"
-                />
-              </div>
-            ))}
+            {state.applications.map((application: any) => {
+              // Use displayText if available (from formatted applications), otherwise build from referenceBrand/referenceNumber
+              // NEVER use application.sku as it's the same for all applications
+              const displayText = application.displayText || 
+                (application.referenceBrand && application.referenceNumber
+                  ? `${application.referenceBrand}: ${application.referenceNumber}`
+                  : application.referenceNumber || 
+                    application.referenceBrand || 
+                    application.description ||
+                    `Aplicación (${application.id ? application.id.substring(application.id.length - 8).toUpperCase() : 'N/A'})` ||
+                    "Sin información");
+              
+              return (
+                <div
+                  key={application.id}
+                  className="bg-black rounded-full text-white py-3 px-6 mb-2 flex gap-3 items-center min-h-[40px] shadow-md hover:bg-gray-800 transition-colors"
+                  title={application.description || displayText}
+                >
+                  <span className="text-sm font-medium whitespace-nowrap">
+                    {displayText}
+                  </span>
+                  <X
+                    onClick={() => handleRemoveApplication(application.id)}
+                    className="cursor-pointer w-4 h-4 hover:text-red-300 transition-colors flex-shrink-0"
+                  />
+                </div>
+              );
+            })}
           </section>
         )}
         {showInput && (

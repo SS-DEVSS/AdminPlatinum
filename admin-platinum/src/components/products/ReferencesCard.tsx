@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Product } from "@/models/product";
 import { Reference } from "@/models/reference";
 import { PlusCircle, X } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import NoData from "../NoData";
 import { Button } from "../ui/button";
 
@@ -28,11 +28,14 @@ const ReferencesCard = ({ state, setState, product }: ReferencesCardProps) => {
   const [referenceBrand, setReferenceBrand] = useState<string>("");
   const [referenceDescription, setReferenceDescription] = useState<string>("");
 
-  if (product) {
-    setState({
-      references: product.references,
-    });
-  }
+  // Load references from product when editing (using useEffect to avoid render issues)
+  useEffect(() => {
+    if (product && product.references) {
+      setState({
+        references: product.references,
+      });
+    }
+  }, [product, setState]);
 
   const handleAddClick = () => {
     setShowInput((prevShowInput) => !prevShowInput);

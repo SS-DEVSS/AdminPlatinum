@@ -17,47 +17,53 @@ import { PlusCircle, Trash } from "lucide-react";
 
 type NotesCardProps = {
   product?: Product | null;
+  onNotesChange?: (notes: Note[]) => void;
 };
 
-const NotesCard = ({ product }: NotesCardProps) => {
+const NotesCard = ({ product, onNotesChange }: NotesCardProps) => {
   const [note, setNote] = useState<string>("");
   const [showInputNotes, setShowInputNotes] = useState<boolean>(false);
   const [formInfo, setFormInfo] = useState({
-    notes: product ? product.notes : ([] as Note[]),
+    notes: product?.notes ? (product.notes as Note[]) : ([] as Note[]),
   });
+
+  // Notify parent when notes change
+  const updateNotes = (newNotes: Note[]) => {
+    setFormInfo({ notes: newNotes });
+    onNotesChange?.(newNotes);
+  };
 
   const handleAddClickNotes = () => {
     setShowInputNotes(!showInputNotes);
   };
 
   const handleAddNotes = () => {
-    if (note !== null) {
+    if (note !== null && note.trim() !== "") {
       const newNote: Note = {
         id: crypto.randomUUID(),
         note: note,
       };
-      setFormInfo((prevForm) => ({
-        ...prevForm,
-        notes: [...prevForm.notes, newNote],
-      }));
+      const updatedNotes = [...formInfo.notes, newNote];
+      updateNotes(updatedNotes);
       setNote("");
       setShowInputNotes(false);
     }
   };
 
   const handleRemoveNotes = (id: string) => {
-    setFormInfo((prevForm) => ({
-      ...prevForm,
-      notes: prevForm.notes.filter((note) => note.id !== id),
-    }));
+    const updatedNotes = formInfo.notes.filter((note) => note.id !== id);
+    updateNotes(updatedNotes);
   };
 
   return (
-    <Card className="w-full flex flex-col mt-5">
+    <Card className="w-full flex flex-col mt-5 opacity-60">
       <CardHeader>
         <CardTitle>Notas</CardTitle>
         <CardDescription>
           Agrega cualquier tipo de notas relevantes para los visitantes.
+          <span className="block mt-1 text-xs text-muted-foreground italic">
+            (Funcionalidad temporalmente deshabilitada)
+          </span>
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-1">
@@ -73,10 +79,21 @@ const NotesCard = ({ product }: NotesCardProps) => {
               <div key={note.id} className="w-full">
                 <Label>{`Nota ${index + 1}`}</Label>
                 <div className="flex items-center gap-3 mt-3">
-                  <Input type="text" value={note.note} />
+                  <Input 
+                    type="text" 
+                    value={note.note} 
+                    disabled
+                    onChange={(e) => {
+                      const updatedNotes = formInfo.notes.map((n) =>
+                        n.id === note.id ? { ...n, note: e.target.value } : n
+                      );
+                      updateNotes(updatedNotes);
+                    }}
+                  />
                   <Button
                     onClick={() => handleRemoveNotes(note.id as string)}
                     size="icon"
+                    disabled
                   >
                     <Trash className="h-4 w-4" />
                   </Button>
@@ -94,11 +111,12 @@ const NotesCard = ({ product }: NotesCardProps) => {
               placeholder="Nota"
               value={note !== null ? note : ""}
               onChange={(e) => setNote(e.target.value)}
+              disabled
             />
-            <Button variant="outline" onClick={handleAddClickNotes}>
+            <Button variant="outline" onClick={handleAddClickNotes} disabled>
               Cancelar
             </Button>
-            <Button onClick={handleAddNotes}>Agregar</Button>
+            <Button onClick={handleAddNotes} disabled>Agregar</Button>
           </div>
         )}
       </CardContent>
@@ -108,7 +126,7 @@ const NotesCard = ({ product }: NotesCardProps) => {
           variant="ghost"
           className="gap-1 hover:bg-slate-100 hover:text-black py-5"
           onClick={handleAddClickNotes}
-          disabled={showInputNotes}
+          disabled
         >
           <PlusCircle className="h-3.5 w-3.5 mr-2" />
           Agregar nota

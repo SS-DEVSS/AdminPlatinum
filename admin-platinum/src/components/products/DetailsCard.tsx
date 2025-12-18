@@ -56,7 +56,7 @@ const DetailsCard = ({ product, state, setState }: DetailsCardProps) => {
   const handleBrandChange = (value: string) => {
     setState((prevForm) => ({
       ...prevForm,
-      brand: value,
+      brand: value === "none" ? "" : value, // Convert "none" to empty string for backend
       category: null,
     }));
   };
@@ -123,15 +123,18 @@ const DetailsCard = ({ product, state, setState }: DetailsCardProps) => {
           <section className="flex gap-4">
             <div className="grid gap-3 w-full">
               <Label htmlFor="brand">
-                <span className="text-redLabel">*</span>Marca
+                Marca
               </Label>
-              <Select onValueChange={handleBrandChange} value={state.brand || ""}>
+              <Select onValueChange={handleBrandChange} value={state.brand || "none"}>
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Selecciona una marca" />
+                  <SelectValue placeholder="Selecciona una marca (opcional)" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
                     <SelectLabel>Marcas</SelectLabel>
+                    <SelectItem value="none">
+                      Sin marca
+                    </SelectItem>
                     {brands.map((brand) => (
                       <SelectItem key={brand.id} value={brand.id || ""}>
                         {brand.name}
@@ -147,7 +150,6 @@ const DetailsCard = ({ product, state, setState }: DetailsCardProps) => {
               </Label>
               <Select
                 onValueChange={handleCategoryChange}
-                disabled={state.brand === ""}
                 value={
                   typeof state.category === "string"
                     ? state.category || ""
