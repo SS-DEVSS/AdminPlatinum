@@ -1,23 +1,30 @@
-import { useParams, Link } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 import Layout from "@/components/Layouts/Layout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { useFormState } from "@/hooks/useFormProduct";
 import AdditionalInfo from "@/modules/products/AdditionalInfo";
 import Attributes from "@/modules/products/Attributes";
 import Details from "@/modules/products/Details";
-import Variants from "@/modules/products/Variants";
-import { ChevronLeft, Circle } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { useProducts } from "@/hooks/useProducts";
 import { useCategoryContext } from "@/context/categories-context";
+import { useToast } from "@/hooks/use-toast";
+import axiosClient from "@/services/axiosInstance";
 
 const NewProduct = () => {
   const { id } = useParams();
   const isEditMode = !!id;
-  const { getProductById } = useProducts();
+  const navigate = useNavigate();
+  const { getProductById, createProduct, updateProduct } = useProducts();
   const { categories } = useCategoryContext();
+  const { toast } = useToast();
+  const [currentProduct, setCurrentProduct] = useState<any>(null);
+  // Temporarily disabled - notes and documents functionality
+  // const [notesState, setNotesState] = useState<any[]>([]);
+  // const [documentsState, setDocumentsState] = useState<any[]>([]);
+  // const [currentVariantId, setCurrentVariantId] = useState<string | null>(null);
 
   const {
     detailsState,
@@ -26,53 +33,62 @@ const NewProduct = () => {
     setAttributesState,
     referencesState,
     setReferencesState,
+    applicationsState,
+    setApplicationsState,
     canContinue,
     setCanContinue,
   } = useFormState();
-
-  const [module, setModule] = useState<number>(0);
-
-  const steps = [
-    "Detalles de Producto",
-    "Attributos de la Categoría",
-    "Variantes del Producto",
-    "Información y documentos adicionales",
-  ];
 
   useEffect(() => {
     const loadProductData = async () => {
       if (isEditMode && id) {
         const product = await getProductById(id);
         if (product) {
+          setCurrentProduct(product); // Store product for passing to child components
           // 1. Populate Details
           // Find the category object from context based on product.category.id
-          const fullCategory = categories.find(c => c.id === product.category.id) || null;
+          const categoryId = product.category?.id || product.category;
+          
+          let fullCategory = categories.find(c => c.id === categoryId) || null;
+          
+          // If category not found in context, create a basic category object from product data
+          if (!fullCategory && product.category) {
+            fullCategory = {
+              id: product.category.id || product.category,
+              name: product.category.name || "Categoría desconocida",
+            } as any;
+          }
+
+          // Get the first image URL if available
+          const firstImage = product.images && product.images.length > 0 
+            ? product.images[0].url 
+            : "";
 
           setDetailsState({
             id: product.id,
             name: product.name,
             type: product.type,
-            description: product.description,
+            description: product.description || "",
             category: fullCategory, // Use the full category object found
             references: [], // Handled in referencesState
-            sku: product.sku,
+            sku: product.sku || "",
             brand: product.brand?.id || "",
+            imgUrl: firstImage, // Set initial image URL
           });
 
           // 2. Populate Attributes
           const attrs: any = {};
-          if (product.attributeValues) {
+          if (product.attributeValues && fullCategory) {
+            // Get product attributes from category (handle both array and object formats)
+            let productAttributes: any[] = [];
+            if (Array.isArray(fullCategory.attributes)) {
+              productAttributes = fullCategory.attributes.filter((a: any) => a.scope === "PRODUCT");
+            } else if (fullCategory.attributes && typeof fullCategory.attributes === 'object' && 'product' in fullCategory.attributes) {
+              productAttributes = (fullCategory.attributes as { product: any[] }).product || [];
+            }
+
             product.attributeValues.forEach((av: any) => {
-              // Use the attribute ID or Name as key, depending on how Attributes.tsx expects it.
-              // Looking at Attributes.tsx, it iterates category attributes and checks attributesState[attr.name].
-              // So we need to map the saved values back to the attribute names.
-
-              // We need to find the attribute name. Ideally the backend response includes it in attributeValues
-              // or we look it up in the category definition.
-              // Assuming product.attributeValues has populated attribute info or we can match by ID.
-              // If the backend returns { idAttribute, valueString, ... } and we have the category loaded:
-
-              const attributeDef = fullCategory?.attributes?.find((a: any) => a.id === av.idAttribute && a.scope === "PRODUCT");
+              const attributeDef = productAttributes.find((a: any) => a.id === av.idAttribute && a.scope === "PRODUCT");
               if (attributeDef) {
                 attrs[attributeDef.name] = av.valueString || av.valueNumber || av.valueBoolean || av.valueDate;
               }
@@ -84,6 +100,135 @@ const NewProduct = () => {
           if (product.references) {
             setReferencesState({ references: product.references });
           }
+
+          // 4. Populate Notes and Documents from variant - TEMPORARILY DISABLED
+          // For SINGLE products, get the first variant
+          // if (product.variants && product.variants.length > 0) {
+          //   const variant = product.variants[0];
+          //   setCurrentVariantId(variant.id);
+          //   
+          //   // Load notes from variant
+          //   if (variant.notes && Array.isArray(variant.notes)) {
+          //     setNotesState(variant.notes);
+          //   }
+          //   
+          //   // Load documents (technicalSheets) from variant
+          //   if (variant.techSheets && Array.isArray(variant.techSheets)) {
+          //     // Map technicalSheets to documents format
+          //     const documents = variant.techSheets.map((ts: any) => ({
+          //       id: ts.id,
+          //       title: ts.title || "",
+          //       document_url: ts.path || ts.url || "",
+          //     }));
+          //     setDocumentsState(documents);
+          //   }
+          // }
+
+          // 4. Populate Applications
+          // Convert backend applications to frontend format
+          // Backend applications have: id, sku, origin, attributeValues
+          // Frontend expects: id, referenceBrand, referenceNumber, type, description
+          if (product.applications && Array.isArray(product.applications)) {
+            const formattedApplications = product.applications.map((app: any, index: number) => {
+              // Extract key attributes from attributeValues
+              // Applications typically have: Modelo, Submodelo, Año, Litros_Motor, etc.
+              const getAttributeValue = (attrName: string) => {
+                const attr = app.attributeValues?.find((av: any) => 
+                  av.attribute?.name === attrName || 
+                  av.attribute?.name?.toLowerCase() === attrName.toLowerCase()
+                );
+                if (!attr) return null;
+                return attr.valueString || attr.valueNumber || attr.valueBoolean || attr.valueDate || null;
+              };
+              
+              // Try common attribute names
+              const modelo = getAttributeValue('Modelo');
+              const submodelo = getAttributeValue('Submodelo');
+              const año = getAttributeValue('Año');
+              const litrosMotor = getAttributeValue('Litros_Motor');
+              const ccMotor = getAttributeValue('CC_Motor');
+              const cidMotor = getAttributeValue('CID_Motor');
+              const cilindrosMotor = getAttributeValue('Cilindros_Motor');
+              const bloqueMotor = getAttributeValue('Bloque_Motor');
+              const motor = getAttributeValue('Motor');
+              const tipoMotor = getAttributeValue('Tipo_Motor');
+              const transmision = getAttributeValue('Transmisión') || getAttributeValue('Transmision');
+              
+              // Build display text from available attributes (prioritize most distinctive ones)
+              const parts: string[] = [];
+              
+              // Modelo is usually the most distinctive
+              if (modelo) parts.push(String(modelo));
+              
+              // Submodelo adds more specificity
+              if (submodelo) parts.push(String(submodelo));
+              
+              // Año is important for differentiation
+              if (año) parts.push(`${año}`);
+              
+              // Motor information
+              if (motor) {
+                parts.push(String(motor));
+              } else if (tipoMotor) {
+                parts.push(String(tipoMotor));
+              } else if (litrosMotor) {
+                parts.push(`${litrosMotor}L`);
+              } else if (ccMotor) {
+                parts.push(`${ccMotor}CC`);
+              } else if (cidMotor) {
+                parts.push(`${cidMotor}CID`);
+              }
+              
+              // Additional motor details if available
+              if (cilindrosMotor && !motor) {
+                parts.push(`${cilindrosMotor}cil`);
+              }
+              
+              if (bloqueMotor) {
+                parts.push(bloqueMotor);
+              }
+              
+              if (transmision) {
+                parts.push(transmision);
+              }
+              
+              // If we have no distinctive attributes, don't add anything
+              // We'll just use the ID to differentiate
+              
+              // Always append a short version of the ID to make each application unique
+              // Use last 8 characters of the ID (more readable than first 8)
+              const shortId = app.id.substring(app.id.length - 8).toUpperCase();
+              
+              // Build display text: combine attributes with ID
+              // NEVER use app.sku as it's the same for all applications
+              let displayText = '';
+              if (parts.length > 0) {
+                displayText = `${parts.join(' - ')} (${shortId})`;
+              } else {
+                // If no attributes, just show the ID
+                displayText = `Aplicación (${shortId})`;
+              }
+              
+              const formatted = {
+                id: app.id,
+                sku: app.sku || "",
+                referenceBrand: modelo ? String(modelo) : (app.origin || ""),
+                referenceNumber: submodelo ? String(submodelo) : (año ? String(año) : displayText),
+                typeOfPart: null,
+                type: "Application",
+                description: displayText,
+                // Store original application data for reference
+                _originalApplication: app,
+                // Store formatted display text
+                displayText: displayText,
+              };
+              
+              return formatted;
+            });
+            
+            setApplicationsState({ applications: formattedApplications });
+          } else {
+          }
         }
       }
     };
@@ -93,32 +238,248 @@ const NewProduct = () => {
     }
   }, [isEditMode, id, categories]); // Depend on categories to ensure they are loaded first
 
-  const getPage = (module: number) => {
-    switch (module) {
-      case 0:
-        return (
-          <Details
-            detailsState={detailsState}
-            setDetailsState={setDetailsState}
-            referencesState={referencesState}
-            setReferencesState={setReferencesState}
-          />
-        );
-      case 1:
-        return (
-          <Attributes
-            setCanContinue={setCanContinue}
-            categoryId={typeof detailsState.category === 'string' ? detailsState.category : detailsState.category?.id || undefined}
-            attributesState={attributesState}
-            setAttributesState={setAttributesState}
-          />
-        );
-      case 2:
-        return <Variants />;
-      case 3:
-        return <AdditionalInfo setCanContinue={setCanContinue} />;
-      default:
-        return null;
+  const handleSubmit = async () => {
+    try {
+      // Validate required fields
+      if (!detailsState.name || !detailsState.description || !detailsState.category) {
+        toast({
+          title: "Error",
+          variant: "destructive",
+          description: "Por favor completa todos los campos requeridos",
+        });
+        return;
+      }
+
+      // Get category ID
+      const categoryId = typeof detailsState.category === 'string' 
+        ? detailsState.category 
+        : detailsState.category?.id;
+
+      if (!categoryId) {
+        toast({
+          title: "Error",
+          variant: "destructive",
+          description: "Por favor selecciona una categoría",
+        });
+        return;
+      }
+
+      // Get the category to access attributes
+      const category = categories.find(c => c.id === categoryId);
+      if (!category) {
+        toast({
+          title: "Error",
+          variant: "destructive",
+          description: "Categoría no encontrada",
+        });
+        return;
+      }
+
+      // Get existing product data if editing
+      let existingProduct: any = null;
+      if (isEditMode && id) {
+        existingProduct = await getProductById(id);
+      }
+
+      // Format attributes
+      const formattedAttributes: any[] = [];
+      if (category.attributes) {
+        const productAttributes = Array.isArray(category.attributes)
+          ? category.attributes.filter((a: any) => a.scope === "PRODUCT")
+          : (category.attributes as any)?.product || [];
+
+        productAttributes.forEach((attr: any) => {
+          const value = attributesState[attr.name];
+          if (value !== undefined && value !== null && value !== "") {
+            // Find the attribute value ID if editing
+            let idAttributeValue: string | undefined;
+            if (isEditMode && existingProduct?.attributeValues) {
+              const existingAttrValue = existingProduct.attributeValues.find(
+                (av: any) => av.idAttribute === attr.id
+              );
+              if (existingAttrValue) {
+                idAttributeValue = existingAttrValue.id;
+              }
+            }
+
+            // In edit mode, only include attributes that already exist (have idAttributeValue)
+            // New attributes would need to be created separately, which is not supported by the update endpoint
+            if (isEditMode && !idAttributeValue) {
+              console.warn(`[NewProduct] Skipping attribute ${attr.name} - it doesn't exist yet and cannot be created via update`);
+              return; // Skip this attribute
+            }
+
+            const attributeValue: any = {
+              idAttribute: attr.id,
+            };
+
+            // Set the value based on attribute type
+            if (attr.type === "STRING" || attr.type === "TEXT" || attr.type?.toLowerCase() === "string" || attr.type?.toLowerCase() === "text") {
+              attributeValue.valueString = String(value);
+              attributeValue.valueNumber = null;
+              attributeValue.valueBoolean = null;
+              attributeValue.valueDate = null;
+            } else if (attr.type === "NUMBER" || attr.type === "NUMERIC" || attr.type === "INTEGER" || attr.type === "DECIMAL" || attr.type?.toLowerCase() === "number" || attr.type?.toLowerCase() === "numeric") {
+              attributeValue.valueNumber = Number(value);
+              attributeValue.valueString = null;
+              attributeValue.valueBoolean = null;
+              attributeValue.valueDate = null;
+            } else if (attr.type === "BOOLEAN" || attr.type?.toLowerCase() === "boolean") {
+              attributeValue.valueBoolean = Boolean(value);
+              attributeValue.valueString = null;
+              attributeValue.valueNumber = null;
+              attributeValue.valueDate = null;
+            } else if (attr.type === "DATE" || attr.type?.toLowerCase() === "date") {
+              attributeValue.valueDate = value instanceof Date ? value : new Date(value);
+              attributeValue.valueString = null;
+              attributeValue.valueNumber = null;
+              attributeValue.valueBoolean = null;
+            }
+
+            // In edit mode, idAttributeValue is required
+            if (isEditMode) {
+              if (!idAttributeValue) {
+                console.error(`[NewProduct] Missing idAttributeValue for attribute ${attr.name} in edit mode`);
+                return; // Skip this attribute
+              }
+              attributeValue.idAttributeValue = idAttributeValue;
+            }
+
+            formattedAttributes.push(attributeValue);
+          }
+        });
+      }
+
+      // Format references
+      const referenceIds = referencesState.references.map(ref => ref.id);
+
+      if (isEditMode && id) {
+        // Update product - ProductUpdateRequest format
+        // Always include name and description (they should always have values)
+        const productPayload: any = {
+          name: detailsState.name || "",
+          description: detailsState.description || null,
+        };
+        
+        // Include variant with notes and documents if we have a variant ID - TEMPORARILY DISABLED
+        // if (currentVariantId && (notesState.length > 0 || documentsState.length > 0)) {
+        //   const variant: any = {
+        //     id: currentVariantId,
+        //     name: detailsState.name || "",
+        //     notes: notesState.map((note: any) => typeof note === 'string' ? note : note.note).filter(Boolean),
+        //     technicalSheets: documentsState.map((doc: any) => ({
+        //       title: doc.title || "",
+        //       path: doc.document_url || doc.path || "",
+        //       description: doc.description || null,
+        //     })),
+        //     images: [],
+        //     attributes: [],
+        //   };
+        //   productPayload.variants = [variant];
+        // }
+
+        // Include references if there are any
+        if (referenceIds.length > 0) {
+          productPayload.references = referenceIds;
+        }
+
+        // Include attributes if there are any
+        if (formattedAttributes.length > 0) {
+          productPayload.attributes = formattedAttributes;
+        }
+
+        // If there's a new image, add it to the payload
+        // The backend expects imageUrl or imgUrl
+        if (detailsState.imgUrl && detailsState.imgUrl.trim() !== "") {
+          // Check if it's a full URL or just a path
+          // If it's a full URL (starts with http), use it as imageUrl
+          // Otherwise, it's already a path and we can use it as imgUrl
+          if (detailsState.imgUrl.startsWith('http')) {
+            productPayload.imageUrl = detailsState.imgUrl;
+          } else {
+            productPayload.imgUrl = detailsState.imgUrl;
+          }
+        }
+
+        await updateProduct(id, productPayload);
+        
+        // Update variant with notes and documents if we have a variant ID - TEMPORARILY DISABLED
+        // if (currentVariantId && (notesState.length > 0 || documentsState.length > 0)) {
+        //   const client = axiosClient();
+        //   const variantPayload: any = {
+        //     notes: notesState.map((note: any) => typeof note === 'string' ? note : note.note).filter(Boolean),
+        //     technicalSheets: documentsState.map((doc: any) => ({
+        //       title: doc.title || "",
+        //       path: doc.document_url || doc.path || "",
+        //       description: doc.description || null,
+        //     })),
+        //     attributes: [],
+        //   };
+        //   
+        //   try {
+        //     await client.patch(`/variants/${currentVariantId}`, variantPayload);
+        //     console.log("[NewProduct] Variant updated with notes and documents");
+        //   } catch (error: any) {
+        //     console.error("[NewProduct] Error updating variant:", error);
+        //     // Don't fail the whole operation if variant update fails
+        //     toast({
+        //       title: "Advertencia",
+        //       variant: "default",
+        //       description: "El producto se actualizó, pero hubo un problema al actualizar las notas y documentos",
+        //     });
+        //   }
+        // }
+        
+        toast({
+          title: "Producto actualizado",
+          variant: "success",
+          description: "El producto se ha actualizado correctamente",
+        });
+      } else {
+        // Create product - ProductCreateRequest format
+        // Format variants (for SINGLE products, create a variant with the product name)
+        const variants: any[] = [];
+        if (detailsState.type === "SINGLE") {
+          variants.push({
+            name: detailsState.name,
+            sku: detailsState.sku || null,
+            price: null,
+            stockQuantity: null,
+            attributes: [],
+            images: detailsState.imgUrl ? [{ path: detailsState.imgUrl, order: 0 }] : [],
+            notes: [],
+            technicalSheets: [],
+          });
+        }
+
+        const productPayload: any = {
+          name: detailsState.name,
+          sku: detailsState.sku || null,
+          description: detailsState.description || null,
+          type: detailsState.type || "SINGLE",
+          idCategory: categoryId,
+          references: referenceIds,
+          attributes: formattedAttributes,
+          variants: variants,
+        };
+
+        await createProduct(productPayload);
+        toast({
+          title: "Producto creado",
+          variant: "success",
+          description: "El producto se ha creado correctamente",
+        });
+      }
+
+      // Navigate back to products list
+      navigate("/productos");
+    } catch (error: any) {
+      console.error("Error saving product:", error);
+      toast({
+        title: "Error",
+        variant: "destructive",
+        description: error.response?.data?.error || error.message || "Error al guardar el producto",
+      });
     }
   };
 
@@ -126,58 +487,46 @@ const NewProduct = () => {
     <Layout>
       <header className="flex justify-between">
         <div className="flex items-center gap-4">
-          <Link to="/categorias">
+          <Link to="/productos">
             <Card className="p-2">
               <ChevronLeft className="h-4 w-4" />
             </Card>
           </Link>
           <p className="text-2xl font-semibold leading-none tracking-tight">
-            Nuevo Producto
+            {isEditMode ? "Editar Producto" : "Nuevo Producto"}
           </p>
         </div>
       </header>
-      <section className="flex justify-center mt-6 gap-3">
-        {steps.map((step, index) => (
-          <div key={index} className="flex items-center gap-3">
-            <div className="flex flex-col items-center gap-3">
-              <Circle
-                fill={module < index ? "#D9D9D9" : "black"}
-                className={module < index ? "text-[#D9D9D9]" : "text-black"}
-              />
-              <p className={module === index ? "font-bold" : ""}>{step}</p>
-            </div>
-            {index <= steps.length - 2 && (
-              <Separator
-                className={`w-44 h-2 rounded-3xl mt-3 ${index < module ? "bg-black" : "bg-[#D9D9D9]"
-                  }`}
-              />
-            )}
-          </div>
-        ))}
-      </section>
-      <section className="flex flex-col justify-center gap-4 mt-2">
-        {getPage(module)}
-        <section className="flex justify-center gap-3">
-          {module != 0 && (
-            <Button
-              onClick={() => setModule((prev) => prev - 1)}
-              className="w-28"
-              variant="outline"
-            >
-              Anterior
-            </Button>
-          )}
-          {module != 3 ? (
-            <Button
-              disabled={!canContinue}
-              onClick={() => setModule((prev) => prev + 1)}
-              className="w-28"
-            >
-              Siguiente
-            </Button>
-          ) : (
-            <Button className="w-28">Publicar</Button>
-          )}
+      <section className="flex flex-col gap-4 mt-6 max-w-4xl mx-auto px-4">
+        <Details
+          detailsState={detailsState}
+          setDetailsState={setDetailsState}
+          referencesState={referencesState}
+          setReferencesState={setReferencesState}
+          applicationsState={applicationsState}
+          setApplicationsState={setApplicationsState}
+          product={isEditMode ? currentProduct : null}
+        />
+        <Attributes
+          setCanContinue={setCanContinue}
+          categoryId={typeof detailsState.category === 'string' ? detailsState.category : detailsState.category?.id || undefined}
+          attributesState={attributesState}
+          setAttributesState={setAttributesState}
+        />
+        <AdditionalInfo 
+          setCanContinue={setCanContinue}
+          product={isEditMode ? currentProduct : null}
+          // Temporarily disabled - notes and documents functionality
+          // onNotesChange={setNotesState}
+          // onDocumentsChange={setDocumentsState}
+        />
+        <section className="flex justify-end gap-3 mt-4">
+          <Link to="/productos">
+            <Button variant="outline">Cancelar</Button>
+          </Link>
+          <Button disabled={!canContinue} onClick={handleSubmit}>
+            {isEditMode ? "Actualizar Producto" : "Publicar Producto"}
+          </Button>
         </section>
       </section>
     </Layout>

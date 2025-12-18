@@ -27,11 +27,16 @@ export const uploadFileToS3 = async (
   try {
     // Use backend file upload endpoint instead of direct S3
     const endpoint = prefix.includes("documents") ? "/files/documents" : "/files/images";
+    console.log(`[S3FileManager] Uploading file to ${endpoint}, size: ${file.size}, type: ${file.type}`);
+    
     const response = await client.post(endpoint, formData, {
       headers: {
         "Content-Type": "multipart/form-data",
       },
+      timeout: 120000, // 120 seconds timeout for large files
     });
+
+    console.log(`[S3FileManager] Upload successful: ${response.data.key || response.data.url}`);
 
     // Backend returns { url, key }, format it to match expected response
     return {
@@ -41,8 +46,9 @@ export const uploadFileToS3 = async (
       status: response.status,
     };
   } catch (error: any) {
-    console.error("Error uploading file:", error);
-    throw new Error(error.response?.data?.error || "Error uploading file");
+    console.error("[S3FileManager] Error uploading file:", error);
+    const errorMessage = error.response?.data?.error || error.message || "Error uploading file";
+    throw new Error(errorMessage);
   }
 };
 

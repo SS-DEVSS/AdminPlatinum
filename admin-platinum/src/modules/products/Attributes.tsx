@@ -32,6 +32,23 @@ const Attributes = ({
     return categories.find((c) => c.id === categoryId);
   }, [categories, categoryId]);
 
+  // Helper to get product attributes from category
+  const getProductAttributes = useMemo(() => {
+    if (!selectedCategory?.attributes) return [];
+    
+    // Check if attributes is an array
+    if (Array.isArray(selectedCategory.attributes)) {
+      return selectedCategory.attributes.filter(attr => attr.scope === "PRODUCT");
+    }
+    
+    // Check if attributes is an object with product/variant structure
+    if (typeof selectedCategory.attributes === 'object' && 'product' in selectedCategory.attributes) {
+      return (selectedCategory.attributes as { product: CategoryAtributes[] }).product || [];
+    }
+    
+    return [];
+  }, [selectedCategory]);
+
   const handleAttributeChange = (name: string, value: any) => {
     setAttributesState((prev: any) => ({
       ...prev,
@@ -41,7 +58,7 @@ const Attributes = ({
 
   // Validation logic
   useEffect(() => {
-    const productAttributes = selectedCategory?.attributes?.filter(attr => attr.scope === "PRODUCT") || [];
+    const productAttributes = getProductAttributes;
     if (!productAttributes.length) {
       setCanContinue(true); // No attributes to fill
       return;
@@ -58,7 +75,7 @@ const Attributes = ({
     });
 
     setCanContinue(isValid);
-  }, [attributesState, selectedCategory, setCanContinue]);
+  }, [attributesState, getProductAttributes, setCanContinue]);
 
   if (!categoryId) {
     return (
@@ -79,7 +96,7 @@ const Attributes = ({
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-wrap justify-between gap-4">
-        {selectedCategory?.attributes?.filter(attr => attr.scope === "PRODUCT").map(
+        {getProductAttributes.map(
           (attribute: CategoryAtributes) => (
             <div key={attribute.id} className="basis-[48%]">
               <Label className="mb-2 block">
@@ -96,8 +113,7 @@ const Attributes = ({
             </div>
           )
         )}
-        {(!selectedCategory?.attributes?.filter(attr => attr.scope === "PRODUCT").length ||
-          selectedCategory.attributes.filter(attr => attr.scope === "PRODUCT").length === 0) && (
+        {getProductAttributes.length === 0 && (
             <p className="text-muted-foreground w-full text-center">
               Esta categoría no tiene atributos definidos.
             </p>
