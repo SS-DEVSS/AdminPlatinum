@@ -21,6 +21,9 @@ import { useCategoryContext } from "@/context/categories-context";
 import { useBrands } from "@/hooks/useBrands";
 import { detailsType } from "@/hooks/useFormProduct";
 import { Product } from "@/models/product";
+import MyDropzone from "@/components/Dropzone";
+import { useS3FileManager } from "@/hooks/useS3FileManager";
+import { useState, useEffect } from "react";
 
 type DetailsCardProps = {
   state: detailsType;
@@ -31,6 +34,16 @@ type DetailsCardProps = {
 const DetailsCard = ({ product, state, setState }: DetailsCardProps) => {
   const { brands } = useBrands();
   const { categories } = useCategoryContext();
+  const { uploadFile, uploading } = useS3FileManager();
+  const [imageFile, setImageFile] = useState<File>({} as File);
+  const [imageUrl, setImageUrl] = useState<string>(state.imgUrl || "");
+
+  // Update imageUrl when state.imgUrl changes (e.g., when loading product data)
+  useEffect(() => {
+    if (state.imgUrl && !imageFile.name) {
+      setImageUrl(state.imgUrl);
+    }
+  }, [state.imgUrl]);
 
   const handleFormChange = (e: any) => {
     const { name, value } = e.target;
@@ -56,6 +69,20 @@ const DetailsCard = ({ product, state, setState }: DetailsCardProps) => {
     }));
   };
 
+  useEffect(() => {
+    if (imageFile && imageFile.name) {
+      uploadFile(imageFile, (key: string, location: string) => {
+        setImageUrl(location);
+        // Store the full URL (location) instead of just the key
+        // The backend can handle both URL and path
+        setState((prevForm) => ({
+          ...prevForm,
+          imgUrl: location, // Use location (full URL) instead of key
+        }));
+      });
+    }
+  }, [imageFile]);
+
   return (
     <Card className="w-full flex flex-col mt-5">
       <CardHeader>
@@ -77,7 +104,7 @@ const DetailsCard = ({ product, state, setState }: DetailsCardProps) => {
               className="w-full"
               placeholder="Gamer Gear Pro Controller"
               onChange={handleFormChange}
-              value={product ? product.sku : state.sku}
+              value={state.sku}
             />
           </div>
           <div className="grid gap-3">
@@ -89,7 +116,7 @@ const DetailsCard = ({ product, state, setState }: DetailsCardProps) => {
               name="description"
               className="w-full"
               placeholder="Gamer Gear Pro Controller"
-              value={product ? product.description : state.description}
+              value={state.description}
               onChange={handleFormChange}
             />
           </div>
@@ -98,7 +125,7 @@ const DetailsCard = ({ product, state, setState }: DetailsCardProps) => {
               <Label htmlFor="brand">
                 <span className="text-redLabel">*</span>Marca
               </Label>
-              <Select onValueChange={handleBrandChange} value={state.brand}>
+              <Select onValueChange={handleBrandChange} value={state.brand || ""}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Selecciona una marca" />
                 </SelectTrigger>
@@ -123,8 +150,8 @@ const DetailsCard = ({ product, state, setState }: DetailsCardProps) => {
                 disabled={state.brand === ""}
                 value={
                   typeof state.category === "string"
-                    ? state.category
-                    : state.category?.id || ""
+                    ? state.category || ""
+                    : (state.category?.id || "")
                 }
               >
                 <SelectTrigger className="w-full">
@@ -136,7 +163,7 @@ const DetailsCard = ({ product, state, setState }: DetailsCardProps) => {
                     {categories.map((category) => (
                       <SelectItem
                         key={category.id}
-                        value={product ? (product.idCategory || "") : (category.id || "")}
+                        value={category.id || ""}
                       >
                         {category.name}
                       </SelectItem>
@@ -146,6 +173,25 @@ const DetailsCard = ({ product, state, setState }: DetailsCardProps) => {
               </Select>
             </div>
           </section>
+          <div className="grid gap-3">
+            <Label htmlFor="image">
+              <span className="text-redLabel">*</span>Imagen del Producto
+            </Label>
+            <MyDropzone
+              file={imageFile}
+              fileSetter={setImageFile}
+              type="image"
+              className="p-8 min-h-[200px]"
+            />
+            {uploading && (
+              <p className="text-sm text-muted-foreground">Subiendo imagen...</p>
+            )}
+            {imageUrl && !imageFile.name && (
+              <div className="mt-2">
+                <img src={imageUrl} alt="Producto" className="max-w-[200px] rounded-md" />
+              </div>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>

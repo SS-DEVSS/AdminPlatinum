@@ -10,11 +10,23 @@ export const useS3FileManager = () => {
     file: File,
     onSuccess: (key: string, location: string) => void
   ) => {
-    if (!file || !file.type) return null;
+    if (!file || !file.type) {
+      console.warn("[useS3FileManager] Invalid file provided");
+      return;
+    }
+
+    // Prevent multiple simultaneous uploads
+    if (uploading) {
+      console.warn("[useS3FileManager] Upload already in progress");
+      return;
+    }
+
     setUploading(true);
     setError(null);
+    
     const fileNameLen = file.name.length + 66;
     if (fileNameLen > 255) {
+      setUploading(false);
       toast({
         title: "El nombre de la imagen tiene que ser menor a 255 characteres.",
         variant: "destructive",
@@ -23,6 +35,7 @@ export const useS3FileManager = () => {
         "El nombre de la imagen tiene que ser menor a 255 characteres"
       );
     }
+    
     try {
       const extension = file.type.split("/")[1];
       let data: any;
@@ -31,15 +44,18 @@ export const useS3FileManager = () => {
       } else {
         data = await uploadFileToS3(file);
       }
-      console.log(data);
+      
       if (data && data.key && data.location) {
         onSuccess(data.key, data.location);
       } else {
         throw new Error("Upload failed: invalid response");
       }
     } catch (e: any) {
-      setError(e.message || "Error uploading file");
-      console.error(e);
+      const errorMessage = e.message || "Error uploading file";
+      setError(errorMessage);
+      console.error("[useS3FileManager] Upload error:", errorMessage);
+      setUploading(false);
+      throw e; // Re-throw to allow caller to handle
     } finally {
       setUploading(false);
     }

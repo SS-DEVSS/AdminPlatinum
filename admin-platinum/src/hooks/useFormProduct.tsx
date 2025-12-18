@@ -11,6 +11,7 @@ export interface detailsType {
   description: string;
   category: Pick<Category, "id" | "name"> | null;
   references: string[];
+  imgUrl?: string;
 }
 
 export const stateSkeleton = {
@@ -21,6 +22,7 @@ export const stateSkeleton = {
   description: "",
   category: null,
   references: [],
+  imgUrl: "",
 };
 
 export const useFormState = () => {
@@ -28,6 +30,9 @@ export const useFormState = () => {
   const [attributesState, setAttributesState] = useState<any>({});
   const [referencesState, setReferencesState] = useState({
     references: [] as Reference[],
+  });
+  const [applicationsState, setApplicationsState] = useState({
+    applications: [] as Reference[],
   });
 
   const [canContinue, setCanContinue] = useState(false);
@@ -57,6 +62,8 @@ export const useFormState = () => {
     setAttributesState,
     referencesState,
     setReferencesState,
+    applicationsState,
+    setApplicationsState,
     canContinue,
     setCanContinue,
   };

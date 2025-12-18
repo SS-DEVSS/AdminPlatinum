@@ -45,4 +45,5 @@ export type CategoryAtributes = {
   order: number;
   scope: "PRODUCT" | "VARIANT";
   id_category?: string;
+  visibleInCatalog?: boolean;
 };

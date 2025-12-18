@@ -1,5 +1,6 @@
 import DetailsCard from "@/components/products/DetailsCard";
 import ReferencesCard from "@/components/products/ReferencesCard";
+import ApplicationsCard from "@/components/products/ApplicationsCard";
 import { detailsType } from "@/hooks/useFormProduct";
 import { Reference } from "@/models/reference";
 
@@ -12,20 +13,26 @@ type DetailsInterface = {
   setReferencesState: React.Dispatch<
     React.SetStateAction<{ references: Reference[] }>
   >;
+  applicationsState: {
+    applications: Reference[];
+  };
+  setApplicationsState: React.Dispatch<
+    React.SetStateAction<{ applications: Reference[] }>
+  >;
 };
 const Details = ({
   detailsState,
   setDetailsState,
   referencesState,
   setReferencesState,
+  applicationsState,
+  setApplicationsState,
 }: DetailsInterface) => {
   return (
-    <section>
-      <section className="flex flex-col md:flex-row justify-between gap-3 w-full">
-        <DetailsCard state={detailsState} setState={setDetailsState} />
-
-        <ReferencesCard state={referencesState} setState={setReferencesState} />
-      </section>
+    <section className="flex flex-col gap-3 w-full">
+      <DetailsCard state={detailsState} setState={setDetailsState} />
+      <ReferencesCard state={referencesState} setState={setReferencesState} />
+      <ApplicationsCard state={applicationsState} setState={setApplicationsState} />
     </section>
   );
 };

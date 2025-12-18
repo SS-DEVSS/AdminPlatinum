@@ -53,16 +53,52 @@ export const useProducts = () => {
     }
   };
 
-  const deleteProduct = (id: Item["id"]) => {
-    console.log(id);
+  const deleteProduct = async (id: Item["id"]) => {
+    try {
+      await client.delete(`/products/${id}`);
+      await getProducts(); // Refresh the list
+    } catch (error) {
+      console.error("Error deleting product:", error);
+      throw error;
+    }
   };
-  const handleUpdateProduct = () => {};
+
+  const createProduct = async (productData: any) => {
+    try {
+      setLoading(true);
+      const { data } = await client.post('/products', productData);
+      await getProducts(); // Refresh the list
+      return data;
+    } catch (error) {
+      console.error("Error creating product:", error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateProduct = async (id: string, productData: any) => {
+    try {
+      setLoading(true);
+      console.log("[useProducts] Updating product:", id, productData);
+      const { data } = await client.patch(`/products/${id}`, productData);
+      await getProducts(); // Refresh the list
+      return data;
+    } catch (error) {
+      console.error("Error updating product:", error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return {
     loading,
     products,
+    getProducts,
     getProductById,
     deleteProduct,
-    handleUpdateProduct,
+    createProduct,
+    updateProduct,
   };
 };

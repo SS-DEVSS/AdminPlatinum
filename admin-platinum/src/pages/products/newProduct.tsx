@@ -1,23 +1,26 @@
-import { useParams, Link } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 import Layout from "@/components/Layouts/Layout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { useFormState } from "@/hooks/useFormProduct";
 import AdditionalInfo from "@/modules/products/AdditionalInfo";
 import Attributes from "@/modules/products/Attributes";
 import Details from "@/modules/products/Details";
-import Variants from "@/modules/products/Variants";
-import { ChevronLeft, Circle } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { useProducts } from "@/hooks/useProducts";
 import { useCategoryContext } from "@/context/categories-context";
+import { useToast } from "@/hooks/use-toast";
+import axiosClient from "@/services/axiosInstance";
 
 const NewProduct = () => {
   const { id } = useParams();
   const isEditMode = !!id;
-  const { getProductById } = useProducts();
+  const navigate = useNavigate();
+  const { getProductById, createProduct, updateProduct } = useProducts();
   const { categories } = useCategoryContext();
+  const { toast } = useToast();
+  const client = axiosClient();
 
   const {
     detailsState,
@@ -26,18 +29,11 @@ const NewProduct = () => {
     setAttributesState,
     referencesState,
     setReferencesState,
+    applicationsState,
+    setApplicationsState,
     canContinue,
     setCanContinue,
   } = useFormState();
-
-  const [module, setModule] = useState<number>(0);
-
-  const steps = [
-    "Detalles de Producto",
-    "Attributos de la Categoría",
-    "Variantes del Producto",
-    "Información y documentos adicionales",
-  ];
 
   useEffect(() => {
     const loadProductData = async () => {
@@ -48,31 +44,36 @@ const NewProduct = () => {
           // Find the category object from context based on product.category.id
           const fullCategory = categories.find(c => c.id === product.category.id) || null;
 
+          // Get the first image URL if available
+          const firstImage = product.images && product.images.length > 0 
+            ? product.images[0].url 
+            : "";
+
           setDetailsState({
             id: product.id,
             name: product.name,
             type: product.type,
-            description: product.description,
+            description: product.description || "",
             category: fullCategory, // Use the full category object found
             references: [], // Handled in referencesState
-            sku: product.sku,
+            sku: product.sku || "",
             brand: product.brand?.id || "",
+            imgUrl: firstImage, // Set initial image URL
           });
 
           // 2. Populate Attributes
           const attrs: any = {};
-          if (product.attributeValues) {
+          if (product.attributeValues && fullCategory) {
+            // Get product attributes from category (handle both array and object formats)
+            let productAttributes: any[] = [];
+            if (Array.isArray(fullCategory.attributes)) {
+              productAttributes = fullCategory.attributes.filter((a: any) => a.scope === "PRODUCT");
+            } else if (fullCategory.attributes && typeof fullCategory.attributes === 'object' && 'product' in fullCategory.attributes) {
+              productAttributes = (fullCategory.attributes as { product: any[] }).product || [];
+            }
+
             product.attributeValues.forEach((av: any) => {
-              // Use the attribute ID or Name as key, depending on how Attributes.tsx expects it.
-              // Looking at Attributes.tsx, it iterates category attributes and checks attributesState[attr.name].
-              // So we need to map the saved values back to the attribute names.
-
-              // We need to find the attribute name. Ideally the backend response includes it in attributeValues
-              // or we look it up in the category definition.
-              // Assuming product.attributeValues has populated attribute info or we can match by ID.
-              // If the backend returns { idAttribute, valueString, ... } and we have the category loaded:
-
-              const attributeDef = fullCategory?.attributes?.find((a: any) => a.id === av.idAttribute && a.scope === "PRODUCT");
+              const attributeDef = productAttributes.find((a: any) => a.id === av.idAttribute && a.scope === "PRODUCT");
               if (attributeDef) {
                 attrs[attributeDef.name] = av.valueString || av.valueNumber || av.valueBoolean || av.valueDate;
               }
@@ -93,32 +94,185 @@ const NewProduct = () => {
     }
   }, [isEditMode, id, categories]); // Depend on categories to ensure they are loaded first
 
-  const getPage = (module: number) => {
-    switch (module) {
-      case 0:
-        return (
-          <Details
-            detailsState={detailsState}
-            setDetailsState={setDetailsState}
-            referencesState={referencesState}
-            setReferencesState={setReferencesState}
-          />
-        );
-      case 1:
-        return (
-          <Attributes
-            setCanContinue={setCanContinue}
-            categoryId={typeof detailsState.category === 'string' ? detailsState.category : detailsState.category?.id || undefined}
-            attributesState={attributesState}
-            setAttributesState={setAttributesState}
-          />
-        );
-      case 2:
-        return <Variants />;
-      case 3:
-        return <AdditionalInfo setCanContinue={setCanContinue} />;
-      default:
-        return null;
+  const handleSubmit = async () => {
+    try {
+      // Validate required fields
+      if (!detailsState.name || !detailsState.description || !detailsState.category) {
+        toast({
+          title: "Error",
+          variant: "destructive",
+          description: "Por favor completa todos los campos requeridos",
+        });
+        return;
+      }
+
+      // Get category ID
+      const categoryId = typeof detailsState.category === 'string' 
+        ? detailsState.category 
+        : detailsState.category?.id;
+
+      if (!categoryId) {
+        toast({
+          title: "Error",
+          variant: "destructive",
+          description: "Por favor selecciona una categoría",
+        });
+        return;
+      }
+
+      // Get the category to access attributes
+      const category = categories.find(c => c.id === categoryId);
+      if (!category) {
+        toast({
+          title: "Error",
+          variant: "destructive",
+          description: "Categoría no encontrada",
+        });
+        return;
+      }
+
+      // Get existing product data if editing
+      let existingProduct: any = null;
+      if (isEditMode && id) {
+        existingProduct = await getProductById(id);
+      }
+
+      // Format attributes
+      const formattedAttributes: any[] = [];
+      if (category.attributes) {
+        const productAttributes = Array.isArray(category.attributes)
+          ? category.attributes.filter((a: any) => a.scope === "PRODUCT")
+          : (category.attributes as any)?.product || [];
+
+        productAttributes.forEach((attr: any) => {
+          const value = attributesState[attr.name];
+          if (value !== undefined && value !== null && value !== "") {
+            // Find the attribute value ID if editing
+            let idAttributeValue: string | undefined;
+            if (isEditMode && existingProduct?.attributeValues) {
+              const existingAttrValue = existingProduct.attributeValues.find(
+                (av: any) => av.idAttribute === attr.id
+              );
+              if (existingAttrValue) {
+                idAttributeValue = existingAttrValue.id;
+              }
+            }
+
+            const attributeValue: any = {
+              idAttribute: attr.id,
+            };
+
+            // Set the value based on attribute type
+            if (attr.type === "STRING" || attr.type === "TEXT") {
+              attributeValue.valueString = String(value);
+            } else if (attr.type === "NUMBER" || attr.type === "INTEGER" || attr.type === "DECIMAL") {
+              attributeValue.valueNumber = Number(value);
+            } else if (attr.type === "BOOLEAN") {
+              attributeValue.valueBoolean = Boolean(value);
+            } else if (attr.type === "DATE") {
+              attributeValue.valueDate = new Date(value);
+            }
+
+            if (idAttributeValue) {
+              attributeValue.idAttributeValue = idAttributeValue;
+            }
+
+            formattedAttributes.push(attributeValue);
+          }
+        });
+      }
+
+      // Format references
+      const referenceIds = referencesState.references.map(ref => ref.id);
+
+      if (isEditMode && id) {
+        // Update product - ProductUpdateRequest format
+        // Always include name and description (they should always have values)
+        const productPayload: any = {
+          name: detailsState.name || "",
+          description: detailsState.description || null,
+          variants: [], // Required field, but we're not updating variants here
+        };
+
+        // Include references if there are any
+        if (referenceIds.length > 0) {
+          productPayload.references = referenceIds;
+        }
+
+        // Include attributes if there are any
+        if (formattedAttributes.length > 0) {
+          productPayload.attributes = formattedAttributes;
+        }
+
+        // If there's a new image, add it to the payload
+        // The backend expects imageUrl or imgUrl
+        if (detailsState.imgUrl && detailsState.imgUrl.trim() !== "") {
+          // Check if it's a full URL or just a path
+          // If it's a full URL (starts with http), use it as imageUrl
+          // Otherwise, it's already a path and we can use it as imgUrl
+          if (detailsState.imgUrl.startsWith('http')) {
+            productPayload.imageUrl = detailsState.imgUrl;
+          } else {
+            productPayload.imgUrl = detailsState.imgUrl;
+          }
+        }
+
+        console.log("[NewProduct] Updating product with payload:", JSON.stringify(productPayload, null, 2));
+        console.log("[NewProduct] Details state:", JSON.stringify(detailsState, null, 2));
+        console.log("[NewProduct] Attributes state:", JSON.stringify(attributesState, null, 2));
+        console.log("[NewProduct] References state:", JSON.stringify(referencesState, null, 2));
+
+        await updateProduct(id, productPayload);
+        toast({
+          title: "Producto actualizado",
+          variant: "success",
+          description: "El producto se ha actualizado correctamente",
+        });
+      } else {
+        // Create product - ProductCreateRequest format
+        // Format variants (for SINGLE products, create a variant with the product name)
+        const variants: any[] = [];
+        if (detailsState.type === "SINGLE") {
+          variants.push({
+            name: detailsState.name,
+            sku: detailsState.sku || null,
+            price: null,
+            stockQuantity: null,
+            attributes: [],
+            images: detailsState.imgUrl ? [{ path: detailsState.imgUrl, order: 0 }] : [],
+            notes: [],
+            technicalSheets: [],
+          });
+        }
+
+        const productPayload: any = {
+          name: detailsState.name,
+          sku: detailsState.sku || null,
+          description: detailsState.description || null,
+          type: detailsState.type || "SINGLE",
+          idCategory: categoryId,
+          references: referenceIds,
+          attributes: formattedAttributes,
+          variants: variants,
+        };
+
+        await createProduct(productPayload);
+        toast({
+          title: "Producto creado",
+          variant: "success",
+          description: "El producto se ha creado correctamente",
+        });
+      }
+
+      // Navigate back to products list
+      navigate("/productos");
+    } catch (error: any) {
+      console.error("Error saving product:", error);
+      toast({
+        title: "Error",
+        variant: "destructive",
+        description: error.response?.data?.error || error.message || "Error al guardar el producto",
+      });
     }
   };
 
@@ -126,58 +280,39 @@ const NewProduct = () => {
     <Layout>
       <header className="flex justify-between">
         <div className="flex items-center gap-4">
-          <Link to="/categorias">
+          <Link to="/productos">
             <Card className="p-2">
               <ChevronLeft className="h-4 w-4" />
             </Card>
           </Link>
           <p className="text-2xl font-semibold leading-none tracking-tight">
-            Nuevo Producto
+            {isEditMode ? "Editar Producto" : "Nuevo Producto"}
           </p>
         </div>
       </header>
-      <section className="flex justify-center mt-6 gap-3">
-        {steps.map((step, index) => (
-          <div key={index} className="flex items-center gap-3">
-            <div className="flex flex-col items-center gap-3">
-              <Circle
-                fill={module < index ? "#D9D9D9" : "black"}
-                className={module < index ? "text-[#D9D9D9]" : "text-black"}
-              />
-              <p className={module === index ? "font-bold" : ""}>{step}</p>
-            </div>
-            {index <= steps.length - 2 && (
-              <Separator
-                className={`w-44 h-2 rounded-3xl mt-3 ${index < module ? "bg-black" : "bg-[#D9D9D9]"
-                  }`}
-              />
-            )}
-          </div>
-        ))}
-      </section>
-      <section className="flex flex-col justify-center gap-4 mt-2">
-        {getPage(module)}
-        <section className="flex justify-center gap-3">
-          {module != 0 && (
-            <Button
-              onClick={() => setModule((prev) => prev - 1)}
-              className="w-28"
-              variant="outline"
-            >
-              Anterior
-            </Button>
-          )}
-          {module != 3 ? (
-            <Button
-              disabled={!canContinue}
-              onClick={() => setModule((prev) => prev + 1)}
-              className="w-28"
-            >
-              Siguiente
-            </Button>
-          ) : (
-            <Button className="w-28">Publicar</Button>
-          )}
+      <section className="flex flex-col gap-4 mt-6 max-w-4xl mx-auto px-4">
+        <Details
+          detailsState={detailsState}
+          setDetailsState={setDetailsState}
+          referencesState={referencesState}
+          setReferencesState={setReferencesState}
+          applicationsState={applicationsState}
+          setApplicationsState={setApplicationsState}
+        />
+        <Attributes
+          setCanContinue={setCanContinue}
+          categoryId={typeof detailsState.category === 'string' ? detailsState.category : detailsState.category?.id || undefined}
+          attributesState={attributesState}
+          setAttributesState={setAttributesState}
+        />
+        <AdditionalInfo setCanContinue={setCanContinue} />
+        <section className="flex justify-end gap-3 mt-4">
+          <Link to="/productos">
+            <Button variant="outline">Cancelar</Button>
+          </Link>
+          <Button disabled={!canContinue} onClick={handleSubmit}>
+            {isEditMode ? "Actualizar Producto" : "Publicar Producto"}
+          </Button>
         </section>
       </section>
     </Layout>
