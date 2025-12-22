@@ -38,6 +38,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -45,6 +46,7 @@ import MyDropzone from "@/components/Dropzone";
 import { useS3FileManager } from "@/hooks/useS3FileManager";
 import { useToast } from "@/hooks/use-toast";
 import axiosClient from "@/services/axiosInstance";
+import { convertImageToWebP } from "@/utils/imageConverter";
 
 interface DataTableProps {
   category?: Category | null;
@@ -54,6 +56,9 @@ interface DataTableProps {
 const DataTable = ({ category, searchFilter }: DataTableProps) => {
   const [mappedData, setMappedData] = useState<Variant[]>([]);
   const [imageDialogOpen, setImageDialogOpen] = useState(false);
+  const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
+  const [previewImageUrl, setPreviewImageUrl] = useState<string>("");
+  const [previewVariant, setPreviewVariant] = useState<Variant | null>(null);
   const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
   const [imageFile, setImageFile] = useState<File>({} as File);
   const [isUploading, setIsUploading] = useState(false);
@@ -84,6 +89,64 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
     uploadInProgressRef.current = false; // Reset upload flag
     setIsUploading(false);
     setImageDialogOpen(true);
+  };
+
+  const handlePreviewImage = (imageUrl: string, variant?: Variant) => {
+    setPreviewImageUrl(imageUrl);
+    setPreviewVariant(variant || null);
+    setPreviewDialogOpen(true);
+  };
+
+  // Obtener la URL de la imagen actual del variant seleccionado
+  const getCurrentImageUrl = (): string | undefined => {
+    if (!selectedVariant) return undefined;
+    const images = selectedVariant.images;
+    if (images && Array.isArray(images) && images.length > 0) {
+      return images[images.length - 1].url;
+    }
+    return undefined;
+  };
+
+  const handleDeleteImage = async (variant?: Variant | null) => {
+    const variantToDelete = variant || selectedVariant;
+    if (!variantToDelete) return;
+
+    const isPseudoVariant = variantToDelete.id === variantToDelete.idProduct;
+    
+    if (!isPseudoVariant) {
+      // Para variants, necesitaríamos un endpoint diferente o manejar de otra forma
+      toast({
+        title: "No se puede eliminar la imagen de un variant desde aquí",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      await client.delete(`/products/${variantToDelete.id}/images`);
+      
+      toast({
+        title: "Imagen eliminada correctamente",
+        variant: "success",
+      });
+
+      // Actualizar la lista de productos
+      await getProducts();
+      
+      // Cerrar los diálogos
+      setPreviewDialogOpen(false);
+      setImageDialogOpen(false);
+      setSelectedVariant(null);
+      setPreviewVariant(null);
+      setImageFile({} as File);
+    } catch (error: any) {
+      console.error("[ProductsTable] Error deleting image:", error);
+      toast({
+        title: "Error al eliminar imagen",
+        variant: "destructive",
+        description: error.response?.data?.error || error.message || "Error desconocido",
+      });
+    }
   };
 
   const handleImageUpload = async () => {
@@ -120,8 +183,22 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
         // This endpoint accepts files directly and creates ProductImage records
         // We'll use replace=true query parameter to replace existing images
         console.log("[ProductsTable] Uploading image to product endpoint");
+        
+        // Convertir imagen a WebP antes de subir
+        let fileToUpload = imageFile;
+        if (imageFile.type.startsWith('image/')) {
+          try {
+            console.log("[ProductsTable] Convirtiendo imagen a WebP:", imageFile.name);
+            fileToUpload = await convertImageToWebP(imageFile);
+            console.log("[ProductsTable] Conversión exitosa:", fileToUpload.name);
+          } catch (error) {
+            console.error("[ProductsTable] Error al convertir imagen, usando original:", error);
+            fileToUpload = imageFile;
+          }
+        }
+        
         const formData = new FormData();
-        formData.append('images', imageFile);
+        formData.append('images', fileToUpload);
         
         const response = await client.post(`/products/${selectedVariant.id}/images?replace=true`, formData, {
           headers: {
@@ -192,9 +269,22 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
         // and then PATCH with the imageUrl
         console.log("[ProductsTable] Uploading variant image");
         
+        // Convertir imagen a WebP antes de subir
+        let fileToUpload = imageFile;
+        if (imageFile.type.startsWith('image/')) {
+          try {
+            console.log("[ProductsTable] Convirtiendo imagen a WebP:", imageFile.name);
+            fileToUpload = await convertImageToWebP(imageFile);
+            console.log("[ProductsTable] Conversión exitosa:", fileToUpload.name);
+          } catch (error) {
+            console.error("[ProductsTable] Error al convertir imagen, usando original:", error);
+            fileToUpload = imageFile;
+          }
+        }
+        
         // Upload the file to get the URL
         const formData = new FormData();
-        formData.append('file', imageFile);
+        formData.append('file', fileToUpload);
         
         const fileUploadResponse = await client.post('/files/images', formData, {
           headers: {
@@ -313,6 +403,8 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
             kitItems: [],
             attributeValues: itemAttributeValues as any, // Preserve attribute values from item
             productAttributeValues: itemAttributeValues, // Also set for product attributes lookup
+            references: item.references || [], // Include references from item
+            applications: (item as any).applications || [], // Include applications if available
           } as Variant];
         }
 
@@ -329,7 +421,10 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
             // Ensure images are preserved from the variant
             images: variant.images || [],
             // Include type from the parent item if not in variant
-            ...((variant as any).type ? {} : { type: item.type })
+            ...((variant as any).type ? {} : { type: item.type }),
+            // Include references and applications from parent item
+            references: item.references || [],
+            applications: (item as any).applications || [],
           } as any;
         });
       });
@@ -380,13 +475,17 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
           >
             {row.getValue("images") && Array.isArray(row.getValue("images")) && row.getValue("images").length > 0 ? (
               <img
-                className="m-auto aspect-square p-2 w-full h-full object-contain rounded-lg"
+                className="m-auto aspect-square p-2 w-full h-full object-contain rounded-lg cursor-pointer"
                 src={row.getValue("images")[row.getValue("images").length - 1].url}
                 alt={row.original.name}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handlePreviewImage(row.getValue("images")[row.getValue("images").length - 1].url, row.original);
+                }}
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-xs text-gray-500">
-                Click para subir
+              <div className="w-full h-full flex items-center justify-center text-center text-xs text-gray-500">
+                Haz clic para subir
               </div>
             )}
           </div>
@@ -555,17 +654,93 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
     );
     
     const flattenedData = flattenVariants(filteredProducts);
-    setMappedData(flattenedData ?? []);
+    // También guardar el item original para cada variant para tener acceso a references y applications
+    const flattenedWithItem = flattenedData.map((variant) => {
+      const originalItem = filteredProducts.find(item => 
+        item.id === variant.idProduct || (item.variants?.some(v => v.id === variant.id) || (!item.variants || item.variants.length === 0) && item.id === variant.id)
+      );
+      return {
+        ...variant,
+        _originalItem: originalItem || null, // Guardar el item original para acceso a references
+      };
+    });
+    setMappedData(flattenedWithItem as Variant[]);
   }, [products, category]);
 
   const searchFilteredProducts = useMemo(() => {
-    const test = mappedData.filter(
-      (variant: Variant) =>
-        variant.name.toLowerCase().includes(searchFilter!.toLowerCase()) ||
-        variant.sku.toLowerCase().includes(searchFilter!.toLowerCase())
-    );
-    return test;
-  }, [searchFilter]);
+    // Si no hay searchFilter, retornar todos los datos
+    if (!searchFilter || searchFilter.trim() === "") {
+      return mappedData;
+    }
+
+    const searchTerm = searchFilter.toLowerCase().trim();
+    
+    return mappedData.filter((variant: Variant) => {
+      const variantAny = variant as any;
+      
+      // Buscar en nombre
+      const nameMatch = variant.name?.toLowerCase().includes(searchTerm) || false;
+      
+      // Buscar en SKU
+      const skuMatch = (variant.sku || "")?.toLowerCase().includes(searchTerm) || false;
+      
+      // Buscar en descripción (puede estar en variant o item)
+      const descriptionMatch = (variantAny.description || "")?.toLowerCase().includes(searchTerm) || false;
+      
+      // Buscar en atributos (valores de atributos del producto y variant)
+      const attributeMatch = 
+        (variant.attributeValues || []).some((attr: any) => {
+          const value = attr.valueString || attr.valueNumber || attr.valueBoolean || attr.valueDate;
+          return value?.toString().toLowerCase().includes(searchTerm);
+        }) ||
+        (variantAny.productAttributeValues || []).some((attr: any) => {
+          const value = attr.valueString || attr.valueNumber || attr.valueBoolean || attr.valueDate;
+          return value?.toString().toLowerCase().includes(searchTerm);
+        });
+      
+      // Buscar en referencias
+      const referencesMatch = (variantAny.references || []).some((ref: any) => {
+        return (
+          (ref.sku || "").toLowerCase().includes(searchTerm) ||
+          (ref.referenceBrand || "").toLowerCase().includes(searchTerm) ||
+          (ref.referenceNumber || "").toLowerCase().includes(searchTerm) ||
+          (ref.typeOfPart || "").toLowerCase().includes(searchTerm) ||
+          (ref.type || "").toLowerCase().includes(searchTerm) ||
+          (ref.description || "").toLowerCase().includes(searchTerm) ||
+          // Buscar en attributeValues de referencias
+          (ref.attributeValues || []).some((attr: any) => {
+            const value = attr.valueString || attr.valueNumber || attr.valueBoolean || attr.valueDate;
+            return value?.toString().toLowerCase().includes(searchTerm);
+          })
+        );
+      });
+      
+      // Buscar en aplicaciones
+      const applicationsMatch = (variantAny.applications || []).some((app: any) => {
+        // Las aplicaciones del backend tienen: id, sku, origin, attributeValues
+        // También pueden tener campos legacy: referenceBrand, referenceNumber, typeOfPart, type, description, displayText
+        return (
+          (app.id || "").toLowerCase().includes(searchTerm) ||
+          (app.sku || "").toLowerCase().includes(searchTerm) ||
+          (app.origin || "").toLowerCase().includes(searchTerm) ||
+          // Campos legacy (por si acaso existen)
+          (app.referenceBrand || "").toLowerCase().includes(searchTerm) ||
+          (app.referenceNumber || "").toLowerCase().includes(searchTerm) ||
+          (app.typeOfPart || "").toLowerCase().includes(searchTerm) ||
+          (app.type || "").toLowerCase().includes(searchTerm) ||
+          (app.description || "").toLowerCase().includes(searchTerm) ||
+          (app.displayText || "").toLowerCase().includes(searchTerm) ||
+          // Buscar en attributeValues de aplicaciones (Modelo, Submodelo, Año, etc.)
+          (app.attributeValues || []).some((attr: any) => {
+            const value = attr.valueString || attr.valueNumber || attr.valueBoolean || attr.valueDate;
+            return value?.toString().toLowerCase().includes(searchTerm);
+          })
+        );
+      });
+      
+      return nameMatch || skuMatch || descriptionMatch || attributeMatch || referencesMatch || applicationsMatch;
+    });
+  }, [searchFilter, mappedData]);
 
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -607,11 +782,83 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
               fileSetter={setImageFile}
               type="image"
               className="p-8 min-h-[200px]"
+              currentImageUrl={getCurrentImageUrl()}
+              onImageClick={() => {
+                const currentUrl = getCurrentImageUrl();
+                if (currentUrl && selectedVariant) {
+                  handlePreviewImage(currentUrl, selectedVariant);
+                }
+              }}
             />
             {(uploading || isUploading) && (
               <p className="text-sm text-muted-foreground mt-2">Subiendo imagen...</p>
             )}
           </div>
+          <DialogFooter className="flex flex-row justify-between sm:justify-between">
+            {getCurrentImageUrl() && (
+              <Button
+                variant="destructive"
+                onClick={() => handleDeleteImage()}
+                disabled={uploading || isUploading}
+              >
+                Eliminar Imagen
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              onClick={() => setImageDialogOpen(false)}
+              disabled={uploading || isUploading}
+            >
+              Cancelar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={previewDialogOpen} onOpenChange={setPreviewDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Vista Previa de Imagen</DialogTitle>
+            {previewVariant && (
+              <DialogDescription>
+                Producto: {previewVariant.name}
+              </DialogDescription>
+            )}
+          </DialogHeader>
+          <div className="py-4 flex justify-center">
+            {previewImageUrl && (
+              <img
+                src={previewImageUrl}
+                alt="Vista previa"
+                className="max-w-full max-h-[500px] object-contain rounded-lg"
+              />
+            )}
+          </div>
+          {previewVariant && previewVariant.id === previewVariant.idProduct && (
+            <DialogFooter>
+              <Button
+                variant="destructive"
+                onClick={() => handleDeleteImage(previewVariant)}
+              >
+                Eliminar Imagen
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setPreviewDialogOpen(false)}
+              >
+                Cerrar
+              </Button>
+            </DialogFooter>
+          )}
+          {previewVariant && previewVariant.id !== previewVariant.idProduct && (
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setPreviewDialogOpen(false)}
+              >
+                Cerrar
+              </Button>
+            </DialogFooter>
+          )}
         </DialogContent>
       </Dialog>
       <div className="rounded-md border">
