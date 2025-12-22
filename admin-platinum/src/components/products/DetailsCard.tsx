@@ -17,6 +17,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useCategoryContext } from "@/context/categories-context";
 import { useBrands } from "@/hooks/useBrands";
 import { detailsType } from "@/hooks/useFormProduct";
@@ -24,6 +31,9 @@ import { Product } from "@/models/product";
 import MyDropzone from "@/components/Dropzone";
 import { useS3FileManager } from "@/hooks/useS3FileManager";
 import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import axiosClient from "@/services/axiosInstance";
 
 type DetailsCardProps = {
   state: detailsType;
@@ -35,8 +45,12 @@ const DetailsCard = ({ product, state, setState }: DetailsCardProps) => {
   const { brands } = useBrands();
   const { categories } = useCategoryContext();
   const { uploadFile, uploading } = useS3FileManager();
+  const { toast } = useToast();
+  const client = axiosClient();
   const [imageFile, setImageFile] = useState<File>({} as File);
   const [imageUrl, setImageUrl] = useState<string>(state.imgUrl || "");
+  const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
+  const [previewImageUrl, setPreviewImageUrl] = useState<string>("");
 
   // Update imageUrl when state.imgUrl changes (e.g., when loading product data)
   useEffect(() => {
@@ -82,6 +96,45 @@ const DetailsCard = ({ product, state, setState }: DetailsCardProps) => {
       });
     }
   }, [imageFile]);
+
+  const handlePreviewImage = (url: string) => {
+    setPreviewImageUrl(url);
+    setPreviewDialogOpen(true);
+  };
+
+  const handleDeleteImage = async () => {
+    if (!state.id) {
+      toast({
+        title: "Error",
+        variant: "destructive",
+        description: "No se puede eliminar la imagen sin un ID de producto",
+      });
+      return;
+    }
+
+    try {
+      await client.delete(`/products/${state.id}/images`);
+      
+      // Limpiar la imagen del estado
+      setImageUrl("");
+      setState((prevForm) => ({
+        ...prevForm,
+        imgUrl: "",
+      }));
+      
+      toast({
+        title: "Imagen eliminada correctamente",
+        variant: "success",
+      });
+    } catch (error: any) {
+      console.error("[DetailsCard] Error deleting image:", error);
+      toast({
+        title: "Error al eliminar imagen",
+        variant: "destructive",
+        description: error.response?.data?.error || error.message || "Error desconocido",
+      });
+    }
+  };
 
   return (
     <Card className="w-full flex flex-col mt-5">
@@ -179,23 +232,55 @@ const DetailsCard = ({ product, state, setState }: DetailsCardProps) => {
             <Label htmlFor="image">
               <span className="text-redLabel">*</span>Imagen del Producto
             </Label>
-            <MyDropzone
-              file={imageFile}
-              fileSetter={setImageFile}
-              type="image"
-              className="p-8 min-h-[200px]"
-            />
+            <div className="relative">
+              <MyDropzone
+                file={imageFile}
+                fileSetter={setImageFile}
+                type="image"
+                className="p-8 min-h-[200px]"
+                currentImageUrl={imageUrl && !imageFile.name ? imageUrl : undefined}
+                onImageClick={() => {
+                  if (imageUrl && !imageFile.name) {
+                    handlePreviewImage(imageUrl);
+                  }
+                }}
+              />
+              {imageUrl && !imageFile.name && state.id && (
+                <div className="mt-3 flex justify-center">
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleDeleteImage}
+                    disabled={uploading}
+                    type="button"
+                  >
+                    Eliminar Imagen
+                  </Button>
+                </div>
+              )}
+            </div>
             {uploading && (
-              <p className="text-sm text-muted-foreground">Subiendo imagen...</p>
-            )}
-            {imageUrl && !imageFile.name && (
-              <div className="mt-2">
-                <img src={imageUrl} alt="Producto" className="max-w-[200px] rounded-md" />
-              </div>
+              <p className="text-sm text-muted-foreground mt-2">Subiendo imagen...</p>
             )}
           </div>
         </div>
       </CardContent>
+      <Dialog open={previewDialogOpen} onOpenChange={setPreviewDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Vista Previa de Imagen</DialogTitle>
+          </DialogHeader>
+          <div className="py-4 flex justify-center">
+            {previewImageUrl && (
+              <img
+                src={previewImageUrl}
+                alt="Vista previa"
+                className="max-w-full max-h-[500px] object-contain rounded-lg"
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };

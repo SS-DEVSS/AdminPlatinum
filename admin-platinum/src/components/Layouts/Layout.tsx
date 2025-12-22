@@ -110,7 +110,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     <div className="flex-col md:flex md:flex-row h-screen w-full">
       <div
         className={`${!menuLarge ? "w-12" : "w-[280px]"
-          } hidden border-r bg-muted/40 md:block`}
+          } hidden border-r bg-muted/40 md:block shrink-0`}
       >
         <div className="flex h-full max-h-screen flex-col gap-2">
           <div
@@ -225,7 +225,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
           </SheetContent>
         </Sheet>
       </header>
-      <div className="flex-1 overflow-y-auto mx-4 md:px-0 py-0 md:my-5">
+      <div className="flex-1 overflow-y-auto px-4 md:px-6 py-0 md:my-5 min-w-0">
         {children}
       </div>
     </div>

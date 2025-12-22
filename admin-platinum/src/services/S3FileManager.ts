@@ -1,4 +1,5 @@
 import axiosClient from "./axiosInstance";
+import { convertImageToWebP } from "@/utils/imageConverter";
 
 export const cleanFilePath = (
   path: string | null | undefined,
@@ -21,13 +22,28 @@ export const uploadFileToS3 = async (
   prefix: string = "uploads/images/"
 ): Promise<UploadFileResponse> => {
   const client = axiosClient();
+  
+  // Convertir imagen a WebP si es una imagen (no documentos PDF)
+  let fileToUpload = file;
+  if (!prefix.includes("documents") && file.type.startsWith("image/")) {
+    try {
+      console.log(`[S3FileManager] Convirtiendo imagen a WebP: ${file.name}`);
+      fileToUpload = await convertImageToWebP(file);
+      console.log(`[S3FileManager] Conversión exitosa: ${fileToUpload.name}`);
+    } catch (error) {
+      console.error("[S3FileManager] Error al convertir imagen a WebP, subiendo original:", error);
+      // Si falla la conversión, subir el archivo original
+      fileToUpload = file;
+    }
+  }
+  
   const formData = new FormData();
-  formData.append("file", file);
+  formData.append("file", fileToUpload);
 
   try {
     // Use backend file upload endpoint instead of direct S3
     const endpoint = prefix.includes("documents") ? "/files/documents" : "/files/images";
-    console.log(`[S3FileManager] Uploading file to ${endpoint}, size: ${file.size}, type: ${file.type}`);
+    console.log(`[S3FileManager] Uploading file to ${endpoint}, size: ${fileToUpload.size}, type: ${fileToUpload.type}`);
     
     const response = await client.post(endpoint, formData, {
       headers: {
@@ -36,13 +52,34 @@ export const uploadFileToS3 = async (
       timeout: 120000, // 120 seconds timeout for large files
     });
 
-    console.log(`[S3FileManager] Upload successful: ${response.data.key || response.data.url}`);
+    const uploadedKey = response.data.key || "";
+    const uploadedUrl = response.data.url || "";
+    
+    // Verificar que el archivo subido sea WebP (si era una imagen)
+    const isWebP = uploadedKey.endsWith('.webp') || uploadedUrl.includes('.webp');
+    if (!prefix.includes("documents") && file.type.startsWith("image/")) {
+      console.log(`[S3FileManager] ✅ Upload successful!`, {
+        originalFile: file.name,
+        originalType: file.type,
+        originalSize: `${(file.size / 1024).toFixed(2)} KB`,
+        uploadedKey: uploadedKey,
+        uploadedUrl: uploadedUrl,
+        isWebP: isWebP ? '✅ SÍ' : '❌ NO',
+        uploadedType: fileToUpload.type,
+      });
+      
+      if (!isWebP) {
+        console.warn(`[S3FileManager] ⚠️ ADVERTENCIA: El archivo no parece ser WebP. Verifica la extensión: ${uploadedKey}`);
+      }
+    } else {
+      console.log(`[S3FileManager] Upload successful: ${uploadedKey || uploadedUrl}`);
+    }
 
     // Backend returns { url, key }, format it to match expected response
     return {
       bucket: "",
-      key: response.data.key || "",
-      location: response.data.url || "",
+      key: uploadedKey,
+      location: uploadedUrl,
       status: response.status,
     };
   } catch (error: any) {

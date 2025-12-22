@@ -29,24 +29,66 @@ import DataTable from "@/modules/products/ProductsTable";
 const Products = () => {
   const navigate = useNavigate();
   const { categories = [] } = useCategories();
-  const [category, setCategory] = useState<Category | null>(null);
-  const [searchFilter, setSearchFilter] = useState("");
+  // Cargar searchFilter desde localStorage al inicializar
+  const [searchFilter, setSearchFilter] = useState(() => {
+    const saved = localStorage.getItem('products-search-filter');
+    return saved || "";
+  });
+  // Cargar categoría desde localStorage al inicializar
+  const [category, setCategory] = useState<Category | null>(() => {
+    const savedCategoryId = localStorage.getItem('products-selected-category');
+    return null; // Se inicializará en el useEffect cuando tengamos las categorías
+  });
 
   const handleSearchFilter = (e: any) => {
-    setSearchFilter(e.target.value);
+    const value = e.target.value;
+    setSearchFilter(value);
+    // Guardar en localStorage
+    if (value) {
+      localStorage.setItem('products-search-filter', value);
+    } else {
+      localStorage.removeItem('products-search-filter');
+    }
+  };
+
+  const handleCategoryChange = (value: string) => {
+    const selectedCategory = categories.find(
+      (cat) => cat.id === value
+    );
+    const categoryToSet = selectedCategory || null;
+    setCategory(categoryToSet);
+    // Guardar en localStorage
+    if (categoryToSet?.id) {
+      localStorage.setItem('products-selected-category', categoryToSet.id);
+    } else {
+      localStorage.removeItem('products-selected-category');
+    }
   };
 
   useEffect(() => {
-    if (!category && categories.length > 0) {
-      setCategory(categories[0]);
+    if (categories.length > 0) {
+      // Intentar restaurar categoría guardada
+      const savedCategoryId = localStorage.getItem('products-selected-category');
+      if (savedCategoryId && !category) {
+        const savedCategory = categories.find((cat) => cat.id === savedCategoryId);
+        if (savedCategory) {
+          setCategory(savedCategory);
+          return;
+        }
+      }
+      // Si no hay categoría guardada o no se encontró, usar la primera
+      if (!category) {
+        setCategory(categories[0]);
+        localStorage.setItem('products-selected-category', categories[0].id || '');
+      }
     }
-  }, [categories, category]);
+  }, [categories]);
 
   return (
     <Layout>
-      <div>
-        <Card className="border-0 shadow-none">
-          <CardHeader className="flex flex-row items-end p-0 m-0">
+      <div className="w-full max-w-full">
+        <Card className="border-0 shadow-none w-full">
+          <CardHeader className="flex flex-row items-end p-0 m-0 pb-6 w-full">
             <div className="flex flex-col gap-3">
               <CardTitle>Productos</CardTitle>
               <div className="flex gap-3">
@@ -62,12 +104,7 @@ const Products = () => {
                 </div>
                 <Select
                   value={category?.id}
-                  onValueChange={(value: string) => {
-                    const selectedCategory = categories.find(
-                      (cat) => cat.id === value
-                    );
-                    setCategory(selectedCategory || null);
-                  }}
+                  onValueChange={handleCategoryChange}
                 >
                   <SelectTrigger className="w-[280px]">
                     <SelectValue placeholder="Selecciona una categoría" />
