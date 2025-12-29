@@ -19,6 +19,8 @@ export type CategoryResponse = {
   attributes?: {
     product: CategoryAtributes[];
     variant: CategoryAtributes[];
+    reference?: CategoryAtributes[];
+    application?: CategoryAtributes[];
   };
   products?: Array<{
     id: string;
@@ -43,7 +45,7 @@ export type CategoryAtributes = {
   required: boolean;
   type: CategoryAttributesTypes;
   order: number;
-  scope: "PRODUCT" | "VARIANT";
+  scope: "PRODUCT" | "VARIANT" | "REFERENCE" | "APPLICATION";
   id_category?: string;
   visibleInCatalog?: boolean;
 };

@@ -1,5 +1,6 @@
 import { Category } from "@/models/category";
 import { Reference } from "@/models/reference";
+import { Application } from "@/models/application";
 import { useState, useMemo } from "react";
 
 export interface detailsType {
@@ -32,7 +33,7 @@ export const useFormState = () => {
     references: [] as Reference[],
   });
   const [applicationsState, setApplicationsState] = useState({
-    applications: [] as Reference[],
+    applications: [] as Application[],
   });
 
   const [canContinue, setCanContinue] = useState(false);

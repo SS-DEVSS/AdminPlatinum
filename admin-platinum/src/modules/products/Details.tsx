@@ -3,6 +3,7 @@ import ReferencesCard from "@/components/products/ReferencesCard";
 import ApplicationsCard from "@/components/products/ApplicationsCard";
 import { detailsType } from "@/hooks/useFormProduct";
 import { Reference } from "@/models/reference";
+import { Application } from "@/models/application";
 
 import { Product } from "@/models/product";
 
@@ -16,10 +17,10 @@ type DetailsInterface = {
     React.SetStateAction<{ references: Reference[] }>
   >;
   applicationsState: {
-    applications: Reference[];
+    applications: Application[];
   };
   setApplicationsState: React.Dispatch<
-    React.SetStateAction<{ applications: Reference[] }>
+    React.SetStateAction<{ applications: Application[] }>
   >;
   product?: Product | null;
 };

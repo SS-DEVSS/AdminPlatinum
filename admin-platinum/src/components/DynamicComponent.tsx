@@ -102,6 +102,62 @@ const DynamicComponent = ({ type, name, required, value, onChange }: getComponen
     normalizedType === "date" ||
     type === CategoryAttributesTypes.DATE
   ) {
+    // Check if this is a year attribute - if so, show only the year
+    const isYearAttribute = name.toLowerCase().includes("año") || 
+                           name.toLowerCase().includes("anio") || 
+                           name.toLowerCase().includes("year");
+    
+    if (isYearAttribute && value) {
+      // For year attributes, extract and display only the year
+      let yearValue = "";
+      if (typeof value === "string") {
+        // If it's already a year string (4 digits), use it
+        if (/^\d{4}$/.test(value.trim())) {
+          yearValue = value.trim();
+        } else {
+          // If it's a date string or timestamp, extract the year
+          const date = new Date(value);
+          if (!isNaN(date.getTime())) {
+            yearValue = date.getFullYear().toString();
+          }
+        }
+      } else if (value instanceof Date) {
+        yearValue = value.getFullYear().toString();
+      } else if (typeof value === "number") {
+        // If it's a number, assume it's a year if it's in a reasonable range
+        if (value >= 1900 && value <= 2100) {
+          yearValue = value.toString();
+        } else {
+          // Otherwise, try to parse as timestamp
+          const date = new Date(value);
+          if (!isNaN(date.getTime())) {
+            yearValue = date.getFullYear().toString();
+          }
+        }
+      }
+      
+      return (
+        <Input
+          required={required}
+          className="mt-1"
+          type="number"
+          min="1900"
+          max="2100"
+          placeholder="1998"
+          value={yearValue}
+          onChange={(e) => {
+            const year = parseInt(e.target.value, 10);
+            if (!isNaN(year) && year >= 1900 && year <= 2100) {
+              // Create a date with January 1st of that year
+              onChange?.(new Date(year, 0, 1));
+            } else if (e.target.value === "") {
+              onChange?.(null);
+            }
+          }}
+        />
+      );
+    }
+    
     return (
       <Popover>
         <PopoverTrigger asChild>

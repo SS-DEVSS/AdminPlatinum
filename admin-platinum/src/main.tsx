@@ -1,7 +1,6 @@
 import * as React from "react";
 import * as ReactDOM from "react-dom/client";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import App from "./App";
+import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
 import DeleteModal from "./components/DeleteModal";
 import { DeleteModalProvider } from "./context/delete-context";
 import "./index.css";
@@ -23,10 +22,12 @@ import { NewsProvider } from "./context/news-context";
 import Banners from "@/pages/banners";
 import Products from "@/pages/products/products";
 import { CategoryContextProvider } from "./context/categories-context";
+import { ImportProvider } from "./context/import-context";
 import NewProduct from "./pages/products/newProduct";
 import ImportProduct from "./pages/products/importProduct";
 import Ajustes from "./pages/ajustes";
 import ProtectedRoute from "./components/ProtectedRoute";
+import { ImportStatusBanner } from "./components/ImportStatusBanner";
 
 const router = createBrowserRouter([
   {
@@ -45,7 +46,7 @@ const router = createBrowserRouter([
     path: "/",
     element: (
       <ProtectedRoute>
-        <App />
+        <Navigate to="/productos" replace />
       </ProtectedRoute>
     ),
   },
@@ -166,10 +167,13 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <BrandProvider>
           <CategoryContextProvider>
             <NewsProvider>
-              <DeleteModal />
+              <ImportProvider>
+                <DeleteModal />
 
-              <RouterProvider router={router} />
-              <Toaster />
+                <RouterProvider router={router} />
+                <Toaster />
+                <ImportStatusBanner />
+              </ImportProvider>
             </NewsProvider>
           </CategoryContextProvider>
         </BrandProvider>
