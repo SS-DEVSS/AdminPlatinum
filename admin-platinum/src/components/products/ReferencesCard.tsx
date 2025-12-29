@@ -9,10 +9,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Product } from "@/models/product";
 import { Reference } from "@/models/reference";
-import { PlusCircle, X } from "lucide-react";
-import { useState, useEffect } from "react";
+import { PlusCircle, X, Pencil } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
 import NoData from "../NoData";
 import { Button } from "../ui/button";
+import EditReferenceDialog from "./EditReferenceDialog";
+import { CategoryAtributes } from "@/models/category";
+import { useCategoryContext } from "@/context/categories-context";
 
 type ReferencesCardProps = {
   state: {
@@ -23,10 +26,31 @@ type ReferencesCardProps = {
 };
 
 const ReferencesCard = ({ state, setState, product }: ReferencesCardProps) => {
+  const { categories } = useCategoryContext();
   const [showInput, setShowInput] = useState(false);
   const [referenceNumber, setReferenceNumber] = useState<string | null>(null);
   const [referenceBrand, setReferenceBrand] = useState<string>("");
   const [referenceDescription, setReferenceDescription] = useState<string>("");
+  const [editingReference, setEditingReference] = useState<Reference | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
+  // Get category attributes
+  const categoryAttributes = useMemo(() => {
+    if (!product?.category) return [];
+    const categoryId = typeof product.category === 'string' ? product.category : product.category.id;
+    const category = categories.find((c) => c.id === categoryId);
+    if (!category?.attributes) return [];
+    
+    if (Array.isArray(category.attributes)) {
+      return category.attributes;
+    }
+    
+    if (typeof category.attributes === 'object' && 'reference' in category.attributes) {
+      return (category.attributes as { reference: CategoryAtributes[] }).reference || [];
+    }
+    
+    return [];
+  }, [product?.category, categories]);
 
   // Load references from product when editing (using useEffect to avoid render issues)
   useEffect(() => {
@@ -70,6 +94,26 @@ const ReferencesCard = ({ state, setState, product }: ReferencesCardProps) => {
     }));
   };
 
+  const handleEditReference = (reference: Reference) => {
+    setEditingReference(reference);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleEditSuccess = async () => {
+    // Refresh references from backend if product ID is available
+    if (product?.id) {
+      try {
+        const client = (await import("@/services/axiosInstance")).default();
+        const response = await client.get(`/references/product/${product.id}`);
+        if (response.data?.references) {
+          setState({ references: response.data.references });
+        }
+      } catch (error) {
+        console.error("Error refreshing references:", error);
+      }
+    }
+  };
+
   return (
     <Card className="w-full flex flex-col mt-5">
       <CardHeader>
@@ -92,14 +136,22 @@ const ReferencesCard = ({ state, setState, product }: ReferencesCardProps) => {
                 key={reference.id}
                 className="bg-black rounded-full text-white p-2 mb-2 flex gap-3 px-6 items-center"
               >
-                <span>
+                <span className="flex-1">
                   {reference.referenceBrand && <span className="font-bold mr-1">{reference.referenceBrand}:</span>}
                   {reference.referenceNumber}
                 </span>
-                <X
-                  onClick={() => handleRemoveReference(reference.id)}
-                  className="cursor-pointer w-4 h-4"
-                />
+                <div className="flex gap-2 items-center">
+                  <Pencil
+                    onClick={() => handleEditReference(reference)}
+                    className="cursor-pointer w-4 h-4 hover:text-blue-300 transition-colors"
+                    title="Editar referencia"
+                  />
+                  <X
+                    onClick={() => handleRemoveReference(reference.id)}
+                    className="cursor-pointer w-4 h-4 hover:text-red-300 transition-colors"
+                    title="Eliminar referencia"
+                  />
+                </div>
               </div>
             ))}
           </section>
@@ -150,6 +202,15 @@ const ReferencesCard = ({ state, setState, product }: ReferencesCardProps) => {
           Agregar número de Referencia
         </Button>
       </CardFooter>
+
+      <EditReferenceDialog
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        reference={editingReference}
+        categoryAttributes={categoryAttributes}
+        productId={product?.id}
+        onSuccess={handleEditSuccess}
+      />
     </Card>
   );
 };

@@ -209,17 +209,13 @@ const NewProduct = () => {
                 displayText = `Aplicación (${shortId})`;
               }
               
-              const formatted = {
+              // Return Application format with displayText for UI display
+              const formatted: any = {
                 id: app.id,
                 sku: app.sku || "",
-                referenceBrand: modelo ? String(modelo) : (app.origin || ""),
-                referenceNumber: submodelo ? String(submodelo) : (año ? String(año) : displayText),
-                typeOfPart: null,
-                type: "Application",
-                description: displayText,
-                // Store original application data for reference
-                _originalApplication: app,
-                // Store formatted display text
+                origin: app.origin || null,
+                attributeValues: app.attributeValues || [],
+                // Store formatted display text for UI
                 displayText: displayText,
               };
               

@@ -17,7 +17,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { useDropzone } from "react-dropzone";
 import { useToast } from "@/hooks/use-toast";
-import axiosClient from "@/services/axiosInstance";
+import { useImportContext } from "@/context/import-context";
 
 type ImportType = "products" | "references" | "applications";
 
@@ -25,12 +25,11 @@ const ImportProduct = () => {
   const navigate = useNavigate();
   const { categories } = useCategoryContext();
   const { toast } = useToast();
-  const client = axiosClient();
+  const { startImport, importState } = useImportContext();
 
   const [importType, setImportType] = useState<ImportType | "">("");
   const [categoryId, setCategoryId] = useState<string>("");
   const [file, setFile] = useState<File | null>(null);
-  const [loading, setLoading] = useState(false);
 
   const onDrop = (acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
@@ -65,43 +64,16 @@ const ImportProduct = () => {
       return;
     }
 
-    try {
-      setLoading(true);
+    // Start import using context (this allows navigation)
+    await startImport(file, importType, categoryId);
 
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("importType", importType);
-      formData.append("categoryId", categoryId);
-
-      await client.post("/import", formData);
-
-      toast({
-        title: "Importación exitosa",
-        description: "Los datos se han importado correctamente.",
-        variant: "default",
-      });
-
-      // Limpiar formulario
-      setImportType("");
-      setCategoryId("");
-      setFile(null);
-      
-      // Redirigir después de un breve delay
-      setTimeout(() => {
-        navigate("/productos");
-      }, 1500);
-    } catch (error: any) {
-      const errorMessage =
-        error.response?.data?.error || error.response?.data?.message || "Error al importar los datos.";
-      
-      toast({
-        title: "Error al importar",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+    // Clear form
+    setImportType("");
+    setCategoryId("");
+    setFile(null);
+    
+    // Allow navigation - user can navigate away and the import will continue
+    // The toast will show the result when it completes
   };
 
   return (
@@ -215,15 +187,15 @@ const ImportProduct = () => {
               <Button
                 onClick={() => navigate("/productos")}
                 variant="outline"
-                disabled={loading}
+                disabled={importState.isImporting}
               >
                 Cancelar
               </Button>
               <Button
                 onClick={handleSubmit}
-                disabled={!importType || !categoryId || !file || loading}
+                disabled={!importType || !categoryId || !file || importState.isImporting}
               >
-                {loading ? "Importando..." : "Importar"}
+                {importState.isImporting ? "Importando..." : "Importar"}
               </Button>
             </div>
           </CardContent>
