@@ -43,10 +43,10 @@ const typeDisplayNames: Record<string, string> = {
 // Función helper para obtener el nombre traducido del tipo
 const getTypeDisplayName = (type: string): string => {
   const normalizedType = type?.toLowerCase() || "";
-  return typeDisplayNames[type] || 
-         typeDisplayNames[normalizedType] || 
-         typeDisplayNames[type.toUpperCase()] || 
-         type;
+  return typeDisplayNames[type] ||
+    typeDisplayNames[normalizedType] ||
+    typeDisplayNames[type.toUpperCase()] ||
+    type;
 };
 
 interface CardAttributeTableProps {
@@ -70,7 +70,7 @@ const CardAttributeTable = ({
             <TableRow>
               <TableHead>Nombre</TableHead>
               <TableHead>Tipo de Dato</TableHead>
-              <TableHead>Obligatorio</TableHead>
+              <TableHead>Opcional</TableHead>
               <TableHead className="w-[20px]"></TableHead>
             </TableRow>
           </TableHeader>

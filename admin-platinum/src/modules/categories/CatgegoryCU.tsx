@@ -76,6 +76,7 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
     brands: [],
     attributes: [],
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
 
   useEffect(() => {
@@ -167,7 +168,7 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
         ...prevForm,
         imgUrl: "",
       }));
-      
+
       toast({
         title: "Imagen eliminada correctamente",
         variant: "success",
@@ -221,7 +222,7 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
     () => {
       // Validación básica: nombre y descripción siempre requeridos
       const basicValidation = form.name.trim() !== "" && form.description.trim() !== "";
-      
+
       // Si es una categoría nueva, requiere imagen, brands y attributes
       if (!category) {
         return (
@@ -231,7 +232,7 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
           form.attributes.length > 0
         );
       }
-      
+
       // Si es edición, solo requiere nombre y descripción
       // La imagen puede estar vacía si se eliminó, pero eso se maneja en el submit
       return basicValidation;
@@ -241,6 +242,7 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
 
   const handleSubmit = async (form: formTypes) => {
     try {
+      setIsSubmitting(true);
       if (category && updateCategory) {
         // Editing existing category - formato según Postman
         const originalBrandIds = category.brands?.map(b => b.id).filter((id): id is string => !!id) || [];
@@ -305,7 +307,7 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
             updatePayload.attributes.delete = attributesToDelete;
           }
         }
-        
+
         // Si hay una nueva imagen (File object), subirla primero
         if (image && image instanceof File && image.name && image.name !== category.imgUrl) {
           uploadFile(image, async (_, location) => {
@@ -328,9 +330,9 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
             id: category.id, // El ID va en el objeto Category para la URL
             ...updatePayload,
           } as any);
-            if (response) {
-              navigate("/categorias");
-            }
+          if (response) {
+            navigate("/categorias");
+          }
         }
       } else if (addCategory && image) {
         // Creating new category - formato según Postman
@@ -359,6 +361,8 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
       }
     } catch (error: any) {
       // Error handling - el error ya se maneja en updateCategory/addCategory
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -406,7 +410,7 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
                     name="name"
                     type="text"
                     className="w-full"
-                    placeholder="Gamer Gear Pro Controller"
+                    placeholder="Clutch, Frenos..."
                     onChange={handleFormInput}
                     value={form.name}
                     maxLength={255}
@@ -587,13 +591,13 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
         </Link>
         <Button
           size="sm"
-          disabled={!validateForm}
+          disabled={!validateForm || isSubmitting}
           className="h-10 px-6 gap-1"
           onClick={() => handleSubmit(form)}
         >
           <Save className="h-3.5 w-3.5 mr-2" />
           <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-            Guardar
+            {isSubmitting ? "Guardando..." : "Guardar"}
           </span>
         </Button>
       </section>

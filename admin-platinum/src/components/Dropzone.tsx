@@ -21,7 +21,7 @@ const MyDropzone = ({ file, fileSetter, type, className, currentImageUrl, onImag
       try {
         const url = URL.createObjectURL(file);
         setPreviewUrl(url);
-        
+
         // Limpiar URL anterior cuando cambie el archivo o se desmonte
         return () => {
           URL.revokeObjectURL(url);
@@ -65,7 +65,7 @@ const MyDropzone = ({ file, fileSetter, type, className, currentImageUrl, onImag
     accept:
       type === "document"
         ? { "application/pdf": [] }
-        : { "image/png": [], "image/jpeg": [], "image/jpg": [] },
+        : { "image/png": [], "image/jpeg": [], "image/jpg": [], "image/webp": [] },
     maxSize: 5000 * 1000,
   });
 
@@ -87,7 +87,7 @@ const MyDropzone = ({ file, fileSetter, type, className, currentImageUrl, onImag
         <p className="text-sm text-[#94A3B8] text-center">
           Haz clic en la imagen para previsualizarla o arrastra/haz clic en la zona de la derecha para subir una nueva imagen
         </p>
-        
+
         {/* Contenedor con imagen a la izquierda y dropzone a la derecha */}
         <div className="flex gap-4">
           {/* Imagen actual a la izquierda */}
@@ -104,15 +104,14 @@ const MyDropzone = ({ file, fileSetter, type, className, currentImageUrl, onImag
               }}
             />
           </div>
-          
+
           {/* Dropzone a la derecha */}
           <div
             {...getRootProps()}
-            className={`flex-1 border border-dashed rounded-lg p-8 min-h-[300px] flex flex-col items-center justify-center ${
-              isDragActive
+            className={`flex-1 border border-dashed rounded-lg p-8 min-h-[300px] flex flex-col items-center justify-center ${isDragActive
                 ? "bg-[#F5F9FD] border-[#0bbff4]"
                 : "bg-gray-50"
-            }`}
+              }`}
           >
             <input {...getInputProps()} />
             {isDragActive ? (
@@ -131,7 +130,7 @@ const MyDropzone = ({ file, fileSetter, type, className, currentImageUrl, onImag
             )}
           </div>
         </div>
-        
+
         {error && <p className="text-center text-red-500">{error}</p>}
       </div>
     );
@@ -142,10 +141,10 @@ const MyDropzone = ({ file, fileSetter, type, className, currentImageUrl, onImag
     <div
       {...getRootProps()}
       className={`${isDragActive
-          ? "bg-[#F5F9FD] border-[#0bbff4]"
-          : file.name
-            ? "bg-green-50 border-green-400"
-            : ""
+        ? "bg-[#F5F9FD] border-[#0bbff4]"
+        : file.name
+          ? "bg-green-50 border-green-400"
+          : ""
         } border border-dashed rounded-lg ${className} flex flex-col items-center justify-center`}
     >
       <input {...getInputProps()} />

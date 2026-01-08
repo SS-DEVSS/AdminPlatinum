@@ -116,14 +116,14 @@ const DetailsCard = ({ product, state, setState }: DetailsCardProps) => {
 
     try {
       await client.delete(`/products/${state.id}/images`);
-      
+
       // Limpiar la imagen del estado
       setImageUrl("");
       setState((prevForm) => ({
         ...prevForm,
         imgUrl: "",
       }));
-      
+
       toast({
         title: "Imagen eliminada correctamente",
         variant: "success",
@@ -157,7 +157,7 @@ const DetailsCard = ({ product, state, setState }: DetailsCardProps) => {
               name="sku"
               type="text"
               className="w-full"
-              placeholder="Gamer Gear Pro Controller"
+              placeholder="SKU"
               onChange={handleFormChange}
               value={state.sku}
             />
@@ -170,7 +170,7 @@ const DetailsCard = ({ product, state, setState }: DetailsCardProps) => {
               id="description"
               name="description"
               className="w-full"
-              placeholder="Gamer Gear Pro Controller"
+              placeholder="Descripción del producto"
               value={state.description}
               onChange={handleFormChange}
             />

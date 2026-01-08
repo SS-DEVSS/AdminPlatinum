@@ -222,7 +222,7 @@ const BlogPostCU = ({ blogPost }: BlogPostCUProps) => {
                   name="title"
                   type="text"
                   className="w-full"
-                  placeholder="Gamer Gear Pro Controller"
+                  placeholder="Título de la noticia"
                   value={blogPost ? blogPost.title : form.title}
                   maxLength={255}
                   onChange={handleFormInput}
