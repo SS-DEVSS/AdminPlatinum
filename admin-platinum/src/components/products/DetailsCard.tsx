@@ -47,15 +47,17 @@ const DetailsCard = ({ product, state, setState }: DetailsCardProps) => {
   const { uploadFile, uploading } = useS3FileManager();
   const { toast } = useToast();
   const client = axiosClient();
-  const [imageFile, setImageFile] = useState<File>({} as File);
+  const [imageFile, setImageFile] = useState<File>({ name: "" } as File);
   const [imageUrl, setImageUrl] = useState<string>(state.imgUrl || "");
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string>("");
 
   // Update imageUrl when state.imgUrl changes (e.g., when loading product data)
   useEffect(() => {
-    if (state.imgUrl && !imageFile.name) {
+    if (state.imgUrl && (!imageFile.name || imageFile.name === "")) {
       setImageUrl(state.imgUrl);
+      // Reset imageFile to ensure it's empty when loading existing image
+      setImageFile({ name: "" } as File);
     }
   }, [state.imgUrl]);
 
@@ -245,17 +247,27 @@ const DetailsCard = ({ product, state, setState }: DetailsCardProps) => {
                   }
                 }}
               />
-              {imageUrl && !imageFile.name && state.id && (
-                <div className="mt-3 flex justify-center">
+              {imageUrl && !imageFile.name && (
+                <div className="mt-3 flex justify-center gap-2">
                   <Button
-                    variant="destructive"
+                    variant="outline"
                     size="sm"
-                    onClick={handleDeleteImage}
-                    disabled={uploading}
+                    onClick={() => handlePreviewImage(imageUrl)}
                     type="button"
                   >
-                    Eliminar Imagen
+                    Previsualizar
                   </Button>
+                  {state.id && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={handleDeleteImage}
+                      disabled={uploading}
+                      type="button"
+                    >
+                      Eliminar Imagen
+                    </Button>
+                  )}
                 </div>
               )}
             </div>

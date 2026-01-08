@@ -81,7 +81,7 @@ export const useCategories = () => {
       };
       setLoading(true);
       const response = await client.post<CategoryRespone>(
-        "/categories/",
+        "/categories",
         category,
         { headers }
       );
@@ -122,6 +122,7 @@ export const useCategories = () => {
         variant: "success",
         description: response.data.message || "La categoría se actualizó exitosamente.",
       });
+      await getCategories(); // Recargar la lista después de actualizar
       return response.data;
     } catch (error: any) {
       setErrorMsg(error.response?.data?.error || "Error al actualizar la categoría");
