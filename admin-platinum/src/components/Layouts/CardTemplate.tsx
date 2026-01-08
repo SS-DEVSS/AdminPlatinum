@@ -190,8 +190,8 @@ const CardTemplate = ({
                       <DropdownMenuItem
                         onClick={() => handleEditCategory(category?.id)}
                       >
-                        <EyeIcon className="mr-2 h-4 w-4" />
-                        <span>Ver Categoría</span>
+                        <Pencil className="mr-2 h-4 w-4" />
+                        <span>Editar Categoría</span>
                       </DropdownMenuItem>
                     </Link>
                     <DropdownMenuItem

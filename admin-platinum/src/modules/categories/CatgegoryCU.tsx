@@ -12,15 +12,22 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useBrandContext } from "@/context/brand-context";
 import { useBrands } from "@/hooks/useBrands";
 import { useS3FileManager } from "@/hooks/useS3FileManager";
 import { Category, CategoryAtributes } from "@/models/category";
 import {
   ChevronLeft,
-  PlusCircle,
   PlusCircleIcon,
   XCircleIcon,
+  Info,
+  Save,
 } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { useState } from "react";
@@ -30,6 +37,7 @@ import CardAtributesVariants from "./CardAtributesVariants";
 type CategoryCUProps = {
   category?: Category | null;
   addCategory?: (category: Omit<Category, "id">) => void;
+  updateCategory?: (category: Category) => void | Promise<any>;
 };
 
 export interface formTypes {
@@ -40,7 +48,7 @@ export interface formTypes {
   attributes: CategoryAtributes[];
 }
 
-const CategoryCU = ({ category, addCategory }: CategoryCUProps) => {
+const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) => {
   const { selectedBrand } = useBrandContext();
   const { brands } = useBrands();
   const { uploadFile } = useS3FileManager();
@@ -58,7 +66,6 @@ const CategoryCU = ({ category, addCategory }: CategoryCUProps) => {
     attributes: [],
   });
 
-  console.log(form);
 
   useEffect(() => {
     if (selectedBrand) {
@@ -76,11 +83,28 @@ const CategoryCU = ({ category, addCategory }: CategoryCUProps) => {
 
   useEffect(() => {
     if (category) {
-      console.log(category);
+      // Transformar attributes si viene como objeto (CategoryResponse) a array plano
+      let attributesArray: CategoryAtributes[] = [];
+      if (category.attributes) {
+        if (Array.isArray(category.attributes)) {
+          // Ya es un array
+          attributesArray = category.attributes;
+        } else if (typeof category.attributes === 'object') {
+          // Es un objeto con product, variant, application, etc.
+          const attrsObj = category.attributes as any;
+          attributesArray = [
+            ...(attrsObj.product || []),
+            ...(attrsObj.variant || []),
+            ...(attrsObj.reference || []),
+            ...(attrsObj.application || []),
+          ];
+        }
+      }
+
       setForm({
         ...category,
         brands: category.brands?.map(b => b.id).filter((id): id is string => !!id) || [],
-        attributes: category.attributes || [],
+        attributes: attributesArray,
       });
       setImage({ ...image, name: category.imgUrl });
       const tempSet = new Set();
@@ -141,7 +165,33 @@ const CategoryCU = ({ category, addCategory }: CategoryCUProps) => {
 
   const handleSubmit = async (form: formTypes) => {
     try {
-      if (addCategory && image) {
+      if (category && updateCategory) {
+        // Editing existing category
+        if (image && image.name !== category.imgUrl) {
+          uploadFile(image, async (_, location) => {
+            const response = await updateCategory({
+              ...category,
+              ...form,
+              imgUrl: location,
+              brands: form.brands.map(id => ({ id } as any)),
+            } as Category);
+            if (response) {
+              navigate("/categorias");
+            }
+          });
+        } else {
+          const response = await updateCategory({
+            ...category,
+            ...form,
+            imgUrl: category.imgUrl,
+            brands: form.brands.map(id => ({ id } as any)),
+          } as Category);
+          if (response) {
+            navigate("/categorias");
+          }
+        }
+      } else if (addCategory && image) {
+        // Creating new category
         uploadFile(image, async (_, location) => {
           const response = (await addCategory({
             ...form,
@@ -154,7 +204,7 @@ const CategoryCU = ({ category, addCategory }: CategoryCUProps) => {
         });
       }
     } catch (error) {
-      console.error("Error in handleSubmit:", error);
+      // Error handling
     }
   };
 
@@ -171,30 +221,6 @@ const CategoryCU = ({ category, addCategory }: CategoryCUProps) => {
             {!category ? "Nueva Categoría" : `${category.name}`}
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Link to="/categorias">
-            <Button variant={"outline"}>Cancelar</Button>
-          </Link>
-          {!category ? (
-            <Button
-              size="sm"
-              disabled={!validateForm}
-              className="h-10 px-6 gap-1"
-              onClick={() => handleSubmit(form)}
-            >
-              <PlusCircle className="h-3.5 w-3.5 mr-2" />
-              <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                Agregar Categoría
-              </span>
-            </Button>
-          ) : (
-            <Button disabled size="sm" className="h-10 px-6 gap-1">
-              <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                Actualizar Categoría
-              </span>
-            </Button>
-          )}
-        </div>
       </header>
       <section>
         <section className="mt-4 flex flex-col md:flex-row justify-between gap-3 w-full">
@@ -208,7 +234,19 @@ const CategoryCU = ({ category, addCategory }: CategoryCUProps) => {
             <CardContent>
               <div className="grid gap-6">
                 <div className="grid gap-3">
-                  <Label htmlFor="name">Name</Label>
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="name">Nombre</Label>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>El nombre de la categoría que se mostrará en el sistema</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                   <Input
                     id="name"
                     name="name"
@@ -221,7 +259,19 @@ const CategoryCU = ({ category, addCategory }: CategoryCUProps) => {
                   />
                 </div>
                 <div className="grid gap-3">
-                  <Label htmlFor="description">Descripción</Label>
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="description">Descripción</Label>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Una descripción breve de la categoría y su propósito</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                   <Textarea
                     id="description"
                     name="description"
@@ -233,7 +283,19 @@ const CategoryCU = ({ category, addCategory }: CategoryCUProps) => {
                   />
                 </div>
                 <div className="grid gap-3">
-                  <Label htmlFor="image">Imagen de la Categoría</Label>
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="image">Imagen de la Categoría</Label>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>La imagen representativa de la categoría que se mostrará en el catálogo</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                   <MyDropzone
                     file={image}
                     fileSetter={setImage}
@@ -246,7 +308,19 @@ const CategoryCU = ({ category, addCategory }: CategoryCUProps) => {
           <section className="w-1/2 flex flex-col justify-between gap-4">
             <Card x-chunk="dashboard-07-chunk-0" className="flex-grow">
               <CardHeader>
-                <CardTitle>Asociar a Marcas</CardTitle>
+                <div className="flex items-center gap-2">
+                  <CardTitle>Asociar a Marcas</CardTitle>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Las marcas asociadas a esta categoría. Los productos de estas marcas podrán usar esta categoría como template</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
                 <CardDescription>
                   Selecciones una marca si desea asociarla a la categoría.
                 </CardDescription>
@@ -306,19 +380,35 @@ const CategoryCU = ({ category, addCategory }: CategoryCUProps) => {
           </section>
         </section>
       </section>
-      <section className="mt-4 flex flex-col md:flex-row justify-between gap-3 w-full">
+      <section className="mt-4 flex flex-col gap-3 w-full">
         <CardAtributesVariants
           form={form}
           setForm={setForm}
-          title={"Atributos de Categoría"}
-          description={"Ingresa los atributos de la categoría"}
+          title={"Atributos de Producto"}
+          description={"Ingresa los atributos de producto para esta categoría"}
         />
         <CardAtributesVariants
           form={form}
           setForm={setForm}
-          title={"Atributos de Variantes"}
-          description={"Ingresa los atributos de la variante"}
+          title={"Atributos de Aplicaciones"}
+          description={"Ingresa los atributos de aplicación para esta categoría"}
         />
+      </section>
+      <section className="mt-6 flex justify-end gap-3">
+        <Link to="/categorias">
+          <Button variant={"outline"}>Cancelar</Button>
+        </Link>
+        <Button
+          size="sm"
+          disabled={!validateForm}
+          className="h-10 px-6 gap-1"
+          onClick={() => handleSubmit(form)}
+        >
+          <Save className="h-3.5 w-3.5 mr-2" />
+          <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+            Guardar
+          </span>
+        </Button>
       </section>
     </main>
   );

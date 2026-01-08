@@ -18,8 +18,36 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { CategoryAtributes } from "@/models/category";
+import { CategoryAtributes, CategoryAttributesTypes } from "@/models/category";
 import NoData from "./NoData";
+
+// Mapeo de tipos técnicos a nombres amigables para el usuario
+const typeDisplayNames: Record<string, string> = {
+  [CategoryAttributesTypes.STRING]: "Texto",
+  [CategoryAttributesTypes.NUMERIC]: "Número",
+  [CategoryAttributesTypes.DATE]: "Fecha",
+  [CategoryAttributesTypes.BOOLEAN]: "Verdadero/Falso",
+  // También manejar valores en mayúsculas que pueden venir del backend
+  "STRING": "Texto",
+  "NUMBER": "Número",
+  "NUMERIC": "Número",
+  "DATE": "Fecha",
+  "BOOLEAN": "Verdadero/Falso",
+  "string": "Texto",
+  "number": "Número",
+  "numeric": "Número",
+  "date": "Fecha",
+  "boolean": "Verdadero/Falso",
+};
+
+// Función helper para obtener el nombre traducido del tipo
+const getTypeDisplayName = (type: string): string => {
+  const normalizedType = type?.toLowerCase() || "";
+  return typeDisplayNames[type] || 
+         typeDisplayNames[normalizedType] || 
+         typeDisplayNames[type.toUpperCase()] || 
+         type;
+};
 
 interface CardAttributeTableProps {
   title: string;
@@ -52,7 +80,9 @@ const CardAttributeTable = ({
                 <TableCell className="font-semibold">
                   {attribute.name}
                 </TableCell>
-                <TableCell>{attribute.type}</TableCell>
+                <TableCell>
+                  {getTypeDisplayName(attribute.type)}
+                </TableCell>
                 <TableCell>
                   <Badge>{attribute.required ? "Si" : "No"}</Badge>
                 </TableCell>
@@ -71,23 +101,13 @@ const CardAttributeTable = ({
                           onClick={() => handleEditClick(attribute)}
                         >
                           <Pencil className="mr-2 h-4 w-4" />
-                          <span>
-                            Editar{" "}
-                            {title === "Atributos de Categoría"
-                              ? "Atributo"
-                              : "Variante"}
-                          </span>
+                          <span>Editar Atributo</span>
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => handleDeleteClick(attribute.name)}
                         >
                           <Trash className="mr-2 h-4 w-4" />
-                          <span>
-                            Eliminar{" "}
-                            {title === "Atributos de Categoría"
-                              ? "Atributo"
-                              : "Variante"}
-                          </span>
+                          <span>Eliminar Atributo</span>
                         </DropdownMenuItem>
                       </DropdownMenuGroup>
                     </DropdownMenuContent>
@@ -101,9 +121,7 @@ const CardAttributeTable = ({
         <NoData>
           <AlertTriangle className="text-[#4E5154]" />
           <p className="text-[#4E5154]">
-            {title === "Atributos de Categoría"
-              ? "No existen atributos asociados"
-              : "No existen variantes asociadas"}
+            No existen atributos asociados
           </p>
           <p className="text-[#94A3B8] font-semibold text-sm">
             Agrega uno en la parte posterior
