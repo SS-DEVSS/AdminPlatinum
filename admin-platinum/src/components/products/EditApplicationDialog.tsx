@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Application } from "@/models/application";
-import { CategoryAtributes } from "@/models/category";
+import { CategoryAtributes, CategoryAttributesTypes } from "@/models/category";
 import DynamicComponent from "@/components/DynamicComponent";
 import { useMemo, useState, useEffect } from "react";
 import axiosClient from "@/services/axiosInstance";
@@ -131,7 +131,7 @@ const EditApplicationDialog = ({
                 // If it's a year attribute, always extract just the year
                 if (isYearAttribute) {
                   value = date.getFullYear().toString();
-                } else if (attr.type === "date" || attr.type === "Date") {
+                } else if (attr.type === CategoryAttributesTypes.DATE) {
                   // For non-year date attributes, format as ISO string
                   value = date.toISOString().split('T')[0]; // YYYY-MM-DD format
                 } else {
@@ -274,18 +274,13 @@ const EditApplicationDialog = ({
                 // Get value from formData
                 const value = formData.attributeValues[attr.name];
                 if (value !== undefined && value !== null && value !== "") {
-                  if (attr.type === "string" || attr.type === "text") {
+                  if (attr.type === CategoryAttributesTypes.STRING) {
                     attributeValue.valueString = String(value);
-                  } else if (
-                    attr.type === "number" ||
-                    attr.type === "numeric" ||
-                    attr.type === "integer" ||
-                    attr.type === "decimal"
-                  ) {
+                  } else if (attr.type === CategoryAttributesTypes.NUMERIC) {
                     attributeValue.valueNumber = Number(value);
-                  } else if (attr.type === "boolean") {
+                  } else if (attr.type === CategoryAttributesTypes.BOOLEAN) {
                     attributeValue.valueBoolean = Boolean(value);
-                  } else if (attr.type === "date") {
+                  } else if (attr.type === CategoryAttributesTypes.DATE) {
                     if (value instanceof Date) {
                       attributeValue.valueDate = value;
                     } else if (typeof value === "string") {
@@ -370,13 +365,13 @@ const EditApplicationDialog = ({
           }
         } else if (value !== undefined && value !== null && value !== "") {
           // Set the appropriate value based on attribute type
-          if (attr.type === "string" || attr.type === "text") {
+          if (attr.type === CategoryAttributesTypes.STRING) {
             attributeValue.valueString = String(value);
-          } else if (attr.type === "number" || attr.type === "numeric" || attr.type === "integer" || attr.type === "decimal") {
+          } else if (attr.type === CategoryAttributesTypes.NUMERIC) {
             attributeValue.valueNumber = Number(value);
-          } else if (attr.type === "boolean") {
+          } else if (attr.type === CategoryAttributesTypes.BOOLEAN) {
             attributeValue.valueBoolean = Boolean(value);
-          } else if (attr.type === "date") {
+          } else if (attr.type === CategoryAttributesTypes.DATE) {
             // For date attributes, convert to Date object
             if (value instanceof Date) {
               attributeValue.valueDate = value;

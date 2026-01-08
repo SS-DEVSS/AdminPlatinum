@@ -1,7 +1,6 @@
 import {
   Box,
   ExternalLink,
-  EyeIcon,
   MoreHorizontal,
   Pencil,
   PlusCircle,

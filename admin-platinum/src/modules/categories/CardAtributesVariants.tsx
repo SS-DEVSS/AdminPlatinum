@@ -64,6 +64,13 @@ type CardAtributesVariantsProps = {
   description: string;
 };
 
+enum AttributeScope {
+  PRODUCT = "PRODUCT",
+  VARIANT = "VARIANT",
+  APPLICATION = "APPLICATION",
+  REFERENCE = "REFERENCE",
+}
+
 interface AttributeFormType {
   name: string;
   csv_name?: string;
@@ -71,7 +78,7 @@ interface AttributeFormType {
   type: CategoryAttributesTypes | string;
   required: boolean | null;
   order?: number;
-  scope?: "VARIANT" | "PRODUCT" | "APPLICATION";
+  scope?: AttributeScope;
 }
 
 const AttributeFormInitialState = {
@@ -95,7 +102,7 @@ const CardAtributesVariants = ({
   description,
 }: CardAtributesVariantsProps) => {
   const { category } = useCategoryContext();
-  const [type, setType] = useState<"VARIANT" | "PRODUCT" | "APPLICATION" | "">("");
+  const [type, setType] = useState<AttributeScope>(AttributeScope.PRODUCT);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState("add");
   const [currentAttribute, setCurrentAttribute] =
@@ -111,11 +118,11 @@ const CardAtributesVariants = ({
 
   useEffect(() => {
     if (title === "Atributos de Producto") {
-      setType("PRODUCT");
+      setType(AttributeScope.PRODUCT);
     } else if (title === "Atributos de Variantes") {
-      setType("VARIANT");
+      setType(AttributeScope.VARIANT);
     } else if (title === "Atributos de Aplicaciones") {
-      setType("APPLICATION");
+      setType(AttributeScope.APPLICATION);
     }
   }, [title]);
 
@@ -144,6 +151,7 @@ const CardAtributesVariants = ({
         applicationAttributes,
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [category]);
 
   useEffect(() => {
@@ -195,7 +203,7 @@ const CardAtributesVariants = ({
     }
   }, [form.attributes]);
 
-  const handleAttributeForm = (e: any) => {
+  const handleAttributeForm = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setAttributeForm({
       ...attributeForm,
@@ -222,11 +230,11 @@ const CardAtributesVariants = ({
 
   const handleAddPredefinedField = (displayName: string, fieldType: string, csvName: string) => {
     const order =
-      type === "PRODUCT"
+      type === AttributeScope.PRODUCT
         ? attributes.productAttributes.length
-        : type === "VARIANT"
-        ? attributes.variantAttributes.length
-        : attributes.applicationAttributes.length;
+        : type === AttributeScope.VARIANT
+          ? attributes.variantAttributes.length
+          : attributes.applicationAttributes.length;
 
     const payload: CategoryAtributes = {
       name: displayName,
@@ -234,7 +242,7 @@ const CardAtributesVariants = ({
       csv_name: csvName,
       required: false,
       type: fieldType as CategoryAttributesTypes,
-      scope: type as "PRODUCT" | "VARIANT" | "APPLICATION",
+      scope: type as AttributeScope,
       order: order,
     };
 
@@ -245,11 +253,11 @@ const CardAtributesVariants = ({
 
     setAttributes((prev) => ({
       ...prev,
-      ...(type === "PRODUCT"
+      ...(type === AttributeScope.PRODUCT
         ? { productAttributes: [...prev.productAttributes, payload] }
-        : type === "VARIANT"
-        ? { variantAttributes: [...prev.variantAttributes, payload] }
-        : { applicationAttributes: [...prev.applicationAttributes, payload] }),
+        : type === AttributeScope.VARIANT
+          ? { variantAttributes: [...prev.variantAttributes, payload] }
+          : { applicationAttributes: [...prev.applicationAttributes, payload] }),
     }));
   };
 
@@ -262,31 +270,31 @@ const CardAtributesVariants = ({
     // Normalizar el tipo a minúsculas para que coincida con el enum
     const normalizedType = attribute.type?.toLowerCase() || attribute.type;
     // Asegurar que el tipo coincida con uno de los valores del enum
-    const validType = typesArray.includes(normalizedType as CategoryAttributesTypes) 
-      ? normalizedType 
+    const validType = typesArray.includes(normalizedType as CategoryAttributesTypes)
+      ? normalizedType
       : (attribute.type?.toLowerCase() === "number" || attribute.type?.toLowerCase() === "numeric"
-          ? CategoryAttributesTypes.NUMERIC
-          : attribute.type?.toLowerCase() === "boolean"
+        ? CategoryAttributesTypes.NUMERIC
+        : attribute.type?.toLowerCase() === "boolean"
           ? CategoryAttributesTypes.BOOLEAN
           : attribute.type?.toLowerCase() === "date"
-          ? CategoryAttributesTypes.DATE
-          : CategoryAttributesTypes.STRING);
+            ? CategoryAttributesTypes.DATE
+            : CategoryAttributesTypes.STRING);
 
     setAttributeForm({
       name: attribute.display_name || attribute.name,
-      csv_name: attribute.csv_name || (attribute as any).csvName || "",
+      csv_name: attribute.csv_name || (attribute as CategoryAtributes).csv_name || "",
       display_name: attribute.display_name || attribute.name,
       type: validType,
       required: attribute.required ?? false,
       order: attribute.order ?? 0,
-      scope: attribute.scope,
+      scope: attribute.scope as AttributeScope | undefined,
     });
   };
 
   const handleDeleteClick = (name: string) => {
     let tempList: CategoryAtributes[] = [];
-    if (type === "PRODUCT") {
-      tempList = attributes.productAttributes.filter((attribute: CategoryAtributes) => 
+    if (type === AttributeScope.PRODUCT) {
+      tempList = attributes.productAttributes.filter((attribute: CategoryAtributes) =>
         attribute.name !== name && attribute.display_name !== name
       );
       setAttributes({
@@ -294,7 +302,7 @@ const CardAtributesVariants = ({
         productAttributes: tempList,
       });
     } else if (type === "VARIANT") {
-      tempList = attributes.variantAttributes.filter((attribute: CategoryAtributes) => 
+      tempList = attributes.variantAttributes.filter((attribute: CategoryAtributes) =>
         attribute.name !== name && attribute.display_name !== name
       );
       setAttributes({
@@ -302,7 +310,7 @@ const CardAtributesVariants = ({
         variantAttributes: tempList,
       });
     } else if (type === "APPLICATION") {
-      tempList = attributes.applicationAttributes.filter((attribute: CategoryAtributes) => 
+      tempList = attributes.applicationAttributes.filter((attribute: CategoryAtributes) =>
         attribute.name !== name && attribute.display_name !== name
       );
       setAttributes({
@@ -313,7 +321,7 @@ const CardAtributesVariants = ({
 
     setForm((prev) => ({
       ...prev,
-      attributes: prev.attributes.filter((attr) => 
+      attributes: prev.attributes.filter((attr) =>
         attr.name !== name && attr.display_name !== name
       ),
     }));
@@ -332,7 +340,7 @@ const CardAtributesVariants = ({
     // Usar display_name como name principal, y csv_name como obligatorio
     const finalDisplayName = attributeForm.display_name || attributeForm.name;
     const finalCsvName = attributeForm.csv_name?.trim() || "";
-    
+
     const payload: CategoryAtributes = {
       ...attributeForm,
       name: finalDisplayName, // El name será el display_name
@@ -356,8 +364,8 @@ const CardAtributesVariants = ({
         ...(type === "PRODUCT"
           ? { productAttributes: [...prev.productAttributes, payload] }
           : type === "VARIANT"
-          ? { variantAttributes: [...prev.variantAttributes, payload] }
-          : { applicationAttributes: [...prev.applicationAttributes, payload] }),
+            ? { variantAttributes: [...prev.variantAttributes, payload] }
+            : { applicationAttributes: [...prev.applicationAttributes, payload] }),
       }));
     } else if (dialogMode === "edit") {
       // Al editar, buscar por id si existe, sino por name
@@ -365,9 +373,9 @@ const CardAtributesVariants = ({
         if (currentAttribute?.id && attr.id) {
           return attr.id === currentAttribute.id;
         }
-        return attr.name === currentAttribute?.name || 
-               (attr.display_name && attr.display_name === currentAttribute?.display_name) ||
-               (attr.display_name && attr.display_name === currentAttribute?.name);
+        return attr.name === currentAttribute?.name ||
+          (attr.display_name && attr.display_name === currentAttribute?.display_name) ||
+          (attr.display_name && attr.display_name === currentAttribute?.name);
       };
 
       setForm((prev) => ({
@@ -381,17 +389,17 @@ const CardAtributesVariants = ({
         ...prev,
         ...(type === "PRODUCT"
           ? {
-              productAttributes: prev.productAttributes.map((attr) =>
-                matchAttribute(attr) ? payload : attr
-              ),
-            }
+            productAttributes: prev.productAttributes.map((attr) =>
+              matchAttribute(attr) ? payload : attr
+            ),
+          }
           : type === "VARIANT"
-          ? {
+            ? {
               variantAttributes: prev.variantAttributes.map((attr) =>
                 matchAttribute(attr) ? payload : attr
               ),
             }
-          : {
+            : {
               applicationAttributes: prev.applicationAttributes.map((attr) =>
                 matchAttribute(attr) ? payload : attr
               ),
@@ -424,8 +432,8 @@ const CardAtributesVariants = ({
                   {title === "Atributos de Producto"
                     ? "Este campo es la plantilla para productos de la categoría que estás creando. Los atributos definidos aquí se aplicarán a todos los productos de esta categoría."
                     : title === "Atributos de Variantes"
-                    ? "Este campo es la plantilla para variantes de la categoría que estás creando. Los atributos definidos aquí se aplicarán a las variantes de los productos de esta categoría."
-                    : "Este campo es la plantilla para aplicaciones de la categoría que estás creando. Los atributos definidos aquí se aplicarán a las aplicaciones de los productos de esta categoría."}
+                      ? "Este campo es la plantilla para variantes de la categoría que estás creando. Los atributos definidos aquí se aplicarán a las variantes de los productos de esta categoría."
+                      : "Este campo es la plantilla para aplicaciones de la categoría que estás creando. Los atributos definidos aquí se aplicarán a las aplicaciones de los productos de esta categoría."}
                 </p>
               </TooltipContent>
             </Tooltip>
@@ -589,26 +597,26 @@ const CardAtributesVariants = ({
                   ? title === "Atributos de Producto"
                     ? "Editar Atributo de Producto"
                     : title === "Atributos de Variantes"
-                    ? "Editar Atributo de Variante"
-                    : "Editar Atributo de Aplicación"
+                      ? "Editar Atributo de Variante"
+                      : "Editar Atributo de Aplicación"
                   : title === "Atributos de Producto"
                     ? "Agregar Atributo de Producto"
                     : title === "Atributos de Variantes"
-                    ? "Agregar Atributo de Variante"
-                    : "Agregar Atributo de Aplicación"}
+                      ? "Agregar Atributo de Variante"
+                      : "Agregar Atributo de Aplicación"}
               </DialogTitle>
               <DialogDescription>
                 {dialogMode === "edit"
                   ? title === "Atributos de Producto"
                     ? "Editar un atributo de producto existente."
                     : title === "Atributos de Variantes"
-                    ? "Editar un atributo de variante existente."
-                    : "Editar un atributo de aplicación existente."
+                      ? "Editar un atributo de variante existente."
+                      : "Editar un atributo de aplicación existente."
                   : title === "Atributos de Producto"
                     ? "Agregar un nuevo atributo de producto al sistema."
                     : title === "Atributos de Variantes"
-                    ? "Agregar un nuevo atributo de variante al sistema."
-                    : "Agregar un nuevo atributo de aplicación al sistema."}
+                      ? "Agregar un nuevo atributo de variante al sistema."
+                      : "Agregar un nuevo atributo de aplicación al sistema."}
               </DialogDescription>
             </DialogHeader>
             <div className="flex items-center gap-2">
@@ -706,7 +714,7 @@ const CardAtributesVariants = ({
             </Select>
             <div className="flex items-center gap-2">
               <Label>
-                <span className="text-redLabel">*</span>Opcional?
+                <span className="text-redLabel">*</span>Requerido
               </Label>
               <TooltipProvider>
                 <Tooltip>
@@ -747,7 +755,7 @@ const CardAtributesVariants = ({
             <DialogFooter>
               <Button
                 disabled={
-                  !validateForm || 
+                  !validateForm ||
                   (type === "PRODUCT" && attributes.productAttributes.length >= 20) ||
                   (type === "VARIANT" && attributes.variantAttributes.length >= 20) ||
                   (type === "APPLICATION" && attributes.applicationAttributes.length >= 20)

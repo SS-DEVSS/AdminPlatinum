@@ -33,11 +33,6 @@ const typeDisplayNames: Record<string, string> = {
   "NUMERIC": "Número",
   "DATE": "Fecha",
   "BOOLEAN": "Verdadero/Falso",
-  "string": "Texto",
-  "number": "Número",
-  "numeric": "Número",
-  "date": "Fecha",
-  "boolean": "Verdadero/Falso",
 };
 
 // Función helper para obtener el nombre traducido del tipo
@@ -57,7 +52,6 @@ interface CardAttributeTableProps {
 }
 
 const CardAttributeTable = ({
-  title,
   attributes,
   handleEditClick,
   handleDeleteClick,
@@ -70,7 +64,7 @@ const CardAttributeTable = ({
             <TableRow>
               <TableHead>Nombre</TableHead>
               <TableHead>Tipo de Dato</TableHead>
-              <TableHead>Opcional</TableHead>
+              <TableHead>Requerido</TableHead>
               <TableHead className="w-[20px]"></TableHead>
             </TableRow>
           </TableHeader>

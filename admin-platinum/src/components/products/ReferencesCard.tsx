@@ -40,21 +40,21 @@ const ReferencesCard = ({ state, setState, product }: ReferencesCardProps) => {
     const categoryId = product.idCategory;
     const category = categories.find((c) => c.id === categoryId);
     if (!category?.attributes) return [];
-    
+
     if (Array.isArray(category.attributes)) {
       return category.attributes;
     }
-    
+
     if (typeof category.attributes === 'object' && 'reference' in category.attributes) {
       return (category.attributes as { reference: CategoryAtributes[] }).reference || [];
     }
-    
+
     return [];
   }, [product?.idCategory, categories]);
 
   // Track the product ID to only load references once per product
   const [loadedProductId, setLoadedProductId] = useState<string | null>(null);
-  
+
   // Load references from product when editing (only once per product)
   useEffect(() => {
     // Only load references if:
@@ -223,7 +223,6 @@ const ReferencesCard = ({ state, setState, product }: ReferencesCardProps) => {
         onOpenChange={setIsEditDialogOpen}
         reference={editingReference}
         categoryAttributes={categoryAttributes}
-        productId={product?.id}
         onSuccess={handleEditSuccess}
       />
     </Card>

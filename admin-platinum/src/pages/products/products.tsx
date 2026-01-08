@@ -36,11 +36,11 @@ const Products = () => {
   });
   // Cargar categoría desde localStorage al inicializar
   const [category, setCategory] = useState<Category | null>(() => {
-    const savedCategoryId = localStorage.getItem('products-selected-category');
+    // const savedCategoryId = localStorage.getItem('products-selected-category');
     return null; // Se inicializará en el useEffect cuando tengamos las categorías
   });
 
-  const handleSearchFilter = (e: any) => {
+  const handleSearchFilter = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchFilter(value);
     // Guardar en localStorage
@@ -82,6 +82,7 @@ const Products = () => {
         localStorage.setItem('products-selected-category', categories[0].id || '');
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [categories]);
 
   return (

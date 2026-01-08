@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Reference } from "@/models/reference";
-import { CategoryAtributes } from "@/models/category";
+import { CategoryAtributes, CategoryAttributesTypes } from "@/models/category";
 import DynamicComponent from "@/components/DynamicComponent";
 import { useMemo, useState, useEffect } from "react";
 import axiosClient from "@/services/axiosInstance";
@@ -29,7 +29,6 @@ type EditReferenceDialogProps = {
   onOpenChange: (open: boolean) => void;
   reference: Reference | null;
   categoryAttributes?: CategoryAtributes[];
-  productId?: string;
   onSuccess?: () => void;
 };
 
@@ -38,7 +37,6 @@ const EditReferenceDialog = ({
   onOpenChange,
   reference,
   categoryAttributes = [],
-  productId,
   onSuccess,
 }: EditReferenceDialogProps) => {
   const { toast } = useToast();
@@ -47,15 +45,15 @@ const EditReferenceDialog = ({
   // Get reference attributes from category
   const referenceAttributes = useMemo(() => {
     if (!categoryAttributes) return [];
-    
+
     if (Array.isArray(categoryAttributes)) {
       return categoryAttributes.filter((attr) => attr.scope === "REFERENCE");
     }
-    
+
     if (typeof categoryAttributes === 'object' && 'reference' in categoryAttributes) {
       return (categoryAttributes as { reference: CategoryAtributes[] }).reference || [];
     }
-    
+
     return [];
   }, [categoryAttributes]);
 
@@ -113,9 +111,6 @@ const EditReferenceDialog = ({
       // Convert attributeValues object back to array format
       const attributes = referenceAttributes.map((attr) => {
         const value = formData.attributeValues[attr.name];
-        const attrValue = reference.attributeValues?.find(
-          (av: any) => av.idAttribute === attr.id || (av.attribute && av.attribute.id === attr.id)
-        );
 
         const attributeValue: any = {
           idAttribute: attr.id!,
@@ -127,13 +122,13 @@ const EditReferenceDialog = ({
 
         // Set the appropriate value based on attribute type
         if (value !== undefined && value !== null && value !== "") {
-          if (attr.type === "string") {
+          if (attr.type === CategoryAttributesTypes.STRING) {
             attributeValue.valueString = String(value);
-          } else if (attr.type === "number") {
+          } else if (attr.type === CategoryAttributesTypes.NUMERIC) {
             attributeValue.valueNumber = Number(value);
-          } else if (attr.type === "boolean") {
+          } else if (attr.type === CategoryAttributesTypes.BOOLEAN) {
             attributeValue.valueBoolean = Boolean(value);
-          } else if (attr.type === "date") {
+          } else if (attr.type === CategoryAttributesTypes.DATE) {
             attributeValue.valueDate = value instanceof Date ? value : new Date(value);
           }
         }

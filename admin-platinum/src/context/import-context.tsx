@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from "react";
+import { createContext, useContext, useState, useCallback, ReactNode } from "react";
 import { useToast } from "@/hooks/use-toast";
 import axiosClient from "@/services/axiosInstance";
 
@@ -27,8 +27,10 @@ export function useImportContext() {
   return context;
 }
 
-export const ImportProvider: React.FC<{ children: React.ReactNode }> = ({
+export const ImportProvider = ({
   children,
+}: {
+  children: ReactNode;
 }) => {
   const { toast } = useToast();
   const client = axiosClient();

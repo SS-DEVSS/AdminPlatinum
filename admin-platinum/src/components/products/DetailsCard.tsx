@@ -20,7 +20,6 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -41,7 +40,7 @@ type DetailsCardProps = {
   product?: Product | null;
 };
 
-const DetailsCard = ({ product, state, setState }: DetailsCardProps) => {
+const DetailsCard = ({ state, setState }: DetailsCardProps) => {
   const { brands } = useBrands();
   const { categories } = useCategoryContext();
   const { uploadFile, uploading } = useS3FileManager();
@@ -87,7 +86,7 @@ const DetailsCard = ({ product, state, setState }: DetailsCardProps) => {
 
   useEffect(() => {
     if (imageFile && imageFile.name) {
-      uploadFile(imageFile, (key: string, location: string) => {
+      uploadFile(imageFile, (_key: string, location: string) => {
         setImageUrl(location);
         // Store the full URL (location) instead of just the key
         // The backend can handle both URL and path
