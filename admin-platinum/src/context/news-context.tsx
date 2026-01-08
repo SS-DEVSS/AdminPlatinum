@@ -1,5 +1,4 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import { useAuthContext } from "@/context/auth-context";
 import { BlogPost } from "@/models/news";
 import axiosClient from "@/services/axiosInstance";
 import { useToast } from "@/hooks/use-toast";
@@ -22,8 +21,7 @@ export const newsContext = () => useContext(NewsContext);
 export const NewsProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const { authState } = useAuthContext();
-  const client = axiosClient(authState.authKey);
+  const client = axiosClient();
   const { toast } = useToast();
 
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);

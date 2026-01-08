@@ -1,12 +1,10 @@
-import { useAuthContext } from "@/context/auth-context";
 import { TechnicalSheet } from "@/models/technicalSheet";
 import axiosClient from "@/services/axiosInstance";
 import { useEffect, useState } from "react";
 import { useToast } from "./use-toast";
 
 export const useTs = () => {
-  const { authState } = useAuthContext();
-  const client = axiosClient(authState.authKey);
+  const client = axiosClient();
   const { toast } = useToast();
 
   const [technicalSheets, setTechnicalSheets] = useState<TechnicalSheet[]>([]);

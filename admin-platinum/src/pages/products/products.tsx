@@ -2,19 +2,14 @@ import Layout from "@/components/Layouts/Layout";
 import { Button } from "@/components/ui/button";
 import {
   Card,
-  CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
-  Download,
-  File,
   Import,
   PlusCircle,
   Search,
-  Share,
 } from "lucide-react";
 import {
   Select,
@@ -25,179 +20,76 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Link } from "react-router-dom";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Category } from "@/models/category";
 import { useCategories } from "@/hooks/useCategories";
-import { Checkbox } from "@/components/ui/checkbox";
 import DataTable from "@/modules/products/ProductsTable";
 
 const Products = () => {
+  const navigate = useNavigate();
   const { categories = [] } = useCategories();
-  const [category, setCategory] = useState<Category | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalOpenExport, setModalOpenExport] = useState(false);
-  const [fileImport, setFileImport] = useState("");
-  const [selectedCategories, setSelectedCategories] = useState<Category[]>([]);
-  const [checkedAll, setCheckedAll] = useState(false);
-  const [searchFilter, setSearchFilter] = useState("");
+  // Cargar searchFilter desde localStorage al inicializar
+  const [searchFilter, setSearchFilter] = useState(() => {
+    const saved = localStorage.getItem('products-search-filter');
+    return saved || "";
+  });
+  // Cargar categoría desde localStorage al inicializar
+  const [category, setCategory] = useState<Category | null>(() => {
+    // const savedCategoryId = localStorage.getItem('products-selected-category');
+    return null; // Se inicializará en el useEffect cuando tengamos las categorías
+  });
 
-  const handleSearchFilter = (e: any) => {
-    setSearchFilter(e.target.value);
+  const handleSearchFilter = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchFilter(value);
+    // Guardar en localStorage
+    if (value) {
+      localStorage.setItem('products-search-filter', value);
+    } else {
+      localStorage.removeItem('products-search-filter');
+    }
+  };
+
+  const handleCategoryChange = (value: string) => {
+    const selectedCategory = categories.find(
+      (cat) => cat.id === value
+    );
+    const categoryToSet = selectedCategory || null;
+    setCategory(categoryToSet);
+    // Guardar en localStorage
+    if (categoryToSet?.id) {
+      localStorage.setItem('products-selected-category', categoryToSet.id);
+    } else {
+      localStorage.removeItem('products-selected-category');
+    }
   };
 
   useEffect(() => {
-    if (!category && categories.length > 0) {
-      setCategory(categories[0]);
+    if (categories.length > 0) {
+      // Intentar restaurar categoría guardada
+      const savedCategoryId = localStorage.getItem('products-selected-category');
+      if (savedCategoryId && !category) {
+        const savedCategory = categories.find((cat) => cat.id === savedCategoryId);
+        if (savedCategory) {
+          setCategory(savedCategory);
+          return;
+        }
+      }
+      // Si no hay categoría guardada o no se encontró, usar la primera
+      if (!category) {
+        setCategory(categories[0]);
+        localStorage.setItem('products-selected-category', categories[0].id || '');
+      }
     }
-  }, [categories, category]);
-
-  const handleCheckAll = (isChecked: boolean) => {
-    setCheckedAll(isChecked);
-    if (isChecked) {
-      setSelectedCategories(categories);
-    } else {
-      setSelectedCategories([]);
-    }
-  };
-
-  const handleFileChange = (e: any) => {
-    const file = e.target.files[0];
-    if (file) {
-      setFileImport(file);
-    } else {
-      setFileImport("");
-    }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [categories]);
 
   return (
     <Layout>
-      <Dialog
-        open={modalOpen}
-        onOpenChange={(open: boolean) => !open && setModalOpen(false)}
-      >
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle className="mb-2">Importar Productos</DialogTitle>
-          </DialogHeader>
-          <input type="file" onChange={handleFileChange} />
-          <DialogDescription>Formatos permitidos: csv</DialogDescription>
-          <Card className="border-[#94A3B8] bg-[#F9FAFB]">
-            <CardHeader className="flex flex-row gap-3 items-center p-3">
-              <File className="mt-2" />
-              <CardTitle className="text-lg mt-0">
-                Plantilla de Productos
-              </CardTitle>
-            </CardHeader>
-            <CardFooter>
-              <CardDescription>
-                Descarga la plantilla de ejemplo para usarla como una base.
-              </CardDescription>
-              <Download className="hover:cursor-pointer" />
-            </CardFooter>
-          </Card>
-          <DialogFooter>
-            <Button onClick={() => setModalOpen(false)} variant="outline">
-              Cancelar
-            </Button>
-            <Button disabled={!fileImport}>Importar Archivo</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      <Dialog
-        open={modalOpenExport}
-        onOpenChange={(open: boolean) => !open && setModalOpenExport(false)}
-      >
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle className="mb-2">Exportar Productos</DialogTitle>
-            <DialogDescription>
-              Selecciona las categorías que deseas exportar.
-            </DialogDescription>
-          </DialogHeader>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>
-                  <Checkbox
-                    checked={checkedAll}
-                    onCheckedChange={(prev: boolean) => handleCheckAll(prev)}
-                    className="border-[#d0d2d6] mt-1"
-                  />
-                </TableHead>
-                <TableHead>Categoría</TableHead>
-                <TableHead>Número de Productos</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {categories.map((category) => (
-                <TableRow key={category.id}>
-                  <TableCell>
-                    <Checkbox
-                      checked={
-                        checkedAll || selectedCategories.includes(category)
-                      }
-                      onCheckedChange={() => {
-                        const updatedSelection = selectedCategories.includes(
-                          category
-                        )
-                          ? selectedCategories.filter(
-                            (c) => c.id !== category.id
-                          )
-                          : [...selectedCategories, category];
-                        setSelectedCategories(updatedSelection);
-                        if (updatedSelection.length === categories.length) {
-                          setCheckedAll(true);
-                        } else {
-                          setCheckedAll(false);
-                        }
-                      }}
-                      className="border-[#d0d2d6] mt-1"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <p className="text-[#71717A] font-medium">
-                      {category.name}
-                    </p>
-                  </TableCell>
-                  <TableCell>
-                    <p className="text-[#71717A] font-medium">
-                      {category.products?.length}
-                    </p>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          <DialogFooter>
-            <Button onClick={() => setModalOpenExport(false)} variant="outline">
-              Cancelar
-            </Button>
-            <Button disabled={selectedCategories.length === 0}>
-              Exportar Productos
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      <div>
-        <Card className="border-0 shadow-none">
-          <CardHeader className="flex flex-row items-end p-0 m-0">
+      <div className="w-full max-w-full">
+        <Card className="border-0 shadow-none w-full">
+          <CardHeader className="flex flex-row items-end p-0 m-0 pb-6 w-full">
             <div className="flex flex-col gap-3">
               <CardTitle>Productos</CardTitle>
               <div className="flex gap-3">
@@ -213,12 +105,7 @@ const Products = () => {
                 </div>
                 <Select
                   value={category?.id}
-                  onValueChange={(value: string) => {
-                    const selectedCategory = categories.find(
-                      (cat) => cat.id === value
-                    );
-                    setCategory(selectedCategory || null);
-                  }}
+                  onValueChange={handleCategoryChange}
                 >
                   <SelectTrigger className="w-[280px]">
                     <SelectValue placeholder="Selecciona una categoría" />
@@ -227,7 +114,7 @@ const Products = () => {
                     <SelectGroup>
                       <SelectLabel>Categorías</SelectLabel>
                       {categories.map((category) => (
-                        <SelectItem key={category.id} value={category.id}>
+                        <SelectItem key={category.id} value={category.id || ""}>
                           {category.name}
                         </SelectItem>
                       ))}
@@ -239,7 +126,7 @@ const Products = () => {
             <div className="ml-auto flex items-center gap-3">
               <div className="rounded-lg flex bg-[#F4F4F5]">
                 <div
-                  onClick={() => setModalOpen(true)}
+                  onClick={() => navigate("/producto/importar")}
                   className="flex hover:cursor-pointer gap-3 items-center hover:bg-primary hover:text-white hover:[&>svg]:text-white rounded-lg m-1 px-3"
                 >
                   <Import />
@@ -248,18 +135,6 @@ const Products = () => {
                     variant={"ghost"}
                   >
                     Importar
-                  </Button>
-                </div>
-                <div
-                  onClick={() => setModalOpenExport(true)}
-                  className="flex hover:cursor-pointer gap-3 items-center hover:bg-primary hover:text-white hover:[&>svg]:text-white rounded-lg m-1 px-3"
-                >
-                  <Share />
-                  <Button
-                    className="hover:bg-transparent hover:text-white"
-                    variant={"ghost"}
-                  >
-                    Exportar
                   </Button>
                 </div>
               </div>

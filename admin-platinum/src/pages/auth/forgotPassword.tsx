@@ -1,110 +1,73 @@
 import CredentialsLayout from "@/components/Layouts/CredentialsLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  InputOTP,
-  InputOTPGroup,
-  InputOTPSlot,
-} from "@/components/ui/input-otp";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { supabase } from "@/services/supabase";
 
 const ForgotPassword = () => {
-  const navigate = useNavigate();
+  const [email, setEmail] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false);
+  const [message, setMessage] = useState<string>("");
+  const [error, setError] = useState<string>("");
 
-  const [verificationCode, setVerificationCode] = useState<string>("");
-  const [verifiedCode, setVerifiedCode] = useState<boolean>(false);
-  const [newPassword, setNewPassword] = useState<string>("");
-  const [confirmPassword, setConfirmPassword] = useState<string>("");
-
-  const handleCode = (value: string) => {
-    setVerificationCode(value);
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEmail(e.target.value);
+    setError("");
+    setMessage("");
   };
 
-  const verifyCode = () => {
-    if (verificationCode === "123456") {
-      setVerifiedCode(true);
-    }
-    return;
-  };
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError("");
+    setMessage("");
+    setLoading(true);
 
-  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setNewPassword(e.target.value);
-  };
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
 
-  const handleConfirmPasswordChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setConfirmPassword(e.target.value);
-  };
+      if (error) throw error;
 
-  const verifyPassword = () => {
-    if (newPassword === confirmPassword) {
-      navigate("/");
-    } else {
+      setMessage("Se ha enviado un enlace de recuperación a tu correo electrónico.");
+    } catch (err: any) {
+      setError(err.message || "Error al enviar el correo de recuperación");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <CredentialsLayout>
       <div className="grid gap-2 text-center">
-        <h1 className="text-3xl font-bold">
-          {verifiedCode ? "Contraseña Nueva" : "Ingrese Código"}
-        </h1>
+        <h1 className="text-3xl font-bold">Recuperar Contraseña</h1>
         <p className="text-balance text-muted-foreground">
-          {verifiedCode
-            ? "Ingrese una nueva contraseña"
-            : "Ingrese el código que enviamos a su correo m******a@gmail.com."}
+          Ingresa tu correo electrónico y te enviaremos un enlace para recuperar tu contraseña.
         </p>
       </div>
-      <div className="grid gap-6">
-        {verifiedCode ? (
-          <div className="grid gap-2">
-            <div className="flex items-center">
-              <Label htmlFor="new-password">Contraseña Nueva</Label>
-            </div>
-            <Input
-              id="new-password"
-              type="password"
-              value={newPassword}
-              onChange={handlePasswordChange}
-              required
-            />
-            <div className="flex items-center">
-              <Label htmlFor="confirm-password">Verificar Contraseña</Label>
-            </div>
-            <Input
-              id="confirm-password"
-              type="password"
-              value={confirmPassword}
-              onChange={handleConfirmPasswordChange}
-              required
-            />
-          </div>
-        ) : (
-          <div className="flex justify-center">
-            <InputOTP
-              maxLength={6}
-              value={verificationCode}
-              onChange={handleCode}
-            >
-              <InputOTPGroup>
-                {[...Array(6)].map((_, index) => (
-                  <InputOTPSlot key={index} index={index} />
-                ))}
-              </InputOTPGroup>
-            </InputOTP>
-          </div>
+      <form onSubmit={handleSubmit} className="grid gap-4">
+        <div className="grid gap-2">
+          <Label htmlFor="email">Correo Electrónico</Label>
+          <Input
+            id="email"
+            type="email"
+            placeholder="correo@ejemplo.com"
+            value={email}
+            onChange={handleEmailChange}
+            required
+          />
+        </div>
+        {error && (
+          <div className="text-sm text-red-500 text-center">{error}</div>
         )}
-        <Button
-          onClick={verifiedCode ? verifyPassword : verifyCode}
-          type="submit"
-          className="w-full"
-        >
-          {verifiedCode ? "Verificar Contraseña" : "Verificar Código"}
+        {message && (
+          <div className="text-sm text-green-500 text-center">{message}</div>
+        )}
+        <Button type="submit" className="w-full" disabled={loading}>
+          {loading ? "Enviando..." : "Enviar Enlace de Recuperación"}
         </Button>
-      </div>
+      </form>
     </CredentialsLayout>
   );
 };

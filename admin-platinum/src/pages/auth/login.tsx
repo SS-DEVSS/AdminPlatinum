@@ -5,26 +5,39 @@ import { Label } from "@/components/ui/label";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { useAuthContext } from "@/context/auth-context";
 
 const Login = () => {
   const navigate = useNavigate();
+  const { signIn } = useAuthContext();
 
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
+  const [error, setError] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false);
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEmail(e.target.value);
+    setError("");
   };
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPassword(e.target.value);
+    setError("");
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setError("");
+    setLoading(true);
 
-    if (email === "test@example.com" && password === "password") {
-      navigate("/");
+    try {
+      await signIn(email, password);
+      navigate("/productos");
+    } catch (err: any) {
+      setError(err.message || "Error al iniciar sesión");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -42,7 +55,7 @@ const Login = () => {
           <Input
             id="email"
             type="email"
-            placeholder="m@example.com"
+            placeholder="correo@ejemplo.com"
             value={email}
             onChange={handleEmailChange}
             required
@@ -55,7 +68,7 @@ const Login = () => {
               to="/olvide-mi-contrasena"
               className="ml-auto inline-block text-sm underline"
             >
-              Olvidaste tu contraseña?
+              Recuperar contraseña
             </Link>
           </div>
           <Input
@@ -66,8 +79,11 @@ const Login = () => {
             required
           />
         </div>
-        <Button type="submit" className="w-full">
-          Login
+        {error && (
+          <div className="text-sm text-red-500 text-center">{error}</div>
+        )}
+        <Button type="submit" className="w-full" disabled={loading}>
+          {loading ? "Iniciando sesión..." : "Login"}
         </Button>
       </form>
     </CredentialsLayout>

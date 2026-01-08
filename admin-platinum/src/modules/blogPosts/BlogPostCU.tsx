@@ -73,7 +73,7 @@ const BlogPostCU = ({ blogPost }: BlogPostCUProps) => {
   useEffect(() => {
     if (blogPost) {
       setForm(blogPost);
-      setImage({ name: blogPost.coverImagePath });
+      setImage({ name: blogPost.coverImagePath } as File);
       const parsedComponents = parseContentToComponents(blogPost.content);
       setComponents(parsedComponents);
     }
@@ -222,7 +222,7 @@ const BlogPostCU = ({ blogPost }: BlogPostCUProps) => {
                   name="title"
                   type="text"
                   className="w-full"
-                  placeholder="Gamer Gear Pro Controller"
+                  placeholder="Título de la noticia"
                   value={blogPost ? blogPost.title : form.title}
                   maxLength={255}
                   onChange={handleFormInput}

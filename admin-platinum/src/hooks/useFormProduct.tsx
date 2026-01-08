@@ -1,5 +1,6 @@
 import { Category } from "@/models/category";
 import { Reference } from "@/models/reference";
+import { Application } from "@/models/application";
 import { useState, useMemo } from "react";
 
 export interface detailsType {
@@ -11,6 +12,7 @@ export interface detailsType {
   description: string;
   category: Pick<Category, "id" | "name"> | null;
   references: string[];
+  imgUrl?: string;
 }
 
 export const stateSkeleton = {
@@ -21,6 +23,7 @@ export const stateSkeleton = {
   description: "",
   category: null,
   references: [],
+  imgUrl: "",
 };
 
 export const useFormState = () => {
@@ -28,6 +31,9 @@ export const useFormState = () => {
   const [attributesState, setAttributesState] = useState<any>({});
   const [referencesState, setReferencesState] = useState({
     references: [] as Reference[],
+  });
+  const [applicationsState, setApplicationsState] = useState({
+    applications: [] as Application[],
   });
 
   const [canContinue, setCanContinue] = useState(false);
@@ -57,6 +63,8 @@ export const useFormState = () => {
     setAttributesState,
     referencesState,
     setReferencesState,
+    applicationsState,
+    setApplicationsState,
     canContinue,
     setCanContinue,
   };

@@ -1,4 +1,3 @@
-import { useAuthContext } from "@/context/auth-context";
 import { Category } from "@/models/category";
 import axiosClient from "@/services/axiosInstance";
 import { useEffect } from "react";
@@ -11,8 +10,7 @@ interface CategoryRespone {
 }
 
 export const useCategories = () => {
-  const { authState } = useAuthContext();
-  const client = axiosClient(authState.authKey);
+  const client = axiosClient();
   const { toast } = useToast();
 
   const [categories, setCategories] = useState<Category[]>([]);
@@ -30,7 +28,7 @@ export const useCategories = () => {
       const data = await client.get("/categories");
       setCategories(data.data);
     } catch (error) {
-      console.error("Error fetching categories:", error);
+      // Error handling
     } finally {
       setLoading(false);
     }
@@ -45,7 +43,7 @@ export const useCategories = () => {
       setCategory(data);
       return data;
     } catch (error) {
-      console.error("Error fetching category by ID:", error);
+      // Error handling
     } finally {
       setLoading(false);
     }
@@ -62,8 +60,7 @@ export const useCategories = () => {
       });
       await getCategories();
     } catch (error: any) {
-      console.log(error);
-      setErrorMsg(error.response.data.error);
+      setErrorMsg(error.response?.data?.error || "Error al eliminar la categoría");
       toast({
         title: "Error al eliminar categoría",
         variant: "destructive",
@@ -84,7 +81,7 @@ export const useCategories = () => {
       };
       setLoading(true);
       const response = await client.post<CategoryRespone>(
-        "/categories/",
+        "/categories",
         category,
         { headers }
       );
@@ -95,7 +92,6 @@ export const useCategories = () => {
       });
       return response.data;
     } catch (error: any) {
-      console.log(error.response.data.error);
       toast({
         title: "Error al crear categoría",
         variant: "destructive",
@@ -108,37 +104,39 @@ export const useCategories = () => {
     }
   };
 
-  //   const updateCategory= async (category: Category) => {
-  //     try {
-  //       const headers = {
-  //         "Content-Type": "application/json",
-  //       };
-  //       setLoading(true);
-  //       const response = await client.patch(
-  //         `/categories/${category.id}`,
-  //         category,
-  //         {
-  //           headers,
-  //         }
-  //       );
-  //       toast({
-  //         title: "Categoría actualizada correctamente.",
-  //         variant: "success",
-  //         description: response.data.message,
-  //       });
-  //     } catch (error: any) {
-  //       console.log(error);
-  //       setErrorMsg(error.response.data.error);
-  //       toast({
-  //         title: "Error al actualizar categoría",
-  //         variant: "destructive",
-  //         description: errorMsg,
-  //       });
-  //     } finally {
-  //       setLoading(false);
-  //       setErrorMsg("");
-  //     }
-  //   };
+  const updateCategory = async (category: Category): Promise<CategoryRespone | null> => {
+    try {
+      const headers = {
+        "Content-Type": "application/json",
+      };
+      setLoading(true);
+      const response = await client.patch<CategoryRespone>(
+        `/categories/${category.id}`,
+        category,
+        {
+          headers,
+        }
+      );
+      toast({
+        title: "Categoría actualizada correctamente.",
+        variant: "success",
+        description: response.data.message || "La categoría se actualizó exitosamente.",
+      });
+      await getCategories(); // Recargar la lista después de actualizar
+      return response.data;
+    } catch (error: any) {
+      setErrorMsg(error.response?.data?.error || "Error al actualizar la categoría");
+      toast({
+        title: "Error al actualizar categoría",
+        variant: "destructive",
+        description: errorMsg,
+      });
+      return null;
+    } finally {
+      setLoading(false);
+      setErrorMsg("");
+    }
+  };
 
   return {
     loading,
@@ -148,5 +146,6 @@ export const useCategories = () => {
     getCategoryById,
     deleteCategory,
     addCategory,
+    updateCategory,
   };
 };

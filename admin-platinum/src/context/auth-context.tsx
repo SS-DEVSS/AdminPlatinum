@@ -1,36 +1,145 @@
-import { ReactNode } from "react";
-import { useState } from "react";
-import { useContext } from "react";
-import { createContext } from "react";
+import { ReactNode, useState, useContext, createContext, useEffect } from "react";
+import { supabase } from "../services/supabase";
+import { Session, User, AuthChangeEvent } from "@supabase/supabase-js";
 
 interface AuthContextTypes {
   isAuthenticated: boolean;
-  authKey: string;
+  session: Session | null;
+  user: User | null;
+  loading: boolean;
 }
 
-const AuthContext = createContext<{
+interface AuthContextValue {
   authState: AuthContextTypes;
-  authenticate: (authKey: string) => void;
-}>({} as any);
+  signIn: (email: string, password: string) => Promise<void>;
+  signOut: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextValue>({
+  authState: {
+    isAuthenticated: false,
+    session: null,
+    user: null,
+    loading: true,
+  },
+  signIn: async () => { },
+  signOut: async () => { },
+});
 
 export const useAuthContext = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [authState, setAuthState] = useState<AuthContextTypes>({
-    isAuthenticated: true,
-    authKey:
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjNiODc2NmZjLTE2ZDUtNGIyYi1hNzdhLTFkM2Q4OGE4MmMxNCIsIm5hbWUiOiJTZWJhc3RpYW4gRmxvcmVzIiwicm9sZSI6IjAxOTQxNjllLWYyODktNDdjZC1iMTA1LWQ0OTk5ZmYwMTJlMSIsInJhbmRvbUhhc2giOiJmY2Q2NDQ0MC01YWIxLTRhZDUtODZlMC1hNTcxZWM5YzE0MGIiLCJpYXQiOjE3Mzc5NDM3NzQsImV4cCI6MTczNzk3Mzc3NH0.hMP8KafA6YwROn0SM1elHStUBuDjW19PaGCdw5NBMGk",
+    isAuthenticated: false,
+    session: null,
+    user: null,
+    loading: true,
   });
 
-  const authenticate = (authKey: string) => {
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }: { data: { session: Session | null } }) => {
+      setAuthState({
+        isAuthenticated: !!session,
+        session,
+        user: session?.user ?? null,
+        loading: false,
+      });
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
+      setAuthState({
+        isAuthenticated: !!session,
+        session,
+        user: session?.user ?? null,
+        loading: false,
+      });
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const signIn = async (email: string, password: string) => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) throw error;
+
+    // Validate that user exists in Users table
+    // The authMiddleware will return 401 if user doesn't exist in Users table
+    const axios = (await import("../services/axiosInstance")).default;
+    const client = axios();
+
+    try {
+      // Use /users endpoint which requires authMiddleware
+      // authMiddleware checks if user exists in Users table - returns 401 if not found
+      const response = await client.get("/users", {
+        validateStatus: (status) => {
+          // Accept 200 (success), 201 (created), 401 (user not found), 403 (no permission)
+          return status === 200 || status === 201 || status === 401 || status === 403;
+        },
+      });
+
+      // If we get 401, it means authMiddleware failed - user doesn't exist in Users table
+      if (response.status === 401) {
+        await supabase.auth.signOut();
+        throw new Error(
+          "Usuario no encontrado en el sistema. Por favor contacte al administrador para crear su cuenta."
+        );
+      }
+
+      // 200/201 means success - user exists
+      // 403 means user exists but lacks permission - that's acceptable, user exists
+      // In both cases, validation passed and we can proceed
+    } catch (validationError: unknown) {
+      // If it's an Error with our message, re-throw it immediately
+      if (validationError instanceof Error) {
+        if (validationError.message.includes("Usuario no encontrado")) {
+          throw validationError;
+        }
+      }
+
+      // Check if it's an axios error with 401 status
+      const axiosError = validationError as {
+        response?: { status?: number; statusText?: string; data?: unknown };
+        message?: string;
+        code?: string;
+      };
+
+      if (axiosError?.response?.status === 401) {
+        await supabase.auth.signOut();
+        throw new Error(
+          "Usuario no encontrado en el sistema. Por favor contacte al administrador para crear su cuenta."
+        );
+      }
+
+      // For network errors or other issues, allow login (backend might be temporarily unavailable)
+      // Only block if we explicitly get 401
+    }
+
     setAuthState({
-      isAuthenticated: true,
-      authKey,
+      isAuthenticated: !!data.session,
+      session: data.session,
+      user: data.user,
+      loading: false,
+    });
+  };
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    setAuthState({
+      isAuthenticated: false,
+      session: null,
+      user: null,
+      loading: false,
     });
   };
 
   return (
-    <AuthContext.Provider value={{ authState, authenticate }}>
+    <AuthContext.Provider value={{ authState, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );

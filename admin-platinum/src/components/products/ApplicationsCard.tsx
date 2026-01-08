@@ -1,0 +1,681 @@
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from "@/components/ui/card";
+import { Product } from "@/models/product";
+import { Application } from "@/models/application";
+import { PlusCircle, X, Pencil, ChevronDown, ChevronUp } from "lucide-react";
+import * as React from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import NoData from "../NoData";
+import { Button } from "../ui/button";
+import EditApplicationDialog from "./EditApplicationDialog";
+import { CategoryAtributes } from "@/models/category";
+import { useCategoryContext } from "@/context/categories-context";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+
+type ApplicationsCardProps = {
+  state: {
+    applications: Application[];
+  };
+  setState: React.Dispatch<React.SetStateAction<{ applications: Application[] }>>;
+  product?: Product | null;
+};
+
+type GroupedApplication = {
+  applications: Application[];
+  origin: string | null;
+  modelo: string | null;
+  submodelo: string | null;
+  añoMin: number | null;
+  añoMax: number | null;
+  litrosMotor: number | string | null;
+  ccMotor: number | string | null;
+  cidMotor: number | string | null;
+  cilindrosMotor: number | string | null;
+  bloqueMotor: string | null;
+  motorDescripcion: string | null;
+  especificaciones: string | null;
+};
+
+const ApplicationsCard = ({ state, setState, product }: ApplicationsCardProps) => {
+  const { categories } = useCategoryContext();
+  const [editingApplication, setEditingApplication] = useState<Application | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  // Always use table view - list view removed
+  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
+
+  // Get category attributes
+  const categoryAttributes = useMemo(() => {
+    const productCategory = (product as any)?.category || product?.idCategory;
+    if (!productCategory) return [];
+    const categoryId = typeof productCategory === 'string' ? productCategory : (productCategory as any).id;
+    const category = categories.find((c) => c.id === categoryId);
+    if (!category?.attributes) return [];
+    
+    if (Array.isArray(category.attributes)) {
+      return category.attributes;
+    }
+    
+    if (typeof category.attributes === 'object' && 'application' in category.attributes) {
+      return (category.attributes as { application: CategoryAtributes[] }).application || [];
+    }
+    
+    return [];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [(product as any)?.category, product?.idCategory, categories]);
+
+
+  const handleAddClick = () => {
+    // Open edit dialog with null application to create a new one
+    setEditingApplication(null);
+    setIsEditDialogOpen(true);
+  };
+
+
+  const handleRemoveFromGroup = (_groupId: number, applicationId: string) => {
+    // Remove application from the group in state, but keep it in the product association
+    // This is a UI-only operation - the application stays linked to the product
+    setState((prevForm: { applications: Application[] }) => ({
+      ...prevForm,
+      applications: prevForm.applications.filter((app: Application) => app.id !== applicationId),
+    }));
+  };
+
+  const toggleRowExpand = (index: number) => {
+    setExpandedRows((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(index)) {
+        newSet.delete(index);
+      } else {
+        newSet.add(index);
+      }
+      return newSet;
+    });
+  };
+
+  const handleEditApplication = (application: Application) => {
+    setEditingApplication(application);
+    setIsEditDialogOpen(true);
+  };
+
+  // Helper function to format applications (same logic as newProduct.tsx)
+  // Using useCallback to avoid dependency issues
+  const formatApplications = useCallback((applications: any[]): Application[] => {
+    return applications.map((app: any) => {
+
+      // Extract key attributes from attributeValues
+      const getAttributeValue = (attrName: string) => {
+        const attr = app.attributeValues?.find((av: any) => 
+          av.attribute?.name === attrName || 
+          av.attribute?.name?.toLowerCase() === attrName.toLowerCase()
+        );
+        if (!attr) return null;
+        
+        // Handle valueDate specially - extract year from date
+        if (attr.valueDate) {
+          const date = new Date(attr.valueDate);
+          if (!isNaN(date.getTime())) {
+            return date.getFullYear().toString();
+          }
+          // If date parsing failed, try to extract year from string if it's an ISO date
+          const dateStr = String(attr.valueDate);
+          const yearMatch = dateStr.match(/^(\d{4})/);
+          if (yearMatch) {
+            return yearMatch[1];
+          }
+        }
+        
+        return attr.valueString || attr.valueNumber || attr.valueBoolean || null;
+      };
+      
+      // Try common attribute names
+      const modelo = getAttributeValue('Modelo');
+      const submodelo = getAttributeValue('Submodelo');
+      const año = getAttributeValue('Año');
+      const litrosMotor = getAttributeValue('Litros_Motor');
+      const ccMotor = getAttributeValue('CC_Motor');
+      const cidMotor = getAttributeValue('CID_Motor');
+      const cilindrosMotor = getAttributeValue('Cilindros_Motor');
+      const bloqueMotor = getAttributeValue('Bloque_Motor');
+      const motor = getAttributeValue('Motor');
+      const tipoMotor = getAttributeValue('Tipo_Motor');
+      const transmision = getAttributeValue('Transmisión') || getAttributeValue('Transmision');
+      
+      // Build display text from available attributes
+      const parts: string[] = [];
+      
+      if (modelo) parts.push(String(modelo));
+      if (submodelo) parts.push(String(submodelo));
+      if (año) {
+        // Ensure año is a string and not a full timestamp
+        let añoStr = String(año);
+        // If it looks like a timestamp, extract just the year
+        if (añoStr.includes('T') || añoStr.includes('-') && añoStr.length > 4) {
+          const yearMatch = añoStr.match(/^(\d{4})/);
+          if (yearMatch) {
+            añoStr = yearMatch[1];
+          }
+        }
+        parts.push(añoStr);
+      }
+      
+      if (motor) {
+        parts.push(String(motor));
+      } else if (tipoMotor) {
+        parts.push(String(tipoMotor));
+      } else if (litrosMotor) {
+        parts.push(`${litrosMotor}L`);
+      } else if (ccMotor) {
+        parts.push(`${ccMotor}CC`);
+      } else if (cidMotor) {
+        parts.push(`${cidMotor}CID`);
+      }
+      
+      if (cilindrosMotor && !motor) {
+        parts.push(`${cilindrosMotor}cil`);
+      }
+      
+      if (bloqueMotor) {
+        parts.push(bloqueMotor);
+      }
+      
+      if (transmision) {
+        parts.push(transmision);
+      }
+      
+      // Always append a short version of the ID
+      const shortId = app.id.substring(app.id.length - 8).toUpperCase();
+      
+      // Build display text
+      let displayText = '';
+      if (parts.length > 0) {
+        displayText = `${parts.join(' - ')} (${shortId})`;
+      } else {
+        displayText = `Aplicación (${shortId})`;
+      }
+      
+      return {
+        id: app.id,
+        sku: app.sku || "",
+        origin: app.origin || null,
+        attributeValues: app.attributeValues || [],
+        displayText: displayText,
+      } as Application;
+    });
+  }, []);
+
+  // Load applications from product when editing (using useEffect to avoid render issues)
+  useEffect(() => {
+    if (!product) {
+      return;
+    }
+    
+    const productApplications = (product as any).applications;
+    
+    if (productApplications && productApplications.length > 0) {
+      // Always format applications to ensure they have proper structure
+      // This ensures the table grouping works correctly from the start
+      const formattedApplications = formatApplications(productApplications);
+      
+      // Always update to ensure applications are formatted correctly
+      // This ensures grouping works correctly even if state already has applications
+      setState({ applications: formattedApplications });
+    } else {
+      // Ensure state is set to empty array if no applications
+      setState({ applications: [] });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product?.id, formatApplications]); // Include formatApplications in deps to ensure it uses the latest version
+
+  const handleEditSuccess = async () => {
+    // Refresh applications from backend if product ID is available
+    if (product?.id) {
+      try {
+        const client = (await import("@/services/axiosInstance")).default();
+        const response = await client.get(`/applications/product/${product.id}`);
+        if (response.data?.applications) {
+          // Format applications before setting state
+          const formattedApplications = formatApplications(response.data.applications);
+          setState({ applications: formattedApplications });
+        }
+      } catch (error) {
+      }
+    }
+  };
+
+  // Helper function to extract attribute value from application
+  const getAttributeValue = (application: Application, attrName: string): any => {
+    const attr = application.attributeValues?.find((av: any) => 
+      av.attribute?.name === attrName || 
+      av.attribute?.name?.toLowerCase() === attrName.toLowerCase()
+    );
+    if (!attr) return null;
+    
+    // Handle valueDate specially - extract year from date
+    if (attr.valueDate) {
+      const date = new Date(attr.valueDate);
+      if (!isNaN(date.getTime())) {
+        return date.getFullYear();
+      }
+    }
+    
+    return attr.valueString || attr.valueNumber || attr.valueBoolean || null;
+  };
+
+  // Helper function to get grouping key (all attributes except Año)
+  const getGroupingKey = (application: Application): string => {
+    const origin = application.origin || "";
+    const modelo = getAttributeValue(application, 'Modelo') || "";
+    const submodelo = getAttributeValue(application, 'Submodelo') || "";
+    const litrosMotor = getAttributeValue(application, 'Litros_Motor') || "";
+    const ccMotor = getAttributeValue(application, 'CC_Motor') || "";
+    const cidMotor = getAttributeValue(application, 'CID_Motor') || "";
+    const cilindrosMotor = getAttributeValue(application, 'Cilindros_Motor') || "";
+    const bloqueMotor = getAttributeValue(application, 'Bloque_Motor') || "";
+    const motor = getAttributeValue(application, 'Motor') || "";
+    const tipoMotor = getAttributeValue(application, 'Tipo_Motor') || "";
+    const transmision = getAttributeValue(application, 'Transmisión') || getAttributeValue(application, 'Transmision') || "";
+    
+    // Create key from all attributes except Año
+    return `${origin}|${modelo}|${submodelo}|${litrosMotor}|${ccMotor}|${cidMotor}|${cilindrosMotor}|${bloqueMotor}|${motor}|${tipoMotor}|${transmision}`;
+  };
+
+  // Helper function to extract year value (single year, not range)
+  const extractYear = (application: Application): number | null => {
+    // First, try to get from attributeValues directly (checking valueDate)
+    const attr = application.attributeValues?.find((av: any) => {
+      const attrName = av.attribute?.name || "";
+      return attrName.toLowerCase().includes("año") || 
+             attrName.toLowerCase().includes("anio") || 
+             attrName.toLowerCase().includes("year");
+    });
+    
+    if (attr) {
+      // Handle valueDate - extract year from date
+      if (attr.valueDate) {
+        const date = new Date(attr.valueDate);
+        if (!isNaN(date.getTime())) {
+          return date.getFullYear();
+        }
+      }
+      
+      // Handle valueString (could be range or single year)
+      if (attr.valueString) {
+        const match = attr.valueString.match(/^(\d{4})\s*[-–]\s*(\d{4})$/);
+        if (match) {
+          return parseInt(match[1], 10); // Return first year only
+        }
+        const singleYear = parseInt(attr.valueString, 10);
+        if (!isNaN(singleYear)) return singleYear;
+      }
+      
+      // Handle valueNumber
+      if (typeof attr.valueNumber === "number") {
+        return attr.valueNumber;
+      }
+    }
+    
+    // Fallback to getAttributeValue helper
+    const añoValue = getAttributeValue(application, 'Año');
+    if (!añoValue) return null;
+    
+    // If it's a range string like "1998-2024", extract the first year
+    if (typeof añoValue === "string") {
+      const match = añoValue.match(/^(\d{4})\s*[-–]\s*(\d{4})$/);
+      if (match) {
+        return parseInt(match[1], 10); // Return first year only
+      }
+      // If it's just a single year string
+      const singleYear = parseInt(añoValue, 10);
+      if (!isNaN(singleYear)) return singleYear;
+    }
+    
+    // If it's a number
+    if (typeof añoValue === "number") {
+      return añoValue;
+    }
+    
+    return null;
+  };
+
+  // Group applications by similarity (all attributes except Año)
+  const groupedApplications = useMemo((): GroupedApplication[] => {
+    if (state.applications.length === 0) {
+      return [];
+    }
+
+    // Group applications by their grouping key
+    const groups = new Map<string, Application[]>();
+    
+    state.applications.forEach((app: Application) => {
+      const key = getGroupingKey(app);
+      if (!groups.has(key)) {
+        groups.set(key, []);
+      }
+      groups.get(key)!.push(app);
+    });
+
+    
+    // Convert groups to GroupedApplication format
+    const grouped = Array.from(groups.entries()).map(([, applications]) => {
+      const firstApp = applications[0];
+      
+      // Extract all years from applications in this group
+      const years = applications
+        .map(app => extractYear(app))
+        .filter((year): year is number => year !== null)
+        .sort((a, b) => a - b);
+
+      const añoMin = years.length > 0 ? years[0] : null;
+      const añoMax = years.length > 0 ? years[years.length - 1] : null;
+
+      // Extract motor description (build from available motor attributes)
+      const motor = getAttributeValue(firstApp, 'Motor');
+      const tipoMotor = getAttributeValue(firstApp, 'Tipo_Motor');
+      const litrosMotor = getAttributeValue(firstApp, 'Litros_Motor');
+      const ccMotor = getAttributeValue(firstApp, 'CC_Motor');
+      const cilindrosMotor = getAttributeValue(firstApp, 'Cilindros_Motor');
+      const bloqueMotor = getAttributeValue(firstApp, 'Bloque_Motor');
+      
+      let motorDescripcion = "";
+      if (motor) {
+        motorDescripcion = String(motor);
+      } else if (tipoMotor) {
+        motorDescripcion = String(tipoMotor);
+      } else {
+        const parts: string[] = [];
+        if (bloqueMotor) parts.push(String(bloqueMotor));
+        if (cilindrosMotor) parts.push(`${cilindrosMotor}cil`);
+        if (litrosMotor) parts.push(`${litrosMotor}L`);
+        else if (ccMotor) parts.push(`${ccMotor}CC`);
+        motorDescripcion = parts.join(" ");
+      }
+
+      // Build especificaciones (Transmisión, etc.)
+      const transmision = getAttributeValue(firstApp, 'Transmisión') || getAttributeValue(firstApp, 'Transmision');
+      const especificacionesParts: string[] = [];
+      // You can add more specifications here as needed
+      if (transmision) especificacionesParts.push(String(transmision));
+      const especificaciones = especificacionesParts.length > 0 ? especificacionesParts.join(" | ") : null;
+
+      return {
+        applications,
+        origin: firstApp.origin,
+        modelo: getAttributeValue(firstApp, 'Modelo'),
+        submodelo: getAttributeValue(firstApp, 'Submodelo'),
+        añoMin,
+        añoMax,
+        litrosMotor: getAttributeValue(firstApp, 'Litros_Motor'),
+        ccMotor: getAttributeValue(firstApp, 'CC_Motor'),
+        cidMotor: getAttributeValue(firstApp, 'CID_Motor'),
+        cilindrosMotor: getAttributeValue(firstApp, 'Cilindros_Motor'),
+        bloqueMotor: getAttributeValue(firstApp, 'Bloque_Motor'),
+        motorDescripcion: motorDescripcion || null,
+        especificaciones,
+      };
+    });
+    
+    return grouped;
+  }, [state.applications]);
+
+  // Helper function to format application display text
+  const getApplicationDisplayText = (application: Application): string => {
+    // If there's a displayText property (from formatted applications), use it
+    if ((application as any).displayText) {
+      return (application as any).displayText;
+    }
+
+    // Build display text from attribute values
+    if (application.attributeValues && application.attributeValues.length > 0) {
+      const parts: string[] = [];
+      application.attributeValues.forEach((attr: any) => {
+        const attrName = attr.attribute?.name || "";
+        const isYearAttribute = attrName.toLowerCase().includes("año") || 
+                               attrName.toLowerCase().includes("anio") || 
+                               attrName.toLowerCase().includes("year");
+        
+        let value: any = null;
+        
+        // For year attributes, prioritize valueDate and extract only the year
+        if (isYearAttribute && attr.valueDate) {
+          const date = new Date(attr.valueDate);
+          if (!isNaN(date.getTime())) {
+            value = date.getFullYear().toString();
+          } else {
+            // If date parsing failed, try to extract year from string
+            const dateStr = String(attr.valueDate);
+            const yearMatch = dateStr.match(/^(\d{4})/);
+            if (yearMatch) {
+              value = yearMatch[1];
+            }
+          }
+        } else if (attr.valueDate) {
+          // For non-year date attributes, extract year as well
+          const date = new Date(attr.valueDate);
+          if (!isNaN(date.getTime())) {
+            value = date.getFullYear().toString();
+          } else {
+            const dateStr = String(attr.valueDate);
+            const yearMatch = dateStr.match(/^(\d{4})/);
+            if (yearMatch) {
+              value = yearMatch[1];
+            } else {
+              value = attr.valueDate;
+            }
+          }
+        } else {
+          value = attr.valueString || attr.valueNumber || attr.valueBoolean;
+        }
+        
+        // If value is a string that looks like a timestamp, extract year
+        if (typeof value === "string" && isYearAttribute) {
+          if (value.includes('T') || (value.includes('-') && value.length > 4)) {
+            const yearMatch = value.match(/^(\d{4})/);
+            if (yearMatch) {
+              value = yearMatch[1];
+            }
+          }
+        }
+        
+        if (value !== null && value !== undefined && attrName) {
+          parts.push(`${attrName}: ${value}`);
+        }
+      });
+      if (parts.length > 0) {
+        return parts.join(", ");
+      }
+    }
+
+    // Fallback to ID
+    const idSuffix = application.id ? application.id.substring(application.id.length - 8).toUpperCase() : 'N/A';
+    return `Aplicación (${idSuffix})`;
+  };
+
+  return (
+    <Card className="w-full flex flex-col mt-5">
+      <CardHeader>
+        <CardTitle>Aplicaciones</CardTitle>
+        <CardDescription>
+          Ingrese las aplicaciones asociadas al producto.
+        </CardDescription>
+        <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
+          <p className="text-sm text-blue-800">
+            <strong>Nota:</strong> Cada aplicación muestra información del vehículo (Modelo, Submodelo, Año, etc.) seguida de un identificador único entre paréntesis. 
+            Este identificador corresponde a los últimos 8 caracteres del ID de la aplicación en la base de datos, lo que permite diferenciar cada aplicación y facilitar su búsqueda o referencia si es necesario.
+            Si aparece "BASE" o "Aplicación", significa que esa aplicación no tiene información adicional de vehículo, pero el identificador único permite diferenciarla de las demás.
+          </p>
+        </div>
+      </CardHeader>
+      <CardContent className="flex-1">
+        {state.applications.length === 0 ? (
+          <NoData>
+            <p className="text-[#94A3B8] font-medium">
+              No hay aplicaciones asociadas
+            </p>
+          </NoData>
+        ) : (
+          // Table view with grouped applications
+          (() => {
+            return (
+              <div className="w-full overflow-x-auto">
+                <Table>
+              <TableHeader>
+                <TableRow className="bg-blue-600 hover:bg-blue-600">
+                  <TableHead className="text-white font-semibold">Origen</TableHead>
+                  <TableHead className="text-white font-semibold">Modelo</TableHead>
+                  <TableHead className="text-white font-semibold">Submodelo</TableHead>
+                  <TableHead className="text-white font-semibold">Año</TableHead>
+                  <TableHead className="text-white font-semibold">Litros Motor</TableHead>
+                  <TableHead className="text-white font-semibold">CC Motor</TableHead>
+                  <TableHead className="text-white font-semibold">CID Motor</TableHead>
+                  <TableHead className="text-white font-semibold">Cilindros Motor</TableHead>
+                  <TableHead className="text-white font-semibold">Bloque Motor</TableHead>
+                  <TableHead className="text-white font-semibold">Motor Descripción</TableHead>
+                  <TableHead className="text-white font-semibold">Especificaciones</TableHead>
+                  <TableHead className="text-white font-semibold">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {groupedApplications.map((group, index) => {
+                  const isExpanded = expandedRows.has(index);
+                  return (
+                    <React.Fragment key={index}>
+                      <TableRow>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {group.applications.length > 1 && (
+                              <button
+                                onClick={() => toggleRowExpand(index)}
+                                className="p-1 hover:bg-gray-100 rounded"
+                                title={isExpanded ? "Colapsar" : "Expandir para ver aplicaciones"}
+                              >
+                                {isExpanded ? (
+                                  <ChevronUp className="h-4 w-4" />
+                                ) : (
+                                  <ChevronDown className="h-4 w-4" />
+                                )}
+                              </button>
+                            )}
+                            <span>{group.origin || "-"}</span>
+                            {group.applications.length > 1 && (
+                              <span className="text-xs text-gray-500">
+                                ({group.applications.length} aplicaciones)
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>{group.modelo || "-"}</TableCell>
+                        <TableCell>{group.submodelo || "-"}</TableCell>
+                        <TableCell>
+                          {group.añoMin && group.añoMax
+                            ? group.añoMin === group.añoMax
+                              ? String(group.añoMin)
+                              : `${group.añoMin}-${group.añoMax}`
+                            : group.añoMin
+                            ? String(group.añoMin)
+                            : "-"}
+                        </TableCell>
+                        <TableCell>{group.litrosMotor ? String(group.litrosMotor) : "-"}</TableCell>
+                        <TableCell>{group.ccMotor ? String(group.ccMotor) : "-"}</TableCell>
+                        <TableCell>{group.cidMotor ? String(group.cidMotor) : "-"}</TableCell>
+                        <TableCell>{group.cilindrosMotor ? String(group.cilindrosMotor) : "-"}</TableCell>
+                        <TableCell>{group.bloqueMotor || "-"}</TableCell>
+                        <TableCell>{group.motorDescripcion || "-"}</TableCell>
+                        <TableCell>{group.especificaciones || "-"}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            {group.applications.length > 0 && (
+                              <Pencil
+                                onClick={() => handleEditApplication(group.applications[0])}
+                                className="cursor-pointer w-4 h-4 hover:text-blue-600 transition-colors"
+                              />
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                      {isExpanded && group.applications.length > 0 && (
+                        <TableRow className="bg-gray-50">
+                          <TableCell colSpan={12} className="p-4">
+                            <div className="space-y-2">
+                              <h4 className="font-semibold text-sm mb-3">
+                                Aplicaciones individuales en este grupo ({group.applications.length}):
+                              </h4>
+                              <div className="flex flex-wrap gap-2">
+                                {group.applications.map((app) => (
+                                  <div
+                                    key={app.id}
+                                    className="bg-white border rounded-lg p-3 flex items-center justify-between gap-3 min-w-[200px]"
+                                  >
+                                    <div className="flex-1">
+                                      <p className="text-sm font-medium">
+                                        {getApplicationDisplayText(app)}
+                                      </p>
+                                      <p className="text-xs text-gray-500 mt-1">
+                                        ID: {app.id.substring(app.id.length - 8).toUpperCase()}
+                                      </p>
+                                    </div>
+                                    <div className="flex gap-2">
+                                    <Pencil
+                                      onClick={() => handleEditApplication(app)}
+                                      className="cursor-pointer w-4 h-4 hover:text-blue-600 transition-colors"
+                                    />
+                                    <X
+                                      onClick={() => handleRemoveFromGroup(index, app.id)}
+                                      className="cursor-pointer w-4 h-4 hover:text-red-600 transition-colors"
+                                    />
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+            );
+          })()
+        )}
+      </CardContent>
+      <CardFooter className="mt-auto border-t p-2 flex justify-end items-center">
+        <Button
+          size="sm"
+          variant="ghost"
+          className="gap-1 hover:bg-slate-100 hover:text-black py-5"
+          onClick={handleAddClick}
+        >
+          <PlusCircle className="h-3.5 w-3.5 mr-2" />
+          Agregar Aplicación
+        </Button>
+      </CardFooter>
+
+      <EditApplicationDialog
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        application={editingApplication}
+        categoryAttributes={categoryAttributes}
+        productId={product?.id}
+        onSuccess={handleEditSuccess}
+      />
+    </Card>
+  );
+};
+
+export default ApplicationsCard;
+

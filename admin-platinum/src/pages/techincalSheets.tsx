@@ -168,8 +168,8 @@ const TechincalSheets = () => {
 
         const payload = {
           ...tsForm,
-          path: fileKey || null,
-          imgUrl: imageKey || null,
+          path: fileKey || undefined,
+          imgUrl: imageKey || undefined,
         };
         await addTechnicalSheet(payload);
       }
@@ -194,7 +194,7 @@ const TechincalSheets = () => {
 
   useEffect(() => {
     if (isEditMode && technicalSheet) {
-      setFile({ name: technicalSheet.url });
+      setFile({ name: technicalSheet.url || "" } as File);
       setIsEditMode(true);
       setIsOpen(true);
     }

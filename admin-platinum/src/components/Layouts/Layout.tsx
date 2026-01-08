@@ -15,13 +15,15 @@ import {
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "../ui/button";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useAuthContext } from "@/context/auth-context";
+import { useImportContext } from "@/context/import-context";
 
 const menuItems = [
   { href: "/productos", icon: Package, text: "Productos" },
@@ -35,6 +37,19 @@ const menuItems = [
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const [menuLarge, setMenuLarge] = useState<boolean>(false);
+  const { signOut } = useAuthContext();
+  const { importState } = useImportContext();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      navigate("/login");
+    } catch (error) {
+      console.error("Error during logout:", error);
+      navigate("/login");
+    }
+  };
 
   const LinkComponent = ({
     href,
@@ -42,14 +57,13 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     text,
   }: {
     href: string;
-    icon: any;
+    icon: React.ComponentType<{ className?: string }>;
     text: string;
   }) => (
     <NavLink
       to={href}
       className={({ isActive }) =>
-        `flex items-center gap-3 rounded-lg px-3 py-3 my-2 first:mt-0 text-muted-foreground transition-all hover:text-primary ${
-          isActive ? "bg-black text-white hover:text-slate-300" : ""
+        `flex items-center gap-3 rounded-lg px-3 py-3 my-2 first:mt-0 text-muted-foreground transition-all hover:text-primary ${isActive ? "bg-black text-white hover:text-slate-300" : ""
         }`
       }
     >
@@ -79,14 +93,13 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     text,
   }: {
     href: string;
-    icon: any;
+    icon: React.ComponentType<{ className?: string }>;
     text: string;
   }) => (
     <NavLink
       to={href}
       className={({ isActive }) =>
-        `flex items-center gap-3 rounded-lg px-3 py-4 text-muted-foreground transition-all hover:text-primary ${
-          isActive ? "bg-black text-white mr-6" : ""
+        `flex items-center gap-3 rounded-lg px-3 py-4 text-muted-foreground transition-all hover:text-primary ${isActive ? "bg-black text-white mr-6" : ""
         }`
       }
     >
@@ -98,15 +111,13 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="flex-col md:flex md:flex-row h-screen w-full">
       <div
-        className={`${
-          !menuLarge ? "w-12" : "w-[280px]"
-        } hidden border-r bg-muted/40 md:block`}
+        className={`${!menuLarge ? "w-12" : "w-[280px]"
+          } hidden border-r bg-muted/40 md:block shrink-0`}
       >
         <div className="flex h-full max-h-screen flex-col gap-2">
           <div
-            className={`${
-              !menuLarge ? "mx-auto px-0" : "px-4 lg:px-6"
-            } flex h-14 items-center border-b lg:h-[60px]`}
+            className={`${!menuLarge ? "mx-auto px-0" : "px-4 lg:px-6"
+              } flex h-14 items-center border-b lg:h-[60px]`}
           >
             <div className="flex items-center gap-2 font-semibold">
               <Package2 className="h-6 w-6" />
@@ -115,9 +126,8 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
           </div>
           <div className="flex-1 overflow-y-auto">
             <nav
-              className={`${
-                !menuLarge ? "items-center flex flex-col" : "px-2 lg:px-4"
-              } text-sm font-medium flex flex-col gap-5 h-full`}
+              className={`${!menuLarge ? "items-center flex flex-col" : "px-2 lg:px-4"
+                } text-sm font-medium flex flex-col gap-5 h-full`}
             >
               <div
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary cursor-pointer"
@@ -142,11 +152,21 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
               </section>
               <div className="my-auto py-4">
                 {!menuLarge && (
-                  <LinkComponent
-                    href={"/login"}
-                    icon={LogOut}
-                    text={"Cerrar Sesión"}
-                  />
+                  <div
+                    className="flex items-center gap-3 rounded-lg px-3 py-3 my-2 text-muted-foreground transition-all hover:text-primary cursor-pointer"
+                    onClick={handleLogout}
+                  >
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <LogOut className="h-4 w-4" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Cerrar Sesión</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                 )}
               </div>
             </nav>
@@ -155,11 +175,13 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             <></>
           ) : (
             <div className="mt-auto p-4">
-              <LinkComponent
-                href={"/login"}
-                icon={LogOut}
-                text={"Cerrar Sesión"}
-              />
+              <div
+                className="flex items-center gap-3 rounded-lg px-3 py-3 my-2 text-muted-foreground transition-all hover:text-primary cursor-pointer"
+                onClick={handleLogout}
+              >
+                <LogOut className="h-4 w-4" />
+                <p>Cerrar Sesión</p>
+              </div>
             </div>
           )}
         </div>
@@ -194,16 +216,18 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
               ))}
             </nav>
             <div className="mt-auto">
-              <LinkComponentMobile
-                href={"/login"}
-                icon={LogOut}
-                text={"Cerrar Sesión"}
-              />
+              <div
+                className="flex items-center gap-3 rounded-lg px-3 py-4 text-muted-foreground transition-all hover:text-primary cursor-pointer"
+                onClick={handleLogout}
+              >
+                <LogOut className="h-4 w-4" />
+                Cerrar Sesión
+              </div>
             </div>
           </SheetContent>
         </Sheet>
       </header>
-      <div className="flex-1 overflow-y-auto mx-4 md:px-0 py-0 md:my-5">
+      <div className={`flex-1 overflow-y-auto px-4 md:px-6 py-0 md:my-5 min-w-0 ${importState.isImporting ? 'pt-20' : ''}`}>
         {children}
       </div>
     </div>

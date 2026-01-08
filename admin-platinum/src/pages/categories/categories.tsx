@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Category } from "@/models/category";
 import { useBrands } from "@/hooks/useBrands";
 import { Brand } from "@/models/brand";
@@ -34,14 +34,19 @@ const Categorias = () => {
   const { categories, getCategories, deleteCategory, getCategoryById } =
     useCategoryContext();
   const { brands } = useBrands();
+  const location = useLocation();
 
   const [searchFilter, setSearchFilter] = useState("");
   const [brandFilter, setBrandFilter] = useState<Brand["id"]>("");
 
+  // Recargar categorías cuando se vuelve a esta página
+  useEffect(() => {
+    getCategories();
+  }, [location.pathname]);
+
   useEffect(() => {
     if (selectedBrand) {
       setBrandFilter(selectedBrand);
-      console.log(brandFilter);
       setSelectedBrand(null);
     }
   }, []);

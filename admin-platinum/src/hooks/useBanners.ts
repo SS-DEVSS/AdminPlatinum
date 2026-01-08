@@ -1,4 +1,3 @@
-import { useAuthContext } from "@/context/auth-context";
 import { Banner } from "@/models/banner";
 import axiosClient from "@/services/axiosInstance";
 import { useEffect } from "react";
@@ -10,8 +9,7 @@ export const useBanners = () => {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  const { authState } = useAuthContext();
-  const client = axiosClient(authState.authKey);
+  const client = axiosClient();
 
   useEffect(() => {
     getAllBanners();

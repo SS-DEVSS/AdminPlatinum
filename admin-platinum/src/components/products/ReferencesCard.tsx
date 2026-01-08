@@ -9,10 +9,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Product } from "@/models/product";
 import { Reference } from "@/models/reference";
-import { PlusCircle, X } from "lucide-react";
-import { useState } from "react";
+import { PlusCircle, X, Pencil } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
 import NoData from "../NoData";
 import { Button } from "../ui/button";
+import EditReferenceDialog from "./EditReferenceDialog";
+import { CategoryAtributes } from "@/models/category";
+import { useCategoryContext } from "@/context/categories-context";
 
 type ReferencesCardProps = {
   state: {
@@ -23,16 +26,57 @@ type ReferencesCardProps = {
 };
 
 const ReferencesCard = ({ state, setState, product }: ReferencesCardProps) => {
+  const { categories } = useCategoryContext();
   const [showInput, setShowInput] = useState(false);
   const [referenceNumber, setReferenceNumber] = useState<string | null>(null);
   const [referenceBrand, setReferenceBrand] = useState<string>("");
   const [referenceDescription, setReferenceDescription] = useState<string>("");
+  const [editingReference, setEditingReference] = useState<Reference | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
-  if (product) {
-    setState({
-      references: product.references,
-    });
-  }
+  // Get category attributes
+  const categoryAttributes = useMemo(() => {
+    if (!product?.idCategory) return [];
+    const categoryId = product.idCategory;
+    const category = categories.find((c) => c.id === categoryId);
+    if (!category?.attributes) return [];
+
+    if (Array.isArray(category.attributes)) {
+      return category.attributes;
+    }
+
+    if (typeof category.attributes === 'object' && 'reference' in category.attributes) {
+      return (category.attributes as { reference: CategoryAtributes[] }).reference || [];
+    }
+
+    return [];
+  }, [product?.idCategory, categories]);
+
+  // Track the product ID to only load references once per product
+  const [loadedProductId, setLoadedProductId] = useState<string | null>(null);
+
+  // Load references from product when editing (only once per product)
+  useEffect(() => {
+    // Only load references if:
+    // 1. Product exists and has references
+    // 2. We haven't loaded references for this product yet (different product ID)
+    // 3. State is currently empty (to avoid overwriting user changes)
+    if (product && product.id && product.references && product.id !== loadedProductId && state.references.length === 0) {
+      setState({
+        references: product.references,
+      });
+      setLoadedProductId(product.id);
+    }
+    // Reset the loaded ID if product changes to a different one
+    if (product && product.id && product.id !== loadedProductId && !product.references) {
+      // Product changed but no references, reset to allow loading when references become available
+      setLoadedProductId(null);
+    }
+    // If product is null/undefined, reset the loaded ID
+    if (!product || !product.id) {
+      setLoadedProductId(null);
+    }
+  }, [product?.id]); // Only depend on product.id to avoid re-running when product object changes
 
   const handleAddClick = () => {
     setShowInput((prevShowInput) => !prevShowInput);
@@ -67,6 +111,26 @@ const ReferencesCard = ({ state, setState, product }: ReferencesCardProps) => {
     }));
   };
 
+  const handleEditReference = (reference: Reference) => {
+    setEditingReference(reference);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleEditSuccess = async () => {
+    // Refresh references from backend if product ID is available
+    if (product?.id) {
+      try {
+        const client = (await import("@/services/axiosInstance")).default();
+        const response = await client.get(`/references/product/${product.id}`);
+        if (response.data?.references) {
+          setState({ references: response.data.references });
+        }
+      } catch (error) {
+        console.error("Error refreshing references:", error);
+      }
+    }
+  };
+
   return (
     <Card className="w-full flex flex-col mt-5">
       <CardHeader>
@@ -89,14 +153,20 @@ const ReferencesCard = ({ state, setState, product }: ReferencesCardProps) => {
                 key={reference.id}
                 className="bg-black rounded-full text-white p-2 mb-2 flex gap-3 px-6 items-center"
               >
-                <span>
+                <span className="flex-1">
                   {reference.referenceBrand && <span className="font-bold mr-1">{reference.referenceBrand}:</span>}
                   {reference.referenceNumber}
                 </span>
-                <X
-                  onClick={() => handleRemoveReference(reference.id)}
-                  className="cursor-pointer w-4 h-4"
-                />
+                <div className="flex gap-2 items-center">
+                  <Pencil
+                    onClick={() => handleEditReference(reference)}
+                    className="cursor-pointer w-4 h-4 hover:text-blue-300 transition-colors"
+                  />
+                  <X
+                    onClick={() => handleRemoveReference(reference.id)}
+                    className="cursor-pointer w-4 h-4 hover:text-red-300 transition-colors"
+                  />
+                </div>
               </div>
             ))}
           </section>
@@ -147,6 +217,14 @@ const ReferencesCard = ({ state, setState, product }: ReferencesCardProps) => {
           Agregar número de Referencia
         </Button>
       </CardFooter>
+
+      <EditReferenceDialog
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        reference={editingReference}
+        categoryAttributes={categoryAttributes}
+        onSuccess={handleEditSuccess}
+      />
     </Card>
   );
 };

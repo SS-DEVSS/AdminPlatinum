@@ -19,8 +19,15 @@ export type CategoryResponse = {
   attributes?: {
     product: CategoryAtributes[];
     variant: CategoryAtributes[];
+    reference?: CategoryAtributes[];
+    application?: CategoryAtributes[];
   };
-  products?: [];
+  products?: Array<{
+    id: string;
+    name: string;
+    type: string;
+    description: string;
+  }>;
 };
 
 export enum CategoryAttributesTypes {
@@ -35,9 +42,12 @@ export const typesArray = Object.values(CategoryAttributesTypes);
 export type CategoryAtributes = {
   id?: string;
   name: string;
+  csv_name?: string;
+  display_name?: string;
   required: boolean;
   type: CategoryAttributesTypes;
   order: number;
-  scope: "PRODUCT" | "VARIANT";
+  scope: "PRODUCT" | "VARIANT" | "REFERENCE" | "APPLICATION";
   id_category?: string;
+  visibleInCatalog?: boolean;
 };

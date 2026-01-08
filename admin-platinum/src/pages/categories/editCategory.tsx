@@ -3,8 +3,8 @@ import { useCategoryContext } from "@/context/categories-context";
 import CategoryCU from "@/modules/categories/CatgegoryCU";
 
 const EditCategory = () => {
-  const { category } = useCategoryContext();
-  return <Layout>{<CategoryCU category={category} />}</Layout>;
+  const { category, updateCategory } = useCategoryContext();
+  return <Layout><CategoryCU category={category} updateCategory={updateCategory} /></Layout>;
 };
 
 export default EditCategory;

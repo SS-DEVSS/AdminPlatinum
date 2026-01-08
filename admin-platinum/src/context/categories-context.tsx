@@ -9,7 +9,6 @@ import {
   useEffect,
   useState,
 } from "react";
-import { useAuthContext } from "./auth-context";
 
 interface CategoryRespone {
   id: string;
@@ -27,6 +26,7 @@ interface ContextCategoryTypes {
   addCategory: (
     category: Omit<Category, "id">
   ) => Promise<CategoryRespone | null>;
+  updateCategory: (category: Category) => Promise<CategoryRespone | null>;
   deleteCategory: (id: Category["id"]) => void;
 }
 
@@ -39,8 +39,7 @@ export const CategoryContextProvider = ({
 }: {
   children: ReactNode;
 }) => {
-  const { authState } = useAuthContext();
-  const client = axiosClient(authState.authKey);
+  const client = axiosClient();
   const { toast } = useToast();
 
   const [selectedCategory, setSelectedCategory] = useState<
@@ -58,10 +57,15 @@ export const CategoryContextProvider = ({
   const getCategories = async () => {
     try {
       setLoading(true);
-      const data = await client.get("/categories");
-      setCategories(data.data);
-    } catch (error) {
-      console.error("Error fetching categories:", error);
+      const response = await client.get("/categories");
+      if (Array.isArray(response.data)) {
+        setCategories(response.data);
+      } else {
+        setCategories([]);
+      }
+    } catch (error: any) {
+      setErrorMsg(error.response?.data?.error || "Error al cargar categorías");
+      setCategories([]);
     } finally {
       setLoading(false);
     }
@@ -73,11 +77,9 @@ export const CategoryContextProvider = ({
       const { data } = await client.get(
         `/categories/${id}?attributes=true&products=true`
       );
-      console.log(data);
       setCategory(data);
       return data;
     } catch (error) {
-      console.error("Error fetching category by ID:", error);
     } finally {
       setLoading(false);
     }
@@ -94,7 +96,6 @@ export const CategoryContextProvider = ({
       });
       await getCategories();
     } catch (error: any) {
-      console.log(error);
       setErrorMsg(error.response.data.error);
       toast({
         title: "Error al eliminar categoría",
@@ -116,7 +117,7 @@ export const CategoryContextProvider = ({
       };
       setLoading(true);
       const response = await client.post<CategoryRespone>(
-        "/categories/",
+        "/categories",
         category,
         { headers }
       );
@@ -128,11 +129,44 @@ export const CategoryContextProvider = ({
       await getCategories();
       return response.data;
     } catch (error: any) {
-      console.log(error.response.data.error);
       toast({
         title: "Error al crear categoría",
         variant: "destructive",
         description: error.response.data.error,
+      });
+      return null;
+    } finally {
+      setLoading(false);
+      setErrorMsg("");
+    }
+  };
+
+  const updateCategory = async (category: Category): Promise<CategoryRespone | null> => {
+    try {
+      const headers = {
+        "Content-Type": "application/json",
+      };
+      setLoading(true);
+      const response = await client.patch<CategoryRespone>(
+        `/categories/${category.id}`,
+        category,
+        {
+          headers,
+        }
+      );
+      toast({
+        title: "Categoría actualizada correctamente.",
+        variant: "success",
+        description: response.data.message || "La categoría se actualizó exitosamente.",
+      });
+      await getCategories(); // Recargar la lista después de actualizar
+      return response.data;
+    } catch (error: any) {
+      setErrorMsg(error.response?.data?.error || "Error al actualizar la categoría");
+      toast({
+        title: "Error al actualizar categoría",
+        variant: "destructive",
+        description: errorMsg,
       });
       return null;
     } finally {
@@ -152,6 +186,7 @@ export const CategoryContextProvider = ({
         getCategoryById,
         getCategories,
         addCategory,
+        updateCategory,
         deleteCategory,
       }}
     >
