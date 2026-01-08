@@ -16,14 +16,20 @@ const MyDropzone = ({ file, fileSetter, type, className, currentImageUrl, onImag
 
   // Generar y limpiar URL de previsualización cuando cambia el archivo
   useEffect(() => {
-    if (file && file.name && type === "image") {
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
-      
-      // Limpiar URL anterior cuando cambie el archivo o se desmonte
-      return () => {
-        URL.revokeObjectURL(url);
-      };
+    // Verificar que file sea realmente un File object válido
+    if (file && file instanceof File && file.name && type === "image") {
+      try {
+        const url = URL.createObjectURL(file);
+        setPreviewUrl(url);
+        
+        // Limpiar URL anterior cuando cambie el archivo o se desmonte
+        return () => {
+          URL.revokeObjectURL(url);
+        };
+      } catch (error) {
+        console.error("Error creating object URL:", error);
+        setPreviewUrl(null);
+      }
     } else {
       setPreviewUrl(null);
     }

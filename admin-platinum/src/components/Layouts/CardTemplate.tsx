@@ -96,6 +96,10 @@ const CardTemplate = ({
   const getImageUrl = () => {
     if (brand) {
       if (brand.logoImgUrl) {
+        // Si ya es una URL completa, usarla directamente
+        if (brand.logoImgUrl.startsWith('http://') || brand.logoImgUrl.startsWith('https://')) {
+          return brand.logoImgUrl;
+        }
         return `${import.meta.env.VITE_AWS_S3_BUCKET_PUBLIC_URL}${cleanFilePath(
           brand.logoImgUrl,
           76
@@ -103,6 +107,10 @@ const CardTemplate = ({
       }
     } else if (category) {
       if (category.imgUrl) {
+        // Si ya es una URL completa, usarla directamente
+        if (category.imgUrl.startsWith('http://') || category.imgUrl.startsWith('https://')) {
+          return category.imgUrl;
+        }
         return `${import.meta.env.VITE_AWS_S3_BUCKET_PUBLIC_URL}${cleanFilePath(
           category.imgUrl,
           76
@@ -190,8 +198,8 @@ const CardTemplate = ({
                       <DropdownMenuItem
                         onClick={() => handleEditCategory(category?.id)}
                       >
-                        <EyeIcon className="mr-2 h-4 w-4" />
-                        <span>Ver Categoría</span>
+                        <Pencil className="mr-2 h-4 w-4" />
+                        <span>Editar Categoría</span>
                       </DropdownMenuItem>
                     </Link>
                     <DropdownMenuItem

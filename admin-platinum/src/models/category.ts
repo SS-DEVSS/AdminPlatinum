@@ -42,6 +42,8 @@ export const typesArray = Object.values(CategoryAttributesTypes);
 export type CategoryAtributes = {
   id?: string;
   name: string;
+  csv_name?: string;
+  display_name?: string;
   required: boolean;
   type: CategoryAttributesTypes;
   order: number;

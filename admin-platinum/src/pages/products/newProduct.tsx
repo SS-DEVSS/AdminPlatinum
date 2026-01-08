@@ -11,7 +11,6 @@ import { ChevronLeft } from "lucide-react";
 import { useProducts } from "@/hooks/useProducts";
 import { useCategoryContext } from "@/context/categories-context";
 import { useToast } from "@/hooks/use-toast";
-import axiosClient from "@/services/axiosInstance";
 
 const NewProduct = () => {
   const { id } = useParams();
@@ -21,10 +20,6 @@ const NewProduct = () => {
   const { categories } = useCategoryContext();
   const { toast } = useToast();
   const [currentProduct, setCurrentProduct] = useState<any>(null);
-  // Temporarily disabled - notes and documents functionality
-  // const [notesState, setNotesState] = useState<any[]>([]);
-  // const [documentsState, setDocumentsState] = useState<any[]>([]);
-  // const [currentVariantId, setCurrentVariantId] = useState<string | null>(null);
 
   const {
     detailsState,
@@ -101,35 +96,12 @@ const NewProduct = () => {
             setReferencesState({ references: product.references });
           }
 
-          // 4. Populate Notes and Documents from variant - TEMPORARILY DISABLED
-          // For SINGLE products, get the first variant
-          // if (product.variants && product.variants.length > 0) {
-          //   const variant = product.variants[0];
-          //   setCurrentVariantId(variant.id);
-          //   
-          //   // Load notes from variant
-          //   if (variant.notes && Array.isArray(variant.notes)) {
-          //     setNotesState(variant.notes);
-          //   }
-          //   
-          //   // Load documents (technicalSheets) from variant
-          //   if (variant.techSheets && Array.isArray(variant.techSheets)) {
-          //     // Map technicalSheets to documents format
-          //     const documents = variant.techSheets.map((ts: any) => ({
-          //       id: ts.id,
-          //       title: ts.title || "",
-          //       document_url: ts.path || ts.url || "",
-          //     }));
-          //     setDocumentsState(documents);
-          //   }
-          // }
-
           // 4. Populate Applications
           // Convert backend applications to frontend format
           // Backend applications have: id, sku, origin, attributeValues
           // Frontend expects: id, referenceBrand, referenceNumber, type, description
           if (product.applications && Array.isArray(product.applications)) {
-            const formattedApplications = product.applications.map((app: any, index: number) => {
+            const formattedApplications = product.applications.map((app: any) => {
               // Extract key attributes from attributeValues
               // Applications typically have: Modelo, Submodelo, Año, Litros_Motor, etc.
               const getAttributeValue = (attrName: string) => {
@@ -301,7 +273,6 @@ const NewProduct = () => {
             // In edit mode, only include attributes that already exist (have idAttributeValue)
             // New attributes would need to be created separately, which is not supported by the update endpoint
             if (isEditMode && !idAttributeValue) {
-              console.warn(`[NewProduct] Skipping attribute ${attr.name} - it doesn't exist yet and cannot be created via update`);
               return; // Skip this attribute
             }
 
@@ -335,7 +306,6 @@ const NewProduct = () => {
             // In edit mode, idAttributeValue is required
             if (isEditMode) {
               if (!idAttributeValue) {
-                console.error(`[NewProduct] Missing idAttributeValue for attribute ${attr.name} in edit mode`);
                 return; // Skip this attribute
               }
               attributeValue.idAttributeValue = idAttributeValue;
@@ -346,9 +316,9 @@ const NewProduct = () => {
         });
       }
 
-      // Format references
-      const referenceIds = referencesState.references.map(ref => ref.id);
-
+      // Format references - compare with existing to only send changes
+      const currentReferenceIds = referencesState.references.map(ref => ref.id).filter((id): id is string => !!id);
+      
       if (isEditMode && id) {
         // Update product - ProductUpdateRequest format
         // Always include name and description (they should always have values)
@@ -356,27 +326,36 @@ const NewProduct = () => {
           name: detailsState.name || "",
           description: detailsState.description || null,
         };
-        
-        // Include variant with notes and documents if we have a variant ID - TEMPORARILY DISABLED
-        // if (currentVariantId && (notesState.length > 0 || documentsState.length > 0)) {
-        //   const variant: any = {
-        //     id: currentVariantId,
-        //     name: detailsState.name || "",
-        //     notes: notesState.map((note: any) => typeof note === 'string' ? note : note.note).filter(Boolean),
-        //     technicalSheets: documentsState.map((doc: any) => ({
-        //       title: doc.title || "",
-        //       path: doc.document_url || doc.path || "",
-        //       description: doc.description || null,
-        //     })),
-        //     images: [],
-        //     attributes: [],
-        //   };
-        //   productPayload.variants = [variant];
-        // }
 
-        // Include references if there are any
-        if (referenceIds.length > 0) {
-          productPayload.references = referenceIds;
+        // Compare references with existing product to only send changes
+        if (existingProduct && existingProduct.references) {
+          const existingReferenceIds = existingProduct.references.map((ref: any) => ref.id).filter((id: any): id is string => !!id);
+          
+          // Find references to add (in current but not in existing) - use IDs for new references
+          const referencesToAdd = currentReferenceIds.filter((id: string) => !existingReferenceIds.includes(id));
+          
+          // Find references to remove (in existing but not in current) - use referenceNumbers for removal
+          const referencesToRemoveIds = existingReferenceIds.filter((id: string) => !currentReferenceIds.includes(id));
+          // Map the IDs to referenceNumbers for the backend
+          const referencesToRemove = existingProduct.references
+            .filter((ref: any) => referencesToRemoveIds.includes(ref.id))
+            .map((ref: any) => ref.referenceNumber)
+            .filter((num: any): num is string => !!num);
+          
+          // Only include references if there are new ones to add (use IDs)
+          if (referencesToAdd.length > 0) {
+            productPayload.references = referencesToAdd;
+          }
+          
+          // Include removeReferences if there are any to remove (use referenceNumbers)
+          if (referencesToRemove.length > 0) {
+            productPayload.removeReferences = referencesToRemove;
+          }
+        } else {
+          // If no existing product or no existing references, send all current references (use IDs)
+          if (currentReferenceIds.length > 0) {
+            productPayload.references = currentReferenceIds;
+          }
         }
 
         // Include attributes if there are any
@@ -398,33 +377,6 @@ const NewProduct = () => {
         }
 
         await updateProduct(id, productPayload);
-        
-        // Update variant with notes and documents if we have a variant ID - TEMPORARILY DISABLED
-        // if (currentVariantId && (notesState.length > 0 || documentsState.length > 0)) {
-        //   const client = axiosClient();
-        //   const variantPayload: any = {
-        //     notes: notesState.map((note: any) => typeof note === 'string' ? note : note.note).filter(Boolean),
-        //     technicalSheets: documentsState.map((doc: any) => ({
-        //       title: doc.title || "",
-        //       path: doc.document_url || doc.path || "",
-        //       description: doc.description || null,
-        //     })),
-        //     attributes: [],
-        //   };
-        //   
-        //   try {
-        //     await client.patch(`/variants/${currentVariantId}`, variantPayload);
-        //     console.log("[NewProduct] Variant updated with notes and documents");
-        //   } catch (error: any) {
-        //     console.error("[NewProduct] Error updating variant:", error);
-        //     // Don't fail the whole operation if variant update fails
-        //     toast({
-        //       title: "Advertencia",
-        //       variant: "default",
-        //       description: "El producto se actualizó, pero hubo un problema al actualizar las notas y documentos",
-        //     });
-        //   }
-        // }
         
         toast({
           title: "Producto actualizado",
@@ -454,7 +406,7 @@ const NewProduct = () => {
           description: detailsState.description || null,
           type: detailsState.type || "SINGLE",
           idCategory: categoryId,
-          references: referenceIds,
+          references: currentReferenceIds,
           attributes: formattedAttributes,
           variants: variants,
         };
@@ -470,7 +422,6 @@ const NewProduct = () => {
       // Navigate back to products list
       navigate("/productos");
     } catch (error: any) {
-      console.error("Error saving product:", error);
       toast({
         title: "Error",
         variant: "destructive",
@@ -512,9 +463,6 @@ const NewProduct = () => {
         <AdditionalInfo 
           setCanContinue={setCanContinue}
           product={isEditMode ? currentProduct : null}
-          // Temporarily disabled - notes and documents functionality
-          // onNotesChange={setNotesState}
-          // onDocumentsChange={setDocumentsState}
         />
         <section className="flex justify-end gap-3 mt-4">
           <Link to="/productos">

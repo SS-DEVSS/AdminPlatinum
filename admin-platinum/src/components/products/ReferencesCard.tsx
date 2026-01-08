@@ -36,8 +36,8 @@ const ReferencesCard = ({ state, setState, product }: ReferencesCardProps) => {
 
   // Get category attributes
   const categoryAttributes = useMemo(() => {
-    if (!product?.category) return [];
-    const categoryId = typeof product.category === 'string' ? product.category : product.category.id;
+    if (!product?.idCategory) return [];
+    const categoryId = product.idCategory;
     const category = categories.find((c) => c.id === categoryId);
     if (!category?.attributes) return [];
     
@@ -50,16 +50,33 @@ const ReferencesCard = ({ state, setState, product }: ReferencesCardProps) => {
     }
     
     return [];
-  }, [product?.category, categories]);
+  }, [product?.idCategory, categories]);
 
-  // Load references from product when editing (using useEffect to avoid render issues)
+  // Track the product ID to only load references once per product
+  const [loadedProductId, setLoadedProductId] = useState<string | null>(null);
+  
+  // Load references from product when editing (only once per product)
   useEffect(() => {
-    if (product && product.references) {
+    // Only load references if:
+    // 1. Product exists and has references
+    // 2. We haven't loaded references for this product yet (different product ID)
+    // 3. State is currently empty (to avoid overwriting user changes)
+    if (product && product.id && product.references && product.id !== loadedProductId && state.references.length === 0) {
       setState({
         references: product.references,
       });
+      setLoadedProductId(product.id);
     }
-  }, [product, setState]);
+    // Reset the loaded ID if product changes to a different one
+    if (product && product.id && product.id !== loadedProductId && !product.references) {
+      // Product changed but no references, reset to allow loading when references become available
+      setLoadedProductId(null);
+    }
+    // If product is null/undefined, reset the loaded ID
+    if (!product || !product.id) {
+      setLoadedProductId(null);
+    }
+  }, [product?.id]); // Only depend on product.id to avoid re-running when product object changes
 
   const handleAddClick = () => {
     setShowInput((prevShowInput) => !prevShowInput);
@@ -144,12 +161,10 @@ const ReferencesCard = ({ state, setState, product }: ReferencesCardProps) => {
                   <Pencil
                     onClick={() => handleEditReference(reference)}
                     className="cursor-pointer w-4 h-4 hover:text-blue-300 transition-colors"
-                    title="Editar referencia"
                   />
                   <X
                     onClick={() => handleRemoveReference(reference.id)}
                     className="cursor-pointer w-4 h-4 hover:text-red-300 transition-colors"
-                    title="Eliminar referencia"
                   />
                 </div>
               </div>

@@ -41,12 +41,17 @@ const axiosClient = (token: string | null = null): AxiosInstance => {
     async (error: AxiosError) => {
       try {
         const { response } = error;
+        // Solo cerrar sesión si es realmente un error de autenticación (401)
         if (response?.status === 401) {
-          await supabase.auth.signOut();
-          window.location.href = "/login";
+          const errorData = response?.data as any;
+          // No cerrar si es un error de validación que viene como 401
+          if (!errorData?.error?.includes('validation') && !errorData?.error?.includes('Invalid')) {
+            await supabase.auth.signOut();
+            window.location.href = "/login";
+          }
         }
       } catch (e) {
-        console.error(e);
+        // Silently handle interceptor errors
       }
       throw error;
     }
