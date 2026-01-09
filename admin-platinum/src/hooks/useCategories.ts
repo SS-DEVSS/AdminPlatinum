@@ -15,7 +15,7 @@ export const useCategories = () => {
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [category, setCategory] = useState({});
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true); // Start with true to show loader initially
   const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {

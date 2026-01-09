@@ -68,7 +68,14 @@ const Banners = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
-            {banners.length && banners.length !== 0 ? (
+            {loading ? (
+              <div className="flex justify-center items-center py-12">
+                <div className="flex flex-col items-center gap-2">
+                  <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                  <p className="text-sm text-muted-foreground">Cargando...</p>
+                </div>
+              </div>
+            ) : banners.length && banners.length !== 0 ? (
               banners.map((banner: Banner) => (
                 <Card
                   key={banner.id}

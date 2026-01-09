@@ -31,7 +31,7 @@ import MyDropzone from "@/components/Dropzone";
 import { useS3FileManager } from "@/hooks/useS3FileManager";
 
 const Marcas = () => {
-  const { brands, brand, addBrand, updateBrand, getBrands, getBrandById } =
+  const { brands, brand, loading, addBrand, updateBrand, getBrands, getBrandById } =
     useBrands();
   const { modalState, closeModal, openModal } = useBrandContext();
   const { uploadFile } = useS3FileManager();
@@ -264,7 +264,14 @@ const Marcas = () => {
               </Dialog>
             </div>
           </CardHeader>
-          {brands.length === 0 || filterBrands.length === 0 ? (
+          {loading ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="flex flex-col items-center gap-2">
+                <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                <p className="text-sm text-muted-foreground">Cargando...</p>
+              </div>
+            </div>
+          ) : brands.length === 0 || filterBrands.length === 0 ? (
             <div className="mt-4">
               <NoData>
                 <AlertTriangle className="text-[#4E5154]" />

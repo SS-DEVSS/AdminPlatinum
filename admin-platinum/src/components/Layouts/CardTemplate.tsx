@@ -1,10 +1,7 @@
 import {
-  Box,
   ExternalLink,
   MoreHorizontal,
-  Pencil,
   PlusCircle,
-  Trash,
 } from "lucide-react";
 import { Badge } from "../ui/badge";
 import { Card, CardContent, CardDescription, CardTitle } from "../ui/card";
@@ -189,16 +186,11 @@ const CardTemplate = ({
                 <DropdownMenuSeparator />
                 {pathname === "/categorias" && (
                   <DropdownMenuGroup>
-                    <DropdownMenuItem>
-                      <Box className="mr-2 h-4 w-4" />
-                      <span>Consultar Productos</span>
-                    </DropdownMenuItem>
                     <Link to="/categorias/editar">
                       <DropdownMenuItem
                         onClick={() => handleEditCategory(category?.id)}
                       >
-                        <Pencil className="mr-2 h-4 w-4" />
-                        <span>Editar Categoría</span>
+                        Editar Categoría
                       </DropdownMenuItem>
                     </Link>
                     <DropdownMenuItem
@@ -218,16 +210,14 @@ const CardTemplate = ({
                         });
                       }}
                     >
-                      <Trash className="mr-2 h-4 w-4" />
-                      <span>Eliminar</span>
+                      Eliminar
                     </DropdownMenuItem>
                   </DropdownMenuGroup>
                 )}
                 {pathname === "/marcas" && (
                   <DropdownMenuGroup>
                     <DropdownMenuItem onClick={handleEditBrand}>
-                      <Pencil className="mr-2 h-4 w-4" />
-                      <span>Editar Marca</span>
+                      Editar Marca
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => {
@@ -247,8 +237,7 @@ const CardTemplate = ({
                         });
                       }}
                     >
-                      <Trash className="mr-2 h-4 w-4" />
-                      <span>Eliminar</span>
+                      Eliminar
                     </DropdownMenuItem>
                   </DropdownMenuGroup>
                 )}

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import {
-  ArrowLeftFromLine,
-  ArrowRightFromLine,
+  ChevronLeft,
+  ChevronRight,
   LayoutGrid,
   Menu,
   Package,
@@ -12,6 +12,8 @@ import {
   Newspaper,
   Megaphone,
   Dock,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "../ui/button";
@@ -112,7 +114,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     <div className="flex-col md:flex md:flex-row h-screen w-full">
       <div
         className={`${!menuLarge ? "w-12" : "w-[280px]"
-          } hidden border-r bg-muted/40 md:block shrink-0`}
+          } hidden border-r bg-muted/40 md:block shrink-0 relative z-[9999]`}
       >
         <div className="flex h-full max-h-screen flex-col gap-2">
           <div
@@ -129,17 +131,26 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
               className={`${!menuLarge ? "items-center flex flex-col" : "px-2 lg:px-4"
                 } text-sm font-medium flex flex-col gap-5 h-full`}
             >
-              <div
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary cursor-pointer"
-                onClick={() => setMenuLarge(!menuLarge)}
-              >
-                {menuLarge ? (
-                  <ArrowLeftFromLine className="h-4 w-4" />
-                ) : (
-                  <ArrowRightFromLine className="h-4 w-4" />
-                )}
-                {menuLarge && <p>Cerrar Menu</p>}
-              </div>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div
+                      className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary cursor-pointer hover:bg-accent"
+                      onClick={() => setMenuLarge(!menuLarge)}
+                    >
+                      {menuLarge ? (
+                        <PanelLeftClose className="h-4 w-4" />
+                      ) : (
+                        <PanelLeftOpen className="h-4 w-4" />
+                      )}
+                      {menuLarge && <p>Colapsar Menú</p>}
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{menuLarge ? "Colapsar menú lateral" : "Expandir menú lateral"}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               <section className="h-full">
                 {menuItems.map((item) => (
                   <LinkComponent
@@ -152,21 +163,21 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
               </section>
               <div className="my-auto py-4">
                 {!menuLarge && (
-                  <div
-                    className="flex items-center gap-3 rounded-lg px-3 py-3 my-2 text-muted-foreground transition-all hover:text-primary cursor-pointer"
-                    onClick={handleLogout}
-                  >
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div
+                          className="flex items-center gap-3 rounded-lg px-3 py-3 my-2 text-muted-foreground transition-all hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950 cursor-pointer"
+                          onClick={handleLogout}
+                        >
                           <LogOut className="h-4 w-4" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Cerrar Sesión</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Cerrar Sesión</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 )}
               </div>
             </nav>
@@ -176,7 +187,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
           ) : (
             <div className="mt-auto p-4">
               <div
-                className="flex items-center gap-3 rounded-lg px-3 py-3 my-2 text-muted-foreground transition-all hover:text-primary cursor-pointer"
+                className="flex items-center gap-3 rounded-lg px-3 py-3 my-2 text-muted-foreground transition-all hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950 cursor-pointer"
                 onClick={handleLogout}
               >
                 <LogOut className="h-4 w-4" />

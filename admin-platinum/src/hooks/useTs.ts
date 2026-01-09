@@ -11,7 +11,7 @@ export const useTs = () => {
   const [technicalSheet, setTechnicalSheet] = useState<TechnicalSheet | null>(
     {} as TechnicalSheet
   );
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true); // Start with true to show loader initially
   const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {

@@ -20,7 +20,7 @@ import NoData from "@/components/NoData";
 import { useMemo, useState } from "react";
 
 const News = () => {
-  const { blogPosts, deleteBlogPost } = newsContext();
+  const { blogPosts, loading, deleteBlogPost } = newsContext();
 
   const [searchFilter, setSearchFilter] = useState("");
 
@@ -68,7 +68,14 @@ const News = () => {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          {filteredBlogPosts.length === 0 ? (
+          {loading ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="flex flex-col items-center gap-2">
+                <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                <p className="text-sm text-muted-foreground">Cargando...</p>
+              </div>
+            </div>
+          ) : filteredBlogPosts.length === 0 ? (
             <div className="mt-4">
               <NoData>
                 <AlertTriangle className="text-[#4E5154]" />

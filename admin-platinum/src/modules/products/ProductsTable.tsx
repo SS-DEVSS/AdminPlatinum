@@ -70,7 +70,7 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
 
   let { attributes } = category || {};
   const { openModal } = useDeleteModal();
-  const { products, deleteProduct, getProducts } = useProducts();
+  const { products, loading, deleteProduct, getProducts } = useProducts();
   const { categories } = useCategories();
 
   if (!attributes && categories.length > 0) {
@@ -882,7 +882,21 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows?.length ? (
+            {loading ? (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-32 text-center"
+                >
+                  <div className="flex justify-center items-center py-8">
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                      <p className="text-sm text-muted-foreground">Cargando productos...</p>
+                    </div>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
