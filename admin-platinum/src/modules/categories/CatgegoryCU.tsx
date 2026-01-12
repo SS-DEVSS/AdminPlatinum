@@ -40,6 +40,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import Loader from "@/components/Loader";
 
 type CategoryCUProps = {
   category?: Category | null;
@@ -77,6 +78,7 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
     attributes: [],
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [savingStartTime, setSavingStartTime] = useState<number | null>(null);
 
 
   useEffect(() => {
@@ -243,6 +245,7 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
   const handleSubmit = async (form: formTypes) => {
     try {
       setIsSubmitting(true);
+      setSavingStartTime(Date.now());
       if (category && updateCategory) {
         // Editing existing category - formato según Postman
         const originalBrandIds = category.brands?.map(b => b.id).filter((id): id is string => !!id) || [];
@@ -273,8 +276,11 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
           .filter(attr => !attr.id || !originalAttributeIds.includes(attr.id))
           .map(attr => ({
             name: attr.display_name || attr.name,
+            csvName: attr.csv_name || attr.name,
+            displayName: attr.display_name || attr.name,
             type: attr.type,
             required: attr.required,
+            order: attr.order,
             scope: attr.scope.toLowerCase(), // "PRODUCT" -> "product"
           }));
         const attributesToDelete = originalAttributeIds.filter(id => !currentAttributeIds.includes(id));
@@ -362,12 +368,24 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
     } catch (error: any) {
       // Error handling - el error ya se maneja en updateCategory/addCategory
     } finally {
-      setIsSubmitting(false);
+      // Ensure loader is shown for at least 800ms for better UX
+      const elapsed = savingStartTime ? Date.now() - savingStartTime : 0;
+      const minDisplayTime = 800;
+      const remainingTime = Math.max(0, minDisplayTime - elapsed);
+      
+      setTimeout(() => {
+        setIsSubmitting(false);
+        setSavingStartTime(null);
+      }, remainingTime);
     }
   };
 
   return (
-    <main>
+    <>
+      {isSubmitting && (
+        <Loader fullScreen message="Guardando cambios..." />
+      )}
+      <main>
       <header className="flex justify-between">
         <div className="flex items-center gap-4">
           <Link to="/categorias">
@@ -618,6 +636,7 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
         </DialogContent>
       </Dialog>
     </main>
+    </>
   );
 };
 

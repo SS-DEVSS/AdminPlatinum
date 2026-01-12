@@ -17,15 +17,11 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import { Brand } from "@/models/brand";
 import { useLocation } from "react-router-dom";
-import { useDeleteModal } from "@/context/delete-context";
 import { useBrandContext } from "@/context/brand-context";
-import { useBrands } from "@/hooks/useBrands";
 import { Category } from "@/models/category";
 import { Separator } from "../ui/separator";
 import { cleanFilePath } from "@/services/S3FileManager";
 import { Button } from "../ui/button";
-import { toast } from "@/hooks/use-toast";
-import { useS3FileManager } from "@/hooks/useS3FileManager";
 
 type CardTemplateProps = {
   category?: Category;
@@ -44,10 +40,7 @@ const CardTemplate = ({
   deleteCategory,
   getCategoryById,
 }: CardTemplateProps) => {
-  const { openModal } = useDeleteModal();
   const { setSelectedBrand, openModal: openModalBrand } = useBrandContext();
-  const { deleteBrand } = useBrands();
-  const { deleteFile } = useS3FileManager();
   const location = useLocation();
   const { pathname } = location;
   const navigate = useNavigate();
@@ -73,20 +66,8 @@ const CardTemplate = ({
     }
   };
 
-  const handleDeleteBrand = async () => {
-    deleteFile(cleanFilePath(brand!.logoImgUrl, 61), async () => {
-      await deleteBrand(brand?.id!);
-    });
-  };
-
   const handleEditCategory = async (id: Category["id"]) => {
     await getCategoryById(id);
-  };
-
-  const handleDeleteCategory = async () => {
-    deleteFile(cleanFilePath(category!.imgUrl, 61), async () => {
-      await deleteCategory(category?.id!);
-    });
   };
 
   const getImageUrl = () => {
@@ -193,51 +174,12 @@ const CardTemplate = ({
                         Editar Categoría
                       </DropdownMenuItem>
                     </Link>
-                    <DropdownMenuItem
-                      onClick={() => {
-                        if (category?.products?.length) {
-                          toast({
-                            title:
-                              "Elimina todos los productos asociados a la categoría.",
-                            variant: "destructive",
-                          });
-                          return;
-                        }
-                        openModal({
-                          title: "Categoría",
-                          description: "Estas seguro que deseas eliminar esta?",
-                          handleDelete: handleDeleteCategory,
-                        });
-                      }}
-                    >
-                      Eliminar
-                    </DropdownMenuItem>
                   </DropdownMenuGroup>
                 )}
                 {pathname === "/marcas" && (
                   <DropdownMenuGroup>
                     <DropdownMenuItem onClick={handleEditBrand}>
                       Editar Marca
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => {
-                        if (brand?.categories?.length) {
-                          toast({
-                            title:
-                              "Elimina todas las categorías asociadas a la marca.",
-                            variant: "destructive",
-                          });
-                          return;
-                        }
-                        openModal({
-                          title: "Marca",
-                          description:
-                            "Estas seguro que deseas eliminar esta marca?",
-                          handleDelete: handleDeleteBrand,
-                        });
-                      }}
-                    >
-                      Eliminar
                     </DropdownMenuItem>
                   </DropdownMenuGroup>
                 )}

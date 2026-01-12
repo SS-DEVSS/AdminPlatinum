@@ -158,7 +158,6 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
     // Check if this file was already uploaded
     const fileIdentifier = `${imageFile.name}-${imageFile.size}-${imageFile.lastModified}`;
     if (lastUploadedFileRef.current === fileIdentifier) {
-      console.log("[ProductsTable] File already uploaded, skipping");
       return;
     }
 
@@ -171,26 +170,16 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
       // If idProduct === id, it means it's a SINGLE product without variants
       const isPseudoVariant = selectedVariant.id === selectedVariant.idProduct;
       
-      console.log("[ProductsTable] Uploading image:", {
-        variantId: selectedVariant.id,
-        productId: selectedVariant.idProduct,
-        isPseudoVariant,
-        fileName: imageFile.name
-      });
-      
       if (isPseudoVariant) {
         // For SINGLE products, use the POST /products/:id/images endpoint
         // This endpoint accepts files directly and creates ProductImage records
         // We'll use replace=true query parameter to replace existing images
-        console.log("[ProductsTable] Uploading image to product endpoint");
         
         // Convertir imagen a WebP antes de subir
         let fileToUpload = imageFile;
         if (imageFile.type.startsWith('image/')) {
           try {
-            console.log("[ProductsTable] Convirtiendo imagen a WebP:", imageFile.name);
             fileToUpload = await convertImageToWebP(imageFile);
-            console.log("[ProductsTable] Conversión exitosa:", fileToUpload.name);
           } catch (error) {
             console.error("[ProductsTable] Error al convertir imagen, usando original:", error);
             fileToUpload = imageFile;
@@ -200,13 +189,11 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
         const formData = new FormData();
         formData.append('images', fileToUpload);
         
-        const response = await client.post(`/products/${selectedVariant.id}/images?replace=true`, formData, {
+        await client.post(`/products/${selectedVariant.id}/images?replace=true`, formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
         });
-        
-        console.log("[ProductsTable] Image uploaded successfully:", response.data);
         
         toast({
           title: "Imagen actualizada correctamente",
@@ -217,10 +204,6 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
         try {
           const updatedProduct = await client.get(`/products/${selectedVariant.id}`);
           const productData = updatedProduct.data;
-          
-          console.log("[ProductsTable] Updated product data (full):", productData);
-          console.log("[ProductsTable] Product images:", productData.images);
-          console.log("[ProductsTable] Product variants:", productData.variants);
           
           // Try to get images from different possible locations
           let updatedImages: any[] = [];
@@ -234,17 +217,10 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
             updatedImages = productData.variants[0].images || [];
           }
           
-          console.log("[ProductsTable] Extracted images:", updatedImages);
-          
           // Update the local state with the new product data
           setMappedData((prevData) => {
-            const updated = prevData.map((variant) => {
+            return prevData.map((variant) => {
               if (variant.id === selectedVariant.id) {
-                console.log("[ProductsTable] Updating variant in state:", {
-                  variantId: variant.id,
-                  oldImages: variant.images,
-                  newImages: updatedImages
-                });
                 return {
                   ...variant,
                   images: updatedImages
@@ -252,8 +228,6 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
               }
               return variant;
             });
-            console.log("[ProductsTable] Updated mappedData:", updated);
-            return updated;
           });
           
           // Also refresh the products list to ensure consistency
@@ -267,15 +241,12 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
         // For variants, we need to upload the file first, then use PATCH with imageUrl
         // Since there's no POST /variants/:id/images endpoint, we'll use the file upload endpoint
         // and then PATCH with the imageUrl
-        console.log("[ProductsTable] Uploading variant image");
         
         // Convertir imagen a WebP antes de subir
         let fileToUpload = imageFile;
         if (imageFile.type.startsWith('image/')) {
           try {
-            console.log("[ProductsTable] Convirtiendo imagen a WebP:", imageFile.name);
             fileToUpload = await convertImageToWebP(imageFile);
-            console.log("[ProductsTable] Conversión exitosa:", fileToUpload.name);
           } catch (error) {
             console.error("[ProductsTable] Error al convertir imagen, usando original:", error);
             fileToUpload = imageFile;
@@ -294,8 +265,6 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
         
         const imageUrl = fileUploadResponse.data.url;
         
-        console.log("[ProductsTable] File uploaded, now updating variant with imageUrl:", imageUrl);
-        
         // Now update the variant with the imageUrl
         await client.patch(`/variants/${selectedVariant.id}`, {
           imageUrl: imageUrl,
@@ -310,8 +279,6 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
         try {
           const updatedVariant = await client.get(`/variants/${selectedVariant.id}`);
           const updatedImages = (updatedVariant.data as any).images || [];
-          
-          console.log("[ProductsTable] Updated variant data:", updatedVariant.data);
           
           // Update the local state with the new variant data
           setMappedData((prevData) => {
@@ -531,9 +498,9 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
           return (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-black">
+                <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-muted/50">
                   <span className="sr-only">Open menu</span>
-                  <MoreHorizontal className="h-4 w-4" />
+                  <MoreHorizontal className="h-4 w-4 text-foreground" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">

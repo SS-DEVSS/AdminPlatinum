@@ -11,15 +11,20 @@ import { ChevronLeft } from "lucide-react";
 import { useProducts } from "@/hooks/useProducts";
 import { useCategoryContext } from "@/context/categories-context";
 import { useToast } from "@/hooks/use-toast";
+import Loader from "@/components/Loader";
+import { useRef } from "react";
 
 const NewProduct = () => {
   const { id } = useParams();
   const isEditMode = !!id;
   const navigate = useNavigate();
-  const { getProductById, createProduct, updateProduct } = useProducts();
+  const { getProductById, createProduct, updateProduct, loading: productsLoading } = useProducts();
   const { categories } = useCategoryContext();
   const { toast } = useToast();
   const [currentProduct, setCurrentProduct] = useState<any>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingProduct, setIsLoadingProduct] = useState(false);
+  const savingStartTimeRef = useRef<number | null>(null);
 
   const {
     detailsState,
@@ -37,6 +42,7 @@ const NewProduct = () => {
   useEffect(() => {
     const loadProductData = async () => {
       if (isEditMode && id) {
+        setIsLoadingProduct(true);
         const product = await getProductById(id);
         if (product) {
           setCurrentProduct(product); // Store product for passing to child components
@@ -110,7 +116,37 @@ const NewProduct = () => {
                   av.attribute?.name?.toLowerCase() === attrName.toLowerCase()
                 );
                 if (!attr) return null;
-                return attr.valueString || attr.valueNumber || attr.valueBoolean || attr.valueDate || null;
+                
+                const isYearAttribute = attrName.toLowerCase().includes("año") || 
+                                       attrName.toLowerCase().includes("anio") || 
+                                       attrName.toLowerCase().includes("year");
+                
+                // For year attributes, prioritize valueNumber (as it's stored now)
+                if (isYearAttribute) {
+                  if (attr.valueNumber !== null && attr.valueNumber !== undefined) {
+                    return attr.valueNumber;
+                  }
+                  // Fallback to valueDate if valueNumber not available
+                  if (attr.valueDate) {
+                    const date = new Date(attr.valueDate);
+                    if (!isNaN(date.getTime())) {
+                      return date.getFullYear();
+                    }
+                  }
+                  // Last resort: valueString
+                  if (attr.valueString) {
+                    const str = String(attr.valueString);
+                    const yearMatch = str.match(/^(\d{4})/);
+                    if (yearMatch) {
+                      return parseInt(yearMatch[1], 10);
+                    }
+                    return str;
+                  }
+                  return null;
+                }
+                
+                // For non-year attributes, use standard priority
+                return attr.valueString || attr.valueNumber || attr.valueBoolean || null;
               };
               
               // Try common attribute names
@@ -135,8 +171,22 @@ const NewProduct = () => {
               // Submodelo adds more specificity
               if (submodelo) parts.push(String(submodelo));
               
-              // Año is important for differentiation
-              if (año) parts.push(`${año}`);
+              // Año is important for differentiation - ensure it's always just the year number
+              if (año) {
+                let añoStr = String(año);
+                // If it looks like a timestamp or ISO date, extract just the year
+                if (añoStr.includes('T') || (añoStr.includes('-') && añoStr.length > 4)) {
+                  const yearMatch = añoStr.match(/^(\d{4})/);
+                  if (yearMatch) {
+                    añoStr = yearMatch[1];
+                  }
+                }
+                // Also handle if it's a number - just convert to string
+                if (typeof año === 'number') {
+                  añoStr = año.toString();
+                }
+                parts.push(añoStr);
+              }
               
               // Motor information
               if (motor) {
@@ -198,6 +248,7 @@ const NewProduct = () => {
           } else {
           }
         }
+        setIsLoadingProduct(false);
       }
     };
 
@@ -207,6 +258,10 @@ const NewProduct = () => {
   }, [isEditMode, id, categories]); // Depend on categories to ensure they are loaded first
 
   const handleSubmit = async () => {
+    setIsSubmitting(true);
+    const startTime = Date.now();
+    savingStartTimeRef.current = startTime;
+    
     try {
       // Validate required fields
       if (!detailsState.name || !detailsState.description || !detailsState.category) {
@@ -419,9 +474,20 @@ const NewProduct = () => {
         });
       }
 
-      // Navigate back to products list
-      navigate("/productos");
+      // Ensure loader is shown for at least 800ms for better UX
+      const elapsed = savingStartTimeRef.current ? Date.now() - savingStartTimeRef.current : 0;
+      const minDisplayTime = 800;
+      const remainingTime = Math.max(0, minDisplayTime - elapsed);
+      
+      setTimeout(() => {
+        setIsSubmitting(false);
+        savingStartTimeRef.current = null;
+        // Navigate back to products list
+        navigate("/productos");
+      }, remainingTime);
     } catch (error: any) {
+      setIsSubmitting(false);
+      savingStartTimeRef.current = null;
       toast({
         title: "Error",
         variant: "destructive",
@@ -430,8 +496,16 @@ const NewProduct = () => {
     }
   };
 
+  if (isLoadingProduct || (isEditMode && !currentProduct && productsLoading)) {
+    return <Loader fullScreen message="Cargando producto..." />;
+  }
+
   return (
-    <Layout>
+    <>
+      {isSubmitting && (
+        <Loader fullScreen message="Guardando cambios..." />
+      )}
+      <Layout>
       <header className="flex justify-between">
         <div className="flex items-center gap-4">
           <Link to="/productos">
@@ -468,12 +542,13 @@ const NewProduct = () => {
           <Link to="/productos">
             <Button variant="outline">Cancelar</Button>
           </Link>
-          <Button disabled={!canContinue} onClick={handleSubmit}>
-            {isEditMode ? "Actualizar Producto" : "Publicar Producto"}
+          <Button disabled={!canContinue || isSubmitting} onClick={handleSubmit}>
+            {isSubmitting ? "Guardando..." : isEditMode ? "Actualizar Producto" : "Publicar Producto"}
           </Button>
         </section>
       </section>
     </Layout>
+    </>
   );
 };
 
