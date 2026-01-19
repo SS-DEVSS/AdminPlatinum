@@ -21,6 +21,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle, CheckCircle2, Clock, XCircle, Loader2 } from "lucide-react";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -29,23 +35,110 @@ import {
 } from "@/components/ui/dialog";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-const getStatusBadge = (status: ImportJobStatus) => {
-  const statusConfig = {
-    pending: { label: "Pendiente", variant: "secondary" as const, icon: Clock },
-    processing: { label: "En Progreso", variant: "default" as const, icon: Loader2 },
-    completed: { label: "Completado", variant: "default" as const, icon: CheckCircle2 },
-    failed: { label: "Fallido", variant: "destructive" as const, icon: XCircle },
-  };
+const getStatusBadge = (
+  status: ImportJobStatus,
+  errors: string[] = [],
+  warnings: string[] = []
+) => {
+  const hasErrors = errors.length > 0;
+  const hasWarnings = warnings.length > 0;
+  const hasIssues = hasErrors || hasWarnings;
+  
+  // Determinar el color según el estado y los errores/advertencias
+  let badgeClassName = "";
+  let mainLabel = "";
+  let Icon = Clock;
+  let tooltipText: string | null = null;
+  
+  if (status === "failed") {
+    // Rojo: no terminó y hubo errores (failed)
+    badgeClassName = "bg-red-500 text-white border-red-600 hover:bg-red-600";
+    mainLabel = "Fallido";
+    Icon = XCircle;
+    if (hasErrors) {
+      tooltipText = `${errors.length} error${errors.length !== 1 ? "es" : ""}. Consulta detalles para más información.`;
+    } else if (hasWarnings) {
+      tooltipText = `${warnings.length} advertencia${warnings.length !== 1 ? "s" : ""}. Consulta detalles para más información.`;
+    } else {
+      tooltipText = "El job falló. Consulta detalles para más información.";
+    }
+  } else if (status === "processing") {
+    if (hasErrors) {
+      // Rojo: está en proceso pero ya hay errores
+      badgeClassName = "bg-red-500 text-white border-red-600 hover:bg-red-600";
+      mainLabel = "En Progreso";
+      Icon = AlertCircle;
+      tooltipText = `${errors.length} error${errors.length !== 1 ? "es" : ""}. Consulta detalles para más información.`;
+    } else if (hasWarnings) {
+      // Azul: está en proceso con advertencias
+      badgeClassName = "bg-blue-500 text-white border-blue-600 hover:bg-blue-600";
+      mainLabel = "En Progreso";
+      Icon = Loader2;
+      tooltipText = `${warnings.length} advertencia${warnings.length !== 1 ? "s" : ""}. Consulta detalles para más información.`;
+    } else {
+      // Azul: está en proceso sin errores ni advertencias
+      badgeClassName = "bg-blue-500 text-white border-blue-600 hover:bg-blue-600";
+      mainLabel = "En Progreso";
+      Icon = Loader2;
+      tooltipText = "El job está siendo procesado. Consulta detalles para más información.";
+    }
+  } else if (status === "completed") {
+    if (hasErrors) {
+      // Amarillo: terminó pero hubo errores
+      badgeClassName = "bg-yellow-500 text-white border-yellow-600 hover:bg-yellow-600";
+      mainLabel = "Completado";
+      tooltipText = `${errors.length} error${errors.length !== 1 ? "es" : ""}. Consulta detalles para más información.`;
+      Icon = AlertCircle;
+    } else if (hasWarnings) {
+      // Amarillo: terminó pero hubo advertencias
+      badgeClassName = "bg-yellow-500 text-white border-yellow-600 hover:bg-yellow-600";
+      mainLabel = "Completado";
+      tooltipText = `${warnings.length} advertencia${warnings.length !== 1 ? "s" : ""}. Consulta detalles para más información.`;
+      Icon = AlertCircle;
+    } else {
+      // Verde: terminó exitosamente - SIN TOOLTIP
+      badgeClassName = "bg-green-500 text-white border-green-600 hover:bg-green-600";
+      mainLabel = "Completado";
+      Icon = CheckCircle2;
+      // tooltipText permanece null
+    }
+  } else {
+    // pending - Azul: está pendiente
+    badgeClassName = "bg-blue-500 text-white border-blue-600 hover:bg-blue-600";
+    mainLabel = "Pendiente";
+    Icon = Clock;
+    if (hasErrors) {
+      tooltipText = `${errors.length} error${errors.length !== 1 ? "es" : ""}. Consulta detalles para más información.`;
+    } else if (hasWarnings) {
+      tooltipText = `${warnings.length} advertencia${warnings.length !== 1 ? "s" : ""}. Consulta detalles para más información.`;
+    } else {
+      tooltipText = "El job está pendiente de procesamiento. Consulta detalles para más información.";
+    }
+  }
 
-  const config = statusConfig[status];
-  const Icon = config.icon;
-
-  return (
-    <Badge variant={config.variant} className="flex items-center gap-1 w-fit">
-      <Icon className="h-3 w-3" />
-      {config.label}
+  const badgeContent = (
+    <Badge className={`flex items-center gap-1.5 w-fit border-transparent py-1 px-2.5 cursor-default ${badgeClassName}`}>
+      <Icon className="h-3.5 w-3.5" />
+      <span className="text-xs font-semibold whitespace-nowrap">{mainLabel}</span>
     </Badge>
   );
+
+  if (tooltipText) {
+    return (
+      <TooltipProvider delayDuration={200}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="inline-block">{badgeContent}</div>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p className="max-w-xs text-sm">{tooltipText}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+
+  return badgeContent;
 };
 
 const getTypeLabel = (type: ImportJobType) => {
@@ -202,24 +295,7 @@ const ImportJobsDashboard = ({ onJobClick }: ImportJobsDashboardProps) => {
                           {getTypeLabel(job.type)}
                         </TableCell>
                         <TableCell>
-                          <div className="flex flex-col gap-1">
-                            {getStatusBadge(job.status)}
-                            {(job.errors.length > 0 || job.warnings.length > 0) && (
-                              <div className="text-xs text-muted-foreground">
-                                {job.errors.length > 0 && (
-                                  <span className="text-red-600">
-                                    {job.errors.length} error{job.errors.length > 1 ? 'es' : ''}
-                                  </span>
-                                )}
-                                {job.errors.length > 0 && job.warnings.length > 0 && ' • '}
-                                {job.warnings.length > 0 && (
-                                  <span className="text-yellow-600">
-                                    {job.warnings.length} advertencia{job.warnings.length > 1 ? 's' : ''}
-                                  </span>
-                                )}
-                              </div>
-                            )}
-                          </div>
+                          {getStatusBadge(job.status, job.errors, job.warnings)}
                         </TableCell>
                         <TableCell className="max-w-[200px] truncate" title={job.originalFileName || job.fileName}>
                           {job.originalFileName || job.fileName}
@@ -322,7 +398,7 @@ const ImportJobsDashboard = ({ onJobClick }: ImportJobsDashboardProps) => {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Estado</label>
-                  <div className="mt-1">{getStatusBadge(selectedJobData.status)}</div>
+                  <div className="mt-1">{getStatusBadge(selectedJobData.status, selectedJobData.errors, selectedJobData.warnings)}</div>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Archivo</label>

@@ -508,7 +508,7 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
                 <Link to={`/producto/${row.original.id}`}>
                   <DropdownMenuItem>Editar</DropdownMenuItem>
                 </Link>
-                <DropdownMenuItem
+                {/* <DropdownMenuItem
                   onClick={() => {
                     openModal({
                       title: "Borrar Producto",
@@ -519,7 +519,7 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
                   }}
                 >
                   Eliminar
-                </DropdownMenuItem>
+                </DropdownMenuItem> */}
               </DropdownMenuContent>
             </DropdownMenu>
           );

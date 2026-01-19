@@ -14,6 +14,7 @@ import {
   Dock,
   PanelLeftClose,
   PanelLeftOpen,
+  Import,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "../ui/button";
@@ -27,14 +28,21 @@ import {
 import { useAuthContext } from "@/context/auth-context";
 import { useImportContext } from "@/context/import-context";
 
-const menuItems = [
+type MenuItem = {
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  text: string;
+};
+
+const menuItems: MenuItem[] = [
   { href: "/productos", icon: Package, text: "Productos" },
+  { href: "/producto/importar/dashboard", icon: Import, text: "Importar" },
   { href: "/marcas", icon: ShoppingCart, text: "Marcas" },
   { href: "/categorias", icon: LayoutGrid, text: "Categorías" },
-  { href: "/boletines", icon: Newspaper, text: "Boletínes" },
-  { href: "/noticias", icon: Megaphone, text: "Noticias" },
-  { href: "/banners", icon: Dock, text: "Banners" },
-  { href: "/ajustes", icon: Settings, text: "Ajustes" },
+  // { href: "/boletines", icon: Newspaper, text: "Boletínes" },
+  // { href: "/noticias", icon: Megaphone, text: "Noticias" },
+  // { href: "/banners", icon: Dock, text: "Banners" },
+  // { href: "/ajustes", icon: Settings, text: "Ajustes" },
 ];
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
