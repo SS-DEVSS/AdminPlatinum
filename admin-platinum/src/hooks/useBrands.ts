@@ -9,7 +9,7 @@ export const useBrands = () => {
 
   const [brands, setBrands] = useState<Brand[]>([]);
   const [brand, setBrand] = useState<Brand | null>({} as Brand);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true); // Start with true to show loader initially
   const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {

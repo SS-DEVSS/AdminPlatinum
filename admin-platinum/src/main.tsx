@@ -25,11 +25,16 @@ import { CategoryContextProvider } from "./context/categories-context";
 import { ImportProvider } from "./context/import-context";
 import NewProduct from "./pages/products/newProduct";
 import ImportProduct from "./pages/products/importProduct";
+import ImportJobsDashboardPage from "./pages/products/importJobsDashboard";
 import Ajustes from "./pages/ajustes";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { ImportStatusBanner } from "./components/ImportStatusBanner";
+import { App } from "./components/App";
 
 const router = createBrowserRouter([
+  {
+    element: <App />,
+    children: [
   {
     path: "/login",
     element: <Login />,
@@ -69,6 +74,14 @@ const router = createBrowserRouter([
   {
     path: "/producto/importar",
     element: <ImportProduct />,
+  },
+  {
+    path: "/producto/importar/dashboard",
+    element: (
+      <ProtectedRoute>
+        <ImportJobsDashboardPage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/producto/:id",
@@ -158,6 +171,8 @@ const router = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
+    ],
+  },
 ]);
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
@@ -169,7 +184,6 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             <NewsProvider>
               <ImportProvider>
                 <DeleteModal />
-
                 <RouterProvider router={router} />
                 <Toaster />
                 <ImportStatusBanner />

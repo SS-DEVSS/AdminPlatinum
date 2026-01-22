@@ -26,7 +26,7 @@ export const NewsProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [blogPost, setBlogPost] = useState<BlogPost | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true); // Start with true to show loader initially
   const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {

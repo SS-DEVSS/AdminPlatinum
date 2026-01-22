@@ -31,7 +31,7 @@ import { useCategoryContext } from "@/context/categories-context";
 
 const Categorias = () => {
   const { selectedBrand, setSelectedBrand } = useBrandContext();
-  const { categories, getCategories, deleteCategory, getCategoryById } =
+  const { categories, loading, getCategories, getCategoryById } =
     useCategoryContext();
   const { brands } = useBrands();
   const location = useLocation();
@@ -116,7 +116,14 @@ const Categorias = () => {
               </Link>
             </div>
           </CardHeader>
-          {categories.length === 0 || filteredCategories.length === 0 ? (
+          {loading ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="flex flex-col items-center gap-2">
+                <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                <p className="text-sm text-muted-foreground">Cargando...</p>
+              </div>
+            </div>
+          ) : categories.length === 0 || filteredCategories.length === 0 ? (
             <div className="mt-4">
               <NoData>
                 <AlertTriangle className="text-[#4E5154]" />
@@ -138,7 +145,6 @@ const Categorias = () => {
                   category={categoria}
                   key={categoria.id}
                   getItems={getCategories}
-                  deleteCategory={deleteCategory}
                   getCategoryById={getCategoryById}
                 />
               ))}

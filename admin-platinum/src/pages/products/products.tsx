@@ -126,7 +126,7 @@ const Products = () => {
             <div className="ml-auto flex items-center gap-3">
               <div className="rounded-lg flex bg-[#F4F4F5]">
                 <div
-                  onClick={() => navigate("/producto/importar")}
+                  onClick={() => navigate("/producto/importar/dashboard")}
                   className="flex hover:cursor-pointer gap-3 items-center hover:bg-primary hover:text-white hover:[&>svg]:text-white rounded-lg m-1 px-3"
                 >
                   <Import />

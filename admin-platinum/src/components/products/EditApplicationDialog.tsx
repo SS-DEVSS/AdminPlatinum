@@ -48,7 +48,11 @@ const EditApplicationDialog = ({
     if (!categoryAttributes) return [];
     
     if (Array.isArray(categoryAttributes)) {
-      return categoryAttributes.filter((attr) => attr.scope === "APPLICATION");
+      // Filter by scope, case-insensitive
+      return categoryAttributes.filter((attr) => {
+        const scope = String(attr.scope || '').toUpperCase();
+        return scope === "APPLICATION" || scope === "APLICACION";
+      });
     }
     
     if (typeof categoryAttributes === 'object' && 'application' in categoryAttributes) {
@@ -90,69 +94,91 @@ const EditApplicationDialog = ({
         
         // Try to find the attribute value by ID first, then by name (case-insensitive)
         const attrValue = application.attributeValues?.find((av: any) => {
-          // Match by ID
+          // Match by ID (most reliable)
           if (av.idAttribute === attr.id || (av.attribute && av.attribute.id === attr.id)) {
             return true;
           }
-          // Match by name (case-insensitive, normalize spaces and underscores)
+          // Match by name (case-insensitive, normalize spaces, underscores, and accents)
           const avAttrName = av.attribute?.name || "";
-          const normalizedAttrName = attr.name.toLowerCase().trim().replace(/_/g, "").replace(/\s+/g, "");
-          const normalizedAvName = avAttrName.toLowerCase().trim().replace(/_/g, "").replace(/\s+/g, "");
+          const normalizeString = (str: string) => {
+            return str.toLowerCase()
+              .trim()
+              .replace(/_/g, "")
+              .replace(/\s+/g, "")
+              .normalize("NFD")
+              .replace(/[\u0300-\u036f]/g, ""); // Remove accents
+          };
+          const normalizedAttrName = normalizeString(attr.name);
+          const normalizedAvName = normalizeString(avAttrName);
           if (normalizedAttrName === normalizedAvName) {
             return true;
+          }
+          // Also try matching with csv_name if available
+          if (attr.csv_name) {
+            const csvName = attr.csv_name;
+            const normalizedCsvName = normalizeString(csvName);
+            if (normalizedCsvName === normalizedAvName) {
+              return true;
+            }
           }
           return false;
         });
         
         if (attrValue) {
-          // Handle different attribute types and extract the appropriate value
           let value: any = "";
-          
-          // For year attributes, check valueDate first
-          if (isYearAttribute && attrValue.valueDate) {
-            // Extract year from date for year attributes
-            const date = new Date(attrValue.valueDate);
-            if (!isNaN(date.getTime())) {
-              value = date.getFullYear().toString();
-            }
-          } else {
-            // For other attributes, get the appropriate value based on what's available
-            // Check all possible value fields (they might be in any of them)
-            if (attrValue.valueString !== null && attrValue.valueString !== undefined && attrValue.valueString !== "") {
-              value = attrValue.valueString;
-            } else if (attrValue.valueNumber !== null && attrValue.valueNumber !== undefined) {
+
+          // Prefer valueNumber for year attributes
+          if (isYearAttribute) {
+            if (attrValue.valueNumber !== null && attrValue.valueNumber !== undefined) {
               value = attrValue.valueNumber;
-            } else if (attrValue.valueBoolean !== null && attrValue.valueBoolean !== undefined) {
-              value = attrValue.valueBoolean;
+            } else if (attrValue.valueString) {
+              value = attrValue.valueString;
             } else if (attrValue.valueDate) {
-              // For date attributes, check if it's a year attribute first
               const date = new Date(attrValue.valueDate);
               if (!isNaN(date.getTime())) {
-                // If it's a year attribute, always extract just the year
-                if (isYearAttribute) {
-                  value = date.getFullYear().toString();
-                } else if (attr.type === CategoryAttributesTypes.DATE) {
-                  // For non-year date attributes, format as ISO string
-                  value = date.toISOString().split('T')[0]; // YYYY-MM-DD format
-                } else {
-                  // For non-date types but with valueDate, extract year as fallback
-                  value = date.getFullYear().toString();
+                value = date.getFullYear().toString();
+              }
+            }
+          } else {
+            // Non-year attributes: standard priority
+            // For numeric attributes, prioritize valueNumber
+            if (attr.type === CategoryAttributesTypes.NUMERIC) {
+              if (attrValue.valueNumber !== null && attrValue.valueNumber !== undefined) {
+                value = attrValue.valueNumber;
+              } else if (attrValue.valueString !== null && attrValue.valueString !== undefined && attrValue.valueString !== "") {
+                // Try to parse string as number
+                const numValue = Number(attrValue.valueString);
+                value = !isNaN(numValue) ? numValue : attrValue.valueString;
+              }
+            } else {
+              // For non-numeric attributes, use standard priority
+              if (attrValue.valueString !== null && attrValue.valueString !== undefined && attrValue.valueString !== "") {
+                value = attrValue.valueString;
+              } else if (attrValue.valueNumber !== null && attrValue.valueNumber !== undefined) {
+                value = attrValue.valueNumber;
+              } else if (attrValue.valueBoolean !== null && attrValue.valueBoolean !== undefined) {
+                value = attrValue.valueBoolean;
+              } else if (attrValue.valueDate) {
+                const date = new Date(attrValue.valueDate);
+                if (!isNaN(date.getTime())) {
+                  if (attr.type === CategoryAttributesTypes.DATE) {
+                    value = date.toISOString().split('T')[0];
+                  } else {
+                    value = date.getFullYear().toString();
+                  }
                 }
               }
             }
           }
-          
-          // Only set the value if we found one (don't set empty string for missing values)
+
           if (value !== "" && value !== null && value !== undefined) {
             attributeValuesObj[attr.name] = value;
           }
-          
-          // For year attributes, extract single year (if it's a range, take the first year)
+
           if (isYearAttribute) {
             if (typeof value === "string" && value) {
               const match = value.match(/^(\d{4})\s*[-–]\s*(\d{4})$/);
               if (match) {
-                // If it's a range, take the first year only (for individual applications)
                 newYearFields[attr.name] = { start: match[1], end: "" };
               } else if (/^\d{4}$/.test(value.trim())) {
                 newYearFields[attr.name] = { start: value.trim(), end: "" };
@@ -160,7 +186,6 @@ const EditApplicationDialog = ({
                 newYearFields[attr.name] = { start: "", end: "" };
               }
             } else if (typeof value === "number") {
-              // If value is a number (year), convert to string
               newYearFields[attr.name] = { start: value.toString(), end: "" };
             } else {
               newYearFields[attr.name] = { start: "", end: "" };
@@ -297,11 +322,14 @@ const EditApplicationDialog = ({
             });
 
             // Create application
+            // Include all attributes, even if empty (backend will handle null values)
+            const attributesToSend = attributes.map((attr) => attr);
+
             const createData = {
               sku: productSku,
               origin: formData.origin || "Nueva aplicación",
               idProduct: productId,
-              attributes: attributes.filter(
+              attributes: attributesToSend.filter(
                 (attr) =>
                   attr.valueString !== null ||
                   attr.valueNumber !== null ||
@@ -338,9 +366,21 @@ const EditApplicationDialog = ({
     if (!application || !application.id) return;
 
     try {
-      // Convert attributeValues object back to array format
-      const attributes = applicationAttributes.map((attr) => {
-        const value = formData.attributeValues[attr.name];
+      // Get existing attribute values from the application to preserve unchanged ones
+      const existingAttrMap = new Map<string, any>();
+      if (application.attributeValues) {
+        application.attributeValues.forEach((av: any) => {
+          const attrId = av.idAttribute || av.attribute?.id;
+          if (attrId) {
+            existingAttrMap.set(attrId, av);
+          }
+        });
+      }
+
+      // Build attributes: include ALL attributes, using formData if changed, otherwise existing values
+      const attributesToSend = applicationAttributes.map((attr) => {
+        const formValue = formData.attributeValues[attr.name];
+        const existingAttr = existingAttrMap.get(attr.id!);
 
         const attributeValue: any = {
           idAttribute: attr.id!,
@@ -350,50 +390,121 @@ const EditApplicationDialog = ({
           valueDate: null,
         };
 
-        // Special handling for year attributes (e.g., "Año")
-        // Store as single year (not range) for individual applications
-        const isYearAttribute = attr.name.toLowerCase().includes("año") || attr.name.toLowerCase().includes("anio") || attr.name.toLowerCase().includes("year");
-        if (isYearAttribute && value) {
-          // For year attributes, store as valueDate (Date object with year)
-          const yearString = typeof value === "string" ? value : String(value);
-          const match = yearString.match(/^(\d{4})\s*[-–]\s*(\d{4})$/);
-          const yearToSave = match ? parseInt(match[1], 10) : parseInt(yearString, 10);
-          
-          if (!isNaN(yearToSave) && yearToSave >= 1900 && yearToSave <= 2100) {
-            // Create a date with January 1st of that year
-            attributeValue.valueDate = new Date(yearToSave, 0, 1);
+        const isYearAttribute =
+          attr.name.toLowerCase().includes("año") ||
+          attr.name.toLowerCase().includes("anio") ||
+          attr.name.toLowerCase().includes("year");
+
+        // Check if form has a value (including 0 for numbers, false for booleans)
+        // IMPORTANT: Always use formValue if it exists, even if it's the same as existing
+        // This ensures user changes are saved even if they type the same value
+        // For strings: must not be empty after trim
+        // For numbers: 0 is valid
+        // For booleans: false is valid
+        let hasFormValue = false;
+        if (formValue !== undefined && formValue !== null) {
+          if (typeof formValue === "string") {
+            hasFormValue = formValue.trim() !== "";
+          } else {
+            // For numbers (including 0), booleans (including false), and other types
+            hasFormValue = true;
           }
-        } else if (value !== undefined && value !== null && value !== "") {
-          // Set the appropriate value based on attribute type
-          if (attr.type === CategoryAttributesTypes.STRING) {
-            attributeValue.valueString = String(value);
-          } else if (attr.type === CategoryAttributesTypes.NUMERIC) {
-            attributeValue.valueNumber = Number(value);
-          } else if (attr.type === CategoryAttributesTypes.BOOLEAN) {
-            attributeValue.valueBoolean = Boolean(value);
-          } else if (attr.type === CategoryAttributesTypes.DATE) {
-            // For date attributes, convert to Date object
-            if (value instanceof Date) {
-              attributeValue.valueDate = value;
-            } else if (typeof value === "string") {
-              const date = new Date(value);
+        }
+        
+        // If form has a value, ALWAYS use it (user may have changed it)
+        if (hasFormValue) {
+          if (isYearAttribute) {
+            const yearString = typeof formValue === "string" ? formValue : String(formValue);
+            const match = yearString.match(/^(\d{4})\s*[-–]\s*(\d{4})$/);
+            const yearToSave = match ? parseInt(match[1], 10) : parseInt(yearString, 10);
+            if (!isNaN(yearToSave) && yearToSave >= 1900 && yearToSave <= 2100) {
+              attributeValue.valueNumber = yearToSave; // store year as number
+            }
+          } else {
+            // Normalize attr.type to handle case-insensitive comparison
+            const normalizedType = String(attr.type || '').toLowerCase();
+            
+            if (normalizedType === "string" || normalizedType === CategoryAttributesTypes.STRING) {
+              attributeValue.valueString = String(formValue);
+            } else if (normalizedType === "number" || normalizedType === "numeric" || normalizedType === CategoryAttributesTypes.NUMERIC) {
+              // Convert to number - handle both string and number inputs
+              let numValue: number;
+              if (typeof formValue === "string") {
+                // Remove any whitespace and parse
+                numValue = parseFloat(formValue.trim());
+              } else {
+                numValue = Number(formValue);
+              }
+              // Allow 0, negative numbers, and decimals
+              if (!isNaN(numValue) && isFinite(numValue)) {
+                attributeValue.valueNumber = numValue;
+              } else {
+                // If conversion failed, try to preserve as string if it's a valid numeric string
+                const strValue = String(formValue).trim();
+                if (strValue && !isNaN(Number(strValue))) {
+                  attributeValue.valueNumber = Number(strValue);
+                } else {
+                  console.warn(`⚠️ Failed to convert "${formValue}" to number`);
+                }
+              }
+            } else if (normalizedType === "boolean" || normalizedType === CategoryAttributesTypes.BOOLEAN) {
+              attributeValue.valueBoolean = Boolean(formValue);
+            } else if (normalizedType === "date" || normalizedType === CategoryAttributesTypes.DATE) {
+              if (formValue instanceof Date) {
+                attributeValue.valueDate = formValue;
+              } else if (typeof formValue === "string") {
+                const date = new Date(formValue);
+                if (!isNaN(date.getTime())) {
+                  attributeValue.valueDate = date;
+                }
+              }
+            } else {
+              console.warn(`⚠️ Unknown type: "${normalizedType}", defaulting to string`);
+              attributeValue.valueString = String(formValue);
+            }
+          }
+        } else if (existingAttr) {
+          // Preserve existing value if form doesn't have it
+          if (isYearAttribute) {
+            // Prefer number; if only date exists, convert to year number
+            if (existingAttr.valueNumber !== null && existingAttr.valueNumber !== undefined) {
+              attributeValue.valueNumber = existingAttr.valueNumber;
+            } else if (existingAttr.valueString) {
+              const num = parseInt(String(existingAttr.valueString), 10);
+              if (!isNaN(num)) attributeValue.valueNumber = num;
+            } else if (existingAttr.valueDate) {
+              const date = new Date(existingAttr.valueDate);
               if (!isNaN(date.getTime())) {
-                attributeValue.valueDate = date;
+                attributeValue.valueNumber = date.getFullYear();
               }
             }
+          } else {
+            attributeValue.valueString = existingAttr.valueString ?? null;
+            attributeValue.valueNumber = existingAttr.valueNumber ?? null;
+            attributeValue.valueBoolean = existingAttr.valueBoolean ?? null;
+            attributeValue.valueDate = existingAttr.valueDate ?? null;
           }
         }
 
         return attributeValue;
+      })
+      // Only include attributes that have at least one value set
+      .filter((attr) => {
+        const hasValue = attr.valueString !== null ||
+          attr.valueNumber !== null ||
+          attr.valueBoolean !== null ||
+          attr.valueDate !== null;
+        if (!hasValue) {
+          console.warn(`⚠️ Filtering out attribute (no value):`, attr);
+        }
+        return hasValue;
       });
 
       const updateData = {
         origin: formData.origin || null,
-        attributes: attributes,
+        attributes: attributesToSend,
       };
 
-      // Note: This will need the backend endpoint to be implemented
-      // For now, we'll show a message that it's not yet available
       await client.patch(`/applications/${application.id}`, updateData);
 
       toast({
@@ -450,7 +561,6 @@ const EditApplicationDialog = ({
                 <SelectValue placeholder="Selecciona un origen" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Fabricante">Fabricante</SelectItem>
                 <SelectItem value="Nueva aplicación">Nueva aplicación</SelectItem>
               </SelectContent>
             </Select>

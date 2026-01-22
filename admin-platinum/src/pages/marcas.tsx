@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Layout from "@/components/Layouts/Layout";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,14 +29,17 @@ import { Brand } from "@/models/brand";
 import NoData from "@/components/NoData";
 import MyDropzone from "@/components/Dropzone";
 import { useS3FileManager } from "@/hooks/useS3FileManager";
+import Loader from "@/components/Loader";
 
 const Marcas = () => {
-  const { brands, brand, addBrand, updateBrand, getBrands, getBrandById } =
+  const { brands, brand, loading, addBrand, updateBrand, getBrands, getBrandById } =
     useBrands();
   const { modalState, closeModal, openModal } = useBrandContext();
   const { uploadFile } = useS3FileManager();
   const { isOpen, title, description } = modalState;
   const [image, setImage] = useState<File>({} as File);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const savingStartTimeRef = useRef<number | null>(null);
 
   const [filterBrandSearch, setFilterBrandSearch] = useState("");
   const [form, setForm] = useState({
@@ -57,10 +60,10 @@ const Marcas = () => {
   }, [image]);
 
   useEffect(() => {
-    if (brand) {
+    if (brand && isOpen && isEditMode) {
       setImage({ name: brand.logoImgUrl! } as File);
     }
-  }, [brand]);
+  }, [brand, isOpen, isEditMode]);
 
   useEffect(() => {
     if (brand) {
@@ -122,27 +125,51 @@ const Marcas = () => {
   );
 
   const handleSubmit = async () => {
+    setIsSubmitting(true);
+    const startTime = Date.now();
+    savingStartTimeRef.current = startTime;
+    
     const brandData = {
       ...form,
       id: brand ? brand.id : "",
     };
 
-    if (isEditMode) {
-      if (image) {
-        uploadFile(image, (_, location) => {
-          updateBrand({ ...brandData, logoImgUrl: location });
-          setImage({} as File);
-        });
+    const finishSaving = () => {
+      const elapsed = savingStartTimeRef.current ? Date.now() - savingStartTimeRef.current : 0;
+      const minDisplayTime = 800;
+      const remainingTime = Math.max(0, minDisplayTime - elapsed);
+      setTimeout(() => {
+        setIsSubmitting(false);
+        savingStartTimeRef.current = null;
+        closeModal();
+      }, remainingTime);
+    };
+
+    try {
+      if (isEditMode) {
+        if (image && image instanceof File && image.name) {
+          uploadFile(image, async (_, location) => {
+            await updateBrand({ ...brandData, logoImgUrl: location });
+            setImage({} as File);
+            finishSaving();
+          });
+        } else {
+          await updateBrand(brandData);
+          finishSaving();
+        }
+      } else {
+        if (image && image instanceof File && image.name) {
+          uploadFile(image, async (_, location) => {
+            await addBrand({ ...form, logoImgUrl: location });
+            setImage({} as File);
+            finishSaving();
+          });
+        }
       }
-    } else {
-      if (image) {
-        uploadFile(image, (_, location) => {
-          addBrand({ ...form, logoImgUrl: location });
-          setImage({} as File);
-        });
-      }
+    } catch (error) {
+      setIsSubmitting(false);
+      savingStartTimeRef.current = null;
     }
-    closeModal();
   };
 
   const handleOpenModal = (brandToEdit = null) => {
@@ -164,7 +191,11 @@ const Marcas = () => {
   };
 
   return (
-    <Layout>
+    <>
+      {isSubmitting && (
+        <Loader fullScreen message="Guardando cambios..." />
+      )}
+      <Layout>
       <div>
         <Card className="border-0 shadow-none">
           <CardHeader className="flex flex-row p-0 m-0">
@@ -212,6 +243,15 @@ const Marcas = () => {
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-[425px]">
+                  {loading && isEditMode ? (
+                    <div className="flex justify-center items-center py-12">
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                        <p className="text-sm text-muted-foreground">Cargando marca...</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
                   <DialogHeader>
                     <DialogTitle className="mb-2">{title}</DialogTitle>
                     <DialogDescription>{description}</DialogDescription>
@@ -253,18 +293,27 @@ const Marcas = () => {
                   </DialogDescription>
                   <DialogFooter>
                     <Button
-                      disabled={!validateForm()}
+                      disabled={!validateForm() || isSubmitting}
                       onClick={handleSubmit}
                       type="submit"
                     >
-                      {isEditMode ? "Actualizar Marca" : "Agregar Marca"}
+                      {isSubmitting ? "Guardando..." : isEditMode ? "Actualizar Marca" : "Agregar Marca"}
                     </Button>
                   </DialogFooter>
+                    </>
+                  )}
                 </DialogContent>
               </Dialog>
             </div>
           </CardHeader>
-          {brands.length === 0 || filterBrands.length === 0 ? (
+          {loading ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="flex flex-col items-center gap-2">
+                <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                <p className="text-sm text-muted-foreground">Cargando...</p>
+              </div>
+            </div>
+          ) : brands.length === 0 || filterBrands.length === 0 ? (
             <div className="mt-4">
               <NoData>
                 <AlertTriangle className="text-[#4E5154]" />
@@ -293,6 +342,7 @@ const Marcas = () => {
         </Card>
       </div>
     </Layout>
+    </>
   );
 };
 

@@ -7,7 +7,7 @@ export const useProducts = () => {
   const client = axiosClient();
 
   const [products, setProducts] = useState<Item[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Start with true to show loader initially
   //   const [loading, setLoading] = useState<boolean>(false);
   //   const [error, setError] = useState<string | null>(null);
 
