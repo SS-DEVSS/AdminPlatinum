@@ -47,7 +47,7 @@ export const CategoryContextProvider = ({
   >(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [category, setCategory] = useState<Category | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true); // Start with true to show loader initially
   const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {

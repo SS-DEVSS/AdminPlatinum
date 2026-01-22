@@ -3,7 +3,7 @@ import { useState } from "react";
 import Layout from "@/components/Layouts/Layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChevronLeft, File } from "lucide-react";
+import { ChevronLeft, File, BarChart3 } from "lucide-react";
 import { useCategoryContext } from "@/context/categories-context";
 import {
   Select,
@@ -89,6 +89,12 @@ const ImportProduct = () => {
             Importar Productos
           </p>
         </div>
+        <Link to="/producto/importar/dashboard">
+          <Button variant="outline" className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4" />
+            Ver Dashboard
+          </Button>
+        </Link>
       </header>
 
       <section className="flex flex-col justify-center gap-4 mt-8">

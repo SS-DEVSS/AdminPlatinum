@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/card";
 import { Product } from "@/models/product";
 import { Application } from "@/models/application";
-import { PlusCircle, X, Pencil, ChevronDown, ChevronUp } from "lucide-react";
+import { PlusCircle, Pencil, ChevronDown, ChevronUp } from "lucide-react";
 import * as React from "react";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import NoData from "../NoData";
@@ -36,6 +36,7 @@ type ApplicationsCardProps = {
 type GroupedApplication = {
   applications: Application[];
   origin: string | null;
+  fabricante: string | null;
   modelo: string | null;
   submodelo: string | null;
   añoMin: number | null;
@@ -56,7 +57,7 @@ const ApplicationsCard = ({ state, setState, product }: ApplicationsCardProps) =
   // Always use table view - list view removed
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
 
-  // Get category attributes
+  // Get category attributes (only application attributes)
   const categoryAttributes = useMemo(() => {
     const productCategory = (product as any)?.category || product?.idCategory;
     if (!productCategory) return [];
@@ -65,7 +66,11 @@ const ApplicationsCard = ({ state, setState, product }: ApplicationsCardProps) =
     if (!category?.attributes) return [];
     
     if (Array.isArray(category.attributes)) {
-      return category.attributes;
+      // Filter to only application attributes
+      return category.attributes.filter((attr) => {
+        const scope = String(attr.scope || '').toUpperCase();
+        return scope === "APPLICATION" || scope === "APLICACION";
+      });
     }
     
     if (typeof category.attributes === 'object' && 'application' in category.attributes) {
@@ -84,14 +89,6 @@ const ApplicationsCard = ({ state, setState, product }: ApplicationsCardProps) =
   };
 
 
-  const handleRemoveFromGroup = (_groupId: number, applicationId: string) => {
-    // Remove application from the group in state, but keep it in the product association
-    // This is a UI-only operation - the application stays linked to the product
-    setState((prevForm: { applications: Application[] }) => ({
-      ...prevForm,
-      applications: prevForm.applications.filter((app: Application) => app.id !== applicationId),
-    }));
-  };
 
   const toggleRowExpand = (index: number) => {
     setExpandedRows((prev) => {
@@ -123,20 +120,40 @@ const ApplicationsCard = ({ state, setState, product }: ApplicationsCardProps) =
         );
         if (!attr) return null;
         
-        // Handle valueDate specially - extract year from date
-        if (attr.valueDate) {
-          const date = new Date(attr.valueDate);
-          if (!isNaN(date.getTime())) {
-            return date.getFullYear().toString();
+        const isYearAttribute = attrName.toLowerCase().includes("año") || 
+                               attrName.toLowerCase().includes("anio") || 
+                               attrName.toLowerCase().includes("year");
+        
+        // For year attributes, prioritize valueNumber (as it's stored now)
+        if (isYearAttribute) {
+          if (attr.valueNumber !== null && attr.valueNumber !== undefined) {
+            return attr.valueNumber.toString();
           }
-          // If date parsing failed, try to extract year from string if it's an ISO date
-          const dateStr = String(attr.valueDate);
-          const yearMatch = dateStr.match(/^(\d{4})/);
-          if (yearMatch) {
-            return yearMatch[1];
+          // Fallback to valueDate if valueNumber not available
+          if (attr.valueDate) {
+            const date = new Date(attr.valueDate);
+            if (!isNaN(date.getTime())) {
+              return date.getFullYear().toString();
+            }
+            const dateStr = String(attr.valueDate);
+            const yearMatch = dateStr.match(/^(\d{4})/);
+            if (yearMatch) {
+              return yearMatch[1];
+            }
           }
+          // Last resort: valueString
+          if (attr.valueString) {
+            const str = String(attr.valueString);
+            const yearMatch = str.match(/^(\d{4})/);
+            if (yearMatch) {
+              return yearMatch[1];
+            }
+            return str;
+          }
+          return null;
         }
         
+        // For non-year attributes, use standard priority
         return attr.valueString || attr.valueNumber || attr.valueBoolean || null;
       };
       
@@ -159,14 +176,18 @@ const ApplicationsCard = ({ state, setState, product }: ApplicationsCardProps) =
       if (modelo) parts.push(String(modelo));
       if (submodelo) parts.push(String(submodelo));
       if (año) {
-        // Ensure año is a string and not a full timestamp
+        // Ensure año is always just the year number, never a timestamp
         let añoStr = String(año);
-        // If it looks like a timestamp, extract just the year
-        if (añoStr.includes('T') || añoStr.includes('-') && añoStr.length > 4) {
+        // If it looks like a timestamp or ISO date, extract just the year
+        if (añoStr.includes('T') || (añoStr.includes('-') && añoStr.length > 4)) {
           const yearMatch = añoStr.match(/^(\d{4})/);
           if (yearMatch) {
             añoStr = yearMatch[1];
           }
+        }
+        // Also handle if it's a number - just convert to string
+        if (typeof año === 'number') {
+          añoStr = año.toString();
         }
         parts.push(añoStr);
       }
@@ -263,20 +284,42 @@ const ApplicationsCard = ({ state, setState, product }: ApplicationsCardProps) =
     );
     if (!attr) return null;
     
-    // Handle valueDate specially - extract year from date
-    if (attr.valueDate) {
-      const date = new Date(attr.valueDate);
-      if (!isNaN(date.getTime())) {
-        return date.getFullYear();
+    const isYearAttribute = attrName.toLowerCase().includes("año") || 
+                           attrName.toLowerCase().includes("anio") || 
+                           attrName.toLowerCase().includes("year");
+    
+    // For year attributes, prioritize valueNumber (as it's stored now)
+    if (isYearAttribute) {
+      if (attr.valueNumber !== null && attr.valueNumber !== undefined) {
+        return attr.valueNumber;
       }
+      // Fallback to valueDate if valueNumber not available
+      if (attr.valueDate) {
+        const date = new Date(attr.valueDate);
+        if (!isNaN(date.getTime())) {
+          return date.getFullYear();
+        }
+      }
+      // Last resort: valueString
+      if (attr.valueString) {
+        const str = String(attr.valueString);
+        const yearMatch = str.match(/^(\d{4})/);
+        if (yearMatch) {
+          return parseInt(yearMatch[1], 10);
+        }
+        return str;
+      }
+      return null;
     }
     
+    // For non-year attributes, use standard priority
     return attr.valueString || attr.valueNumber || attr.valueBoolean || null;
   };
 
   // Helper function to get grouping key (all attributes except Año)
   const getGroupingKey = (application: Application): string => {
     const origin = application.origin || "";
+    const fabricante = getAttributeValue(application, 'Fabricante') || "";
     const modelo = getAttributeValue(application, 'Modelo') || "";
     const submodelo = getAttributeValue(application, 'Submodelo') || "";
     const litrosMotor = getAttributeValue(application, 'Litros_Motor') || "";
@@ -289,7 +332,7 @@ const ApplicationsCard = ({ state, setState, product }: ApplicationsCardProps) =
     const transmision = getAttributeValue(application, 'Transmisión') || getAttributeValue(application, 'Transmision') || "";
     
     // Create key from all attributes except Año
-    return `${origin}|${modelo}|${submodelo}|${litrosMotor}|${ccMotor}|${cidMotor}|${cilindrosMotor}|${bloqueMotor}|${motor}|${tipoMotor}|${transmision}`;
+    return `${origin}|${fabricante}|${modelo}|${submodelo}|${litrosMotor}|${ccMotor}|${cidMotor}|${cilindrosMotor}|${bloqueMotor}|${motor}|${tipoMotor}|${transmision}`;
   };
 
   // Helper function to extract year value (single year, not range)
@@ -303,7 +346,12 @@ const ApplicationsCard = ({ state, setState, product }: ApplicationsCardProps) =
     });
     
     if (attr) {
-      // Handle valueDate - extract year from date
+      // Prioritize valueNumber (as year is stored as number now)
+      if (attr.valueNumber !== null && attr.valueNumber !== undefined) {
+        return typeof attr.valueNumber === 'number' ? attr.valueNumber : parseInt(String(attr.valueNumber), 10);
+      }
+      
+      // Fallback to valueDate - extract year from date
       if (attr.valueDate) {
         const date = new Date(attr.valueDate);
         if (!isNaN(date.getTime())) {
@@ -321,7 +369,7 @@ const ApplicationsCard = ({ state, setState, product }: ApplicationsCardProps) =
         if (!isNaN(singleYear)) return singleYear;
       }
       
-      // Handle valueNumber
+      // Handle valueNumber (legacy support)
       if (typeof attr.valueNumber === "number") {
         return attr.valueNumber;
       }
@@ -413,6 +461,7 @@ const ApplicationsCard = ({ state, setState, product }: ApplicationsCardProps) =
       return {
         applications,
         origin: firstApp.origin,
+        fabricante: getAttributeValue(firstApp, 'Fabricante'),
         modelo: getAttributeValue(firstApp, 'Modelo'),
         submodelo: getAttributeValue(firstApp, 'Submodelo'),
         añoMin,
@@ -440,6 +489,15 @@ const ApplicationsCard = ({ state, setState, product }: ApplicationsCardProps) =
     // Build display text from attribute values
     if (application.attributeValues && application.attributeValues.length > 0) {
       const parts: string[] = [];
+
+      const normalizeToYear = (input: any): string | null => {
+        if (input === null || input === undefined) return null;
+        const str = String(input);
+        const yearMatch = str.match(/^(\d{4})/);
+        if (yearMatch) return yearMatch[1];
+        return null;
+      };
+
       application.attributeValues.forEach((attr: any) => {
         const attrName = attr.attribute?.name || "";
         const isYearAttribute = attrName.toLowerCase().includes("año") || 
@@ -448,35 +506,49 @@ const ApplicationsCard = ({ state, setState, product }: ApplicationsCardProps) =
         
         let value: any = null;
         
-        // For year attributes, prioritize valueDate and extract only the year
-        if (isYearAttribute && attr.valueDate) {
-          const date = new Date(attr.valueDate);
-          if (!isNaN(date.getTime())) {
-            value = date.getFullYear().toString();
-          } else {
-            // If date parsing failed, try to extract year from string
-            const dateStr = String(attr.valueDate);
-            const yearMatch = dateStr.match(/^(\d{4})/);
-            if (yearMatch) {
-              value = yearMatch[1];
+        if (isYearAttribute) {
+          // Prioritize valueNumber (as it's stored now)
+          if (attr.valueNumber !== null && attr.valueNumber !== undefined) {
+            value = attr.valueNumber.toString();
+          } else if (attr.valueString) {
+            // If it's a string, try to extract year
+            const normalized = normalizeToYear(attr.valueString);
+            value = normalized ?? attr.valueString;
+          } else if (attr.valueDate) {
+            // If it's a date, extract year
+            const date = new Date(attr.valueDate);
+            if (!isNaN(date.getTime())) {
+              value = date.getFullYear().toString();
+            } else {
+              const normalized = normalizeToYear(attr.valueDate);
+              value = normalized ?? null;
             }
+          } else {
+            value = null;
+          }
+          
+          // Final check: if value is still a long string/timestamp, extract year
+          if (value && typeof value === "string" && (value.includes('T') || value.length > 4)) {
+            const normalized = normalizeToYear(value);
+            if (normalized) value = normalized;
           }
         } else if (attr.valueDate) {
-          // For non-year date attributes, extract year as well
+          // Para otros atributos de fecha, mostrar solo el año en el preview
           const date = new Date(attr.valueDate);
           if (!isNaN(date.getTime())) {
             value = date.getFullYear().toString();
           } else {
-            const dateStr = String(attr.valueDate);
-            const yearMatch = dateStr.match(/^(\d{4})/);
-            if (yearMatch) {
-              value = yearMatch[1];
-            } else {
-              value = attr.valueDate;
-            }
+            const normalized = normalizeToYear(attr.valueDate);
+            value = normalized ?? attr.valueDate;
           }
         } else {
-          value = attr.valueString || attr.valueNumber || attr.valueBoolean;
+          // Fallback a string/number/boolean
+          value = attr.valueString ?? attr.valueNumber ?? attr.valueBoolean;
+          // Si parece timestamp/ISO y tiene año, muestra solo el año
+          if (typeof value === "string" && value.length > 4) {
+            const normalized = normalizeToYear(value);
+            if (normalized) value = normalized;
+          }
         }
         
         // If value is a string that looks like a timestamp, extract year
@@ -534,6 +606,7 @@ const ApplicationsCard = ({ state, setState, product }: ApplicationsCardProps) =
               <TableHeader>
                 <TableRow className="bg-blue-600 hover:bg-blue-600">
                   <TableHead className="text-white font-semibold">Origen</TableHead>
+                  <TableHead className="text-white font-semibold">Fabricante</TableHead>
                   <TableHead className="text-white font-semibold">Modelo</TableHead>
                   <TableHead className="text-white font-semibold">Submodelo</TableHead>
                   <TableHead className="text-white font-semibold">Año</TableHead>
@@ -576,6 +649,7 @@ const ApplicationsCard = ({ state, setState, product }: ApplicationsCardProps) =
                             )}
                           </div>
                         </TableCell>
+                        <TableCell>{group.fabricante || "-"}</TableCell>
                         <TableCell>{group.modelo || "-"}</TableCell>
                         <TableCell>{group.submodelo || "-"}</TableCell>
                         <TableCell>
@@ -607,7 +681,7 @@ const ApplicationsCard = ({ state, setState, product }: ApplicationsCardProps) =
                       </TableRow>
                       {isExpanded && group.applications.length > 0 && (
                         <TableRow className="bg-gray-50">
-                          <TableCell colSpan={12} className="p-4">
+                          <TableCell colSpan={13} className="p-4">
                             <div className="space-y-2">
                               <h4 className="font-semibold text-sm mb-3">
                                 Aplicaciones individuales en este grupo ({group.applications.length}):
@@ -630,10 +704,6 @@ const ApplicationsCard = ({ state, setState, product }: ApplicationsCardProps) =
                                     <Pencil
                                       onClick={() => handleEditApplication(app)}
                                       className="cursor-pointer w-4 h-4 hover:text-blue-600 transition-colors"
-                                    />
-                                    <X
-                                      onClick={() => handleRemoveFromGroup(index, app.id)}
-                                      className="cursor-pointer w-4 h-4 hover:text-red-600 transition-colors"
                                     />
                                     </div>
                                   </div>

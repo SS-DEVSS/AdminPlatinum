@@ -6,7 +6,7 @@ import { toast } from "./use-toast";
 
 export const useBanners = () => {
   const [banners, setBanners] = useState<Banner[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Start with true to show loader initially
   const [errorMsg, setErrorMsg] = useState("");
 
   const client = axiosClient();
