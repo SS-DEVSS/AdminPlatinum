@@ -1,17 +1,11 @@
 import { useState } from "react";
 import {
-  ChevronLeft,
-  ChevronRight,
   LayoutGrid,
   Menu,
   Package,
   Package2,
-  Settings,
   ShoppingCart,
   LogOut,
-  Newspaper,
-  Megaphone,
-  Dock,
   PanelLeftClose,
   PanelLeftOpen,
   Import,

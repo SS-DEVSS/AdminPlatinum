@@ -20,7 +20,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useDeleteModal } from "@/context/delete-context";
 import { Link } from "react-router-dom";
 import { AttributeValue, Item, Variant } from "@/models/product";
 import { useProducts } from "@/hooks/useProducts";
@@ -69,18 +68,13 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
   const client = axiosClient();
 
   let { attributes } = category || {};
-  const { openModal } = useDeleteModal();
-  const { products, loading, deleteProduct, getProducts } = useProducts();
+  const { products, loading, getProducts } = useProducts();
   const { categories } = useCategories();
 
   if (!attributes && categories.length > 0) {
     // attributes = categories[0].attributes;
     attributes = categories[0].attributes;
   }
-
-  const handleDeleteProduct = async (id: Item["id"]) => {
-    await deleteProduct(id);
-  };
 
   const handleImageClick = (variant: Variant) => {
     setSelectedVariant(variant);

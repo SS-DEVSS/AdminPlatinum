@@ -31,7 +31,7 @@ import { useCategoryContext } from "@/context/categories-context";
 
 const Categorias = () => {
   const { selectedBrand, setSelectedBrand } = useBrandContext();
-  const { categories, loading, getCategories, deleteCategory, getCategoryById } =
+  const { categories, loading, getCategories, getCategoryById } =
     useCategoryContext();
   const { brands } = useBrands();
   const location = useLocation();
@@ -145,7 +145,6 @@ const Categorias = () => {
                   category={categoria}
                   key={categoria.id}
                   getItems={getCategories}
-                  deleteCategory={deleteCategory}
                   getCategoryById={getCategoryById}
                 />
               ))}

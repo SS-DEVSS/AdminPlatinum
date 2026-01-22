@@ -42,7 +42,6 @@ const getStatusBadge = (
 ) => {
   const hasErrors = errors.length > 0;
   const hasWarnings = warnings.length > 0;
-  const hasIssues = hasErrors || hasWarnings;
   
   // Determinar el color según el estado y los errores/advertencias
   let badgeClassName = "";
@@ -173,7 +172,7 @@ const ImportJobsDashboard = ({ onJobClick }: ImportJobsDashboardProps) => {
   const [selectedJob, setSelectedJob] = useState<string | null>(null);
   const limit = 20;
 
-  const { jobs, loading, error, pagination, refresh } = useImportJobs({
+  const { jobs, loading, error, pagination } = useImportJobs({
     type: typeFilter !== "all" ? typeFilter : undefined,
     status: statusFilter !== "all" ? statusFilter : undefined,
     page,

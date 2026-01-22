@@ -29,7 +29,6 @@ type CardTemplateProps = {
   date?: Date;
   getItems?: () => void;
   getBrandById?: (id: Brand["id"]) => void;
-  deleteCategory?: any;
   getCategoryById?: any;
 };
 
@@ -37,7 +36,6 @@ const CardTemplate = ({
   brand,
   category,
   getBrandById,
-  deleteCategory,
   getCategoryById,
 }: CardTemplateProps) => {
   const { setSelectedBrand, openModal: openModalBrand } = useBrandContext();
