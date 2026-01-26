@@ -2,8 +2,8 @@ import { Dispatch, useCallback, useState, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
 
 interface MyDropzoneProps {
-  file: File;
-  fileSetter: Dispatch<React.SetStateAction<File>>;
+  file?: File | null;
+  fileSetter: Dispatch<React.SetStateAction<File | null>>;
   type?: "document" | "image";
   className?: string;
   currentImageUrl?: string; // URL de la imagen actual (si existe)
@@ -47,7 +47,7 @@ const MyDropzone = ({ file, fileSetter, type, className, currentImageUrl, onImag
         const sanitizedFiles = acceptedFiles.map((file) => {
           const sanitizedFile = new File(
             [file],
-            file.name.replace(/[()]/g, ""),
+            file.name ? file.name.replace(/[()]/g, "") : "file",
             {
               type: file.type,
             }
@@ -75,7 +75,7 @@ const MyDropzone = ({ file, fileSetter, type, className, currentImageUrl, onImag
   };
 
   // Si hay una imagen actual y no se ha seleccionado un nuevo archivo, mostrar layout dividido
-  const showSplitLayout = currentImageUrl && !file.name && !previewUrl && type === "image";
+  const showSplitLayout = currentImageUrl && !file && !previewUrl && type === "image";
   const showPreview = previewUrl && type === "image";
   const showText = !showSplitLayout && !showPreview;
 
@@ -142,7 +142,7 @@ const MyDropzone = ({ file, fileSetter, type, className, currentImageUrl, onImag
       {...getRootProps()}
       className={`${isDragActive
         ? "bg-[#F5F9FD] border-[#0bbff4]"
-        : file.name
+        : file && file.name
           ? "bg-green-50 border-green-400"
           : ""
         } border border-dashed rounded-lg ${className} flex flex-col items-center justify-center`}
@@ -167,7 +167,7 @@ const MyDropzone = ({ file, fileSetter, type, className, currentImageUrl, onImag
               <p
                 className={`text-[#4E5154] text-center overflow-ellipsis text-sm`}
               >
-                {file.name ? test(file.name) : "Vista previa"}
+                {file && file.name ? test(file.name) : "Vista previa"}
               </p>
               <p className="text-center text-[#94A3B8] mt-2 text-sm underline hover:cursor-pointer">
                 Haz clic para seleccionar otra imagen

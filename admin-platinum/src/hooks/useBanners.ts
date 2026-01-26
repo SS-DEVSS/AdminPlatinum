@@ -21,7 +21,6 @@ export const useBanners = () => {
       const { data } = await client.get(`/banners?page=1&pageSize=10`);
       setBanners(data.banners);
     } catch (error: any) {
-      console.log(error.response.data);
     } finally {
       setLoading(false);
     }
@@ -45,7 +44,6 @@ export const useBanners = () => {
       });
       await getAllBanners();
     } catch (error: any) {
-      console.log(error);
       setErrorMsg(error.response.data.error);
       toast({
         title: "Error al crear banner",
@@ -68,7 +66,6 @@ export const useBanners = () => {
       });
       await getAllBanners();
     } catch (error: any) {
-      console.log(error.response.data.error);
     } finally {
       setLoading(false);
     }

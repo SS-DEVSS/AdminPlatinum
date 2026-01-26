@@ -27,9 +27,7 @@ export const uploadFileToS3 = async (
   let fileToUpload = file;
   if (!prefix.includes("documents") && file.type.startsWith("image/")) {
     try {
-      console.log(`[S3FileManager] Convirtiendo imagen a WebP: ${file.name}`);
       fileToUpload = await convertImageToWebP(file);
-      console.log(`[S3FileManager] Conversión exitosa: ${fileToUpload.name}`);
     } catch (error) {
       console.error("[S3FileManager] Error al convertir imagen a WebP, subiendo original:", error);
       // Si falla la conversión, subir el archivo original
@@ -43,7 +41,6 @@ export const uploadFileToS3 = async (
   try {
     // Use backend file upload endpoint instead of direct S3
     const endpoint = prefix.includes("documents") ? "/files/documents" : "/files/images";
-    console.log(`[S3FileManager] Uploading file to ${endpoint}, size: ${fileToUpload.size}, type: ${fileToUpload.type}`);
     
     const response = await client.post(endpoint, formData, {
       headers: {
@@ -57,22 +54,8 @@ export const uploadFileToS3 = async (
     
     // Verificar que el archivo subido sea WebP (si era una imagen)
     const isWebP = uploadedKey.endsWith('.webp') || uploadedUrl.includes('.webp');
-    if (!prefix.includes("documents") && file.type.startsWith("image/")) {
-      console.log(`[S3FileManager] ✅ Upload successful!`, {
-        originalFile: file.name,
-        originalType: file.type,
-        originalSize: `${(file.size / 1024).toFixed(2)} KB`,
-        uploadedKey: uploadedKey,
-        uploadedUrl: uploadedUrl,
-        isWebP: isWebP ? '✅ SÍ' : '❌ NO',
-        uploadedType: fileToUpload.type,
-      });
-      
-      if (!isWebP) {
-        console.warn(`[S3FileManager] ⚠️ ADVERTENCIA: El archivo no parece ser WebP. Verifica la extensión: ${uploadedKey}`);
-      }
-    } else {
-      console.log(`[S3FileManager] Upload successful: ${uploadedKey || uploadedUrl}`);
+    if (!prefix.includes("documents") && file.type.startsWith("image/") && !isWebP) {
+      console.warn(`[S3FileManager] ⚠️ ADVERTENCIA: El archivo no parece ser WebP. Verifica la extensión: ${uploadedKey}`);
     }
 
     // Backend returns { url, key }, format it to match expected response

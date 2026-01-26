@@ -55,17 +55,6 @@ export const convertImageToWebP = async (
               lastModified: Date.now(),
             });
 
-            const originalSizeKB = (file.size / 1024).toFixed(2);
-            const webpSizeKB = (webpFile.size / 1024).toFixed(2);
-            const reduction = ((1 - webpFile.size / file.size) * 100).toFixed(1);
-            
-            console.log(`[ImageConverter] ✅ Conversión exitosa:`, {
-              original: `${file.name} (${originalSizeKB} KB)`,
-              converted: `${webpFile.name} (${webpSizeKB} KB)`,
-              reduccion: `${reduction}%`,
-              tipo: webpFile.type,
-            });
-            
             resolve(webpFile);
           },
           'image/webp',

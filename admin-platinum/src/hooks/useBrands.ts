@@ -37,7 +37,6 @@ export const useBrands = () => {
     } catch (error) {
       console.error("Error fetching brands:", error);
     } finally {
-      console.log(brand);
       setLoading(false);
     }
   };
@@ -78,7 +77,6 @@ export const useBrands = () => {
       });
       await getBrands();
     } catch (error: any) {
-      console.log(error);
       setErrorMsg(error.response.data.error);
       toast({
         title: "Error al eliminar marca",
@@ -107,7 +105,6 @@ export const useBrands = () => {
       });
       await getBrands();
     } catch (error: any) {
-      console.log(error);
       setErrorMsg(error.response.data.error);
       toast({
         title: "Error al actualizar marca",
