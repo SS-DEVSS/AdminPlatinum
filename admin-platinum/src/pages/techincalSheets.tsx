@@ -116,8 +116,8 @@ const TechincalSheets = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [tsForm, setTsForm] = useState<TSFormType>(TsFormInitialState);
-  const [file, setFile] = useState<File>({ name: "" } as File);
-  const [image, setImage] = useState<File>({} as File);
+  const [file, setFile] = useState<File | null>(null);
+  const [image, setImage] = useState<File | null>(null);
 
   const toggleModal = async () => {
     setIsOpen(!isOpen);

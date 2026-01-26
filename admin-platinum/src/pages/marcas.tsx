@@ -37,7 +37,7 @@ const Marcas = () => {
   const { modalState, closeModal, openModal } = useBrandContext();
   const { uploadFile } = useS3FileManager();
   const { isOpen, title, description } = modalState;
-  const [image, setImage] = useState<File>({} as File);
+  const [image, setImage] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const savingStartTimeRef = useRef<number | null>(null);
 
@@ -51,7 +51,7 @@ const Marcas = () => {
   const [isEditMode, setIsEditMode] = useState(false);
 
   useEffect(() => {
-    if (image.name !== form.logoImgUrl) {
+    if (image?.name && image.name !== form.logoImgUrl) {
       setForm({
         ...form,
         logoImgUrl: image.name,
@@ -61,7 +61,7 @@ const Marcas = () => {
 
   useEffect(() => {
     if (brand && isOpen && isEditMode) {
-      setImage({ name: brand.logoImgUrl! } as File);
+      setImage(null);
     }
   }, [brand, isOpen, isEditMode]);
 
@@ -150,7 +150,7 @@ const Marcas = () => {
         if (image && image instanceof File && image.name) {
           uploadFile(image, async (_, location) => {
             await updateBrand({ ...brandData, logoImgUrl: location });
-            setImage({} as File);
+            setImage(null);
             finishSaving();
           });
         } else {
@@ -161,7 +161,7 @@ const Marcas = () => {
         if (image && image instanceof File && image.name) {
           uploadFile(image, async (_, location) => {
             await addBrand({ ...form, logoImgUrl: location });
-            setImage({} as File);
+            setImage(null);
             finishSaving();
           });
         }

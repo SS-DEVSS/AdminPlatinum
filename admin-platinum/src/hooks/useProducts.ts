@@ -34,7 +34,6 @@ export const useProducts = () => {
       
       setProducts(allProducts);
     } catch (error) {
-      console.log(error);
     } finally {
       setLoading(false);
     }
@@ -46,7 +45,6 @@ export const useProducts = () => {
       const { data } = await client.get(`/products/${id}`);
       return data;
     } catch (error) {
-      console.log(error);
       return null;
     } finally {
       setLoading(false);
@@ -66,11 +64,24 @@ export const useProducts = () => {
   const createProduct = async (productData: any) => {
     try {
       setLoading(true);
-      const { data } = await client.post('/products', productData);
-      await getProducts(); // Refresh the list
+      
+      const { data } = await client.post('/products', productData, {
+        timeout: 120000, // 2 minutes timeout for product creation
+      });
+      
+      
+      // Refresh the list in background (don't wait for it)
+      getProducts().catch((err) => {
+        console.error("Error refreshing products list:", err);
+        // Don't throw - this is a background operation
+      });
       return data;
-    } catch (error) {
-      console.error("Error creating product:", error);
+    } catch (error: any) {
+      console.error("Error creating product:", {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
       throw error;
     } finally {
       setLoading(false);
@@ -80,7 +91,6 @@ export const useProducts = () => {
   const updateProduct = async (id: string, productData: any) => {
     try {
       setLoading(true);
-      console.log("[useProducts] Updating product:", id, productData);
       const { data } = await client.patch(`/products/${id}`, productData);
       await getProducts(); // Refresh the list
       return data;

@@ -59,7 +59,7 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
   const [previewImageUrl, setPreviewImageUrl] = useState<string>("");
   const [previewVariant, setPreviewVariant] = useState<Variant | null>(null);
   const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
-  const [imageFile, setImageFile] = useState<File>({} as File);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const uploadInProgressRef = useRef(false);
   const lastUploadedFileRef = useRef<string>("");
@@ -145,7 +145,7 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
 
   const handleImageUpload = async () => {
     // Prevent multiple simultaneous uploads
-    if (uploadInProgressRef.current || isUploading || !selectedVariant || !imageFile.name) {
+    if (uploadInProgressRef.current || isUploading || !selectedVariant || !imageFile?.name) {
       return;
     }
 
@@ -332,7 +332,7 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [imageFile.name, imageFile.size, imageFile.lastModified]); // Only trigger when file actually changes
+  }, [imageFile?.name, imageFile?.size, imageFile?.lastModified]); // Only trigger when file actually changes
 
   const flattenVariants = (items: Item[]): Variant[] => {
     if (items.length) {
