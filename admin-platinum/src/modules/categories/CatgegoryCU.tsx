@@ -66,7 +66,7 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
   const [selectedBrandIds, setSelectedBrandIds] = useState<Set<string>>(
     new Set()
   );
-  const [image, setImage] = useState<File>({ name: "" } as File);
+  const [image, setImage] = useState<File | null>(null);
   const [imageUrl, setImageUrl] = useState<string>(category?.imgUrl || "");
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string>("");
@@ -186,7 +186,7 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
   };
 
   useEffect(() => {
-    if (image.name !== form.imgUrl) {
+    if (image?.name && image.name !== form.imgUrl) {
       setForm({
         ...form,
         imgUrl: image.name,
@@ -478,14 +478,14 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
                       fileSetter={setImage}
                       type="image"
                       className="p-8 min-h-[200px]"
-                      currentImageUrl={imageUrl && !image.name ? imageUrl : undefined}
+                      currentImageUrl={imageUrl && !image?.name ? imageUrl : undefined}
                       onImageClick={() => {
-                        if (imageUrl && !image.name) {
+                        if (imageUrl && !image?.name) {
                           handlePreviewImage(imageUrl);
                         }
                       }}
                     />
-                    {imageUrl && !image.name && category?.id && (
+                    {imageUrl && !image?.name && category?.id && (
                       <div className="mt-3 flex justify-center gap-2">
                         <Button
                           variant="outline"

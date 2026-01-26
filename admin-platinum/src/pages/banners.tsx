@@ -17,7 +17,7 @@ import { AlertTriangle, GripVertical, XCircle } from "lucide-react";
 import { useState } from "react";
 
 const Banners = () => {
-  const [image, setImage] = useState<File>({} as File);
+  const [image, setImage] = useState<File | null>(null);
 
   const { loading, banners, addBanner, deleteBanner } = useBanners();
   const { uploadFile, deleteFile } = useS3FileManager();
@@ -48,9 +48,9 @@ const Banners = () => {
           </CardHeader>
           <CardContent>
             <MyDropzone className="p-16" file={image} fileSetter={setImage} />
-            {image.name && (
+            {image?.name && (
               <div className="flex justify-center mt-3 gap-2">
-                <Button onClick={() => setImage({} as File)} variant="outline">
+                <Button onClick={() => setImage(null)} variant="outline">
                   Cancelar
                 </Button>
                 <Button disabled={loading} onClick={handleUpload}>

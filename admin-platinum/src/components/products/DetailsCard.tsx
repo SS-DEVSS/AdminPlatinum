@@ -46,19 +46,17 @@ const DetailsCard = ({ state, setState }: DetailsCardProps) => {
   const { uploadFile, uploading } = useS3FileManager();
   const { toast } = useToast();
   const client = axiosClient();
-  const [imageFile, setImageFile] = useState<File>({ name: "" } as File);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [imageUrl, setImageUrl] = useState<string>(state.imgUrl || "");
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string>("");
 
   // Update imageUrl when state.imgUrl changes (e.g., when loading product data)
   useEffect(() => {
-    if (state.imgUrl && (!imageFile.name || imageFile.name === "")) {
+    if (state.imgUrl && !imageFile) {
       setImageUrl(state.imgUrl);
-      // Reset imageFile to ensure it's empty when loading existing image
-      setImageFile({ name: "" } as File);
     }
-  }, [state.imgUrl]);
+  }, [state.imgUrl, imageFile]);
 
   const handleFormChange = (e: any) => {
     const { name, value } = e.target;
@@ -84,6 +82,7 @@ const DetailsCard = ({ state, setState }: DetailsCardProps) => {
     }));
   };
 
+  // Upload image immediately when selected (same behavior for create and edit)
   useEffect(() => {
     if (imageFile && imageFile.name) {
       uploadFile(imageFile, (_key: string, location: string) => {
@@ -95,8 +94,10 @@ const DetailsCard = ({ state, setState }: DetailsCardProps) => {
           imgUrl: location, // Use location (full URL) instead of key
         }));
       });
+    } else if (!imageFile) {
+      setImageUrl("");
     }
-  }, [imageFile]);
+  }, [imageFile, uploadFile, setState]);
 
   const handlePreviewImage = (url: string) => {
     setPreviewImageUrl(url);
@@ -147,6 +148,20 @@ const DetailsCard = ({ state, setState }: DetailsCardProps) => {
       </CardHeader>
       <CardContent className="flex-1">
         <div className="grid gap-6">
+          <div className="grid gap-3">
+            <Label htmlFor="name">
+              <span className="text-redLabel">*</span>Nombre del Producto
+            </Label>
+            <Input
+              id="name"
+              name="name"
+              type="text"
+              className="w-full"
+              placeholder="Nombre del producto"
+              onChange={handleFormChange}
+              value={state.name}
+            />
+          </div>
           <div className="grid gap-3">
             <Label htmlFor="sku">
               <span className="text-redLabel">*</span>SKU
@@ -235,18 +250,18 @@ const DetailsCard = ({ state, setState }: DetailsCardProps) => {
             </Label>
             <div className="relative">
               <MyDropzone
-                file={imageFile}
+                file={imageFile || undefined}
                 fileSetter={setImageFile}
                 type="image"
                 className="p-8 min-h-[200px]"
-                currentImageUrl={imageUrl && !imageFile.name ? imageUrl : undefined}
+                currentImageUrl={imageUrl && !imageFile ? imageUrl : undefined}
                 onImageClick={() => {
-                  if (imageUrl && !imageFile.name) {
+                  if (imageUrl && !imageFile) {
                     handlePreviewImage(imageUrl);
                   }
                 }}
               />
-              {imageUrl && !imageFile.name && (
+              {imageUrl && !imageFile && (
                 <div className="mt-3 flex justify-center gap-2">
                   <Button
                     variant="outline"

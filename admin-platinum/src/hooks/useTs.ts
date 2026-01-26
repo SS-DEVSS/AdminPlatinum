@@ -31,7 +31,6 @@ export const useTs = () => {
         variant: "success",
       });
     } catch (error: any) {
-      console.log(error);
       setErrorMsg(error.response.data.error);
       toast({
         title: "Error al crear boletín",

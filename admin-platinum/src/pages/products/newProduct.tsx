@@ -18,7 +18,7 @@ const NewProduct = () => {
   const { id } = useParams();
   const isEditMode = !!id;
   const navigate = useNavigate();
-  const { getProductById, createProduct, updateProduct, loading: productsLoading } = useProducts();
+  const { getProductById, createProduct, updateProduct, getProducts, loading: productsLoading } = useProducts();
   const { categories } = useCategoryContext();
   const { toast } = useToast();
   const [currentProduct, setCurrentProduct] = useState<any>(null);
@@ -258,17 +258,33 @@ const NewProduct = () => {
   }, [isEditMode, id, categories]); // Depend on categories to ensure they are loaded first
 
   const handleSubmit = async () => {
+    if (isSubmitting) return; // Prevent double submission
+    
     setIsSubmitting(true);
     const startTime = Date.now();
     savingStartTimeRef.current = startTime;
     
     try {
       // Validate required fields
-      if (!detailsState.name || !detailsState.description || !detailsState.category) {
+      const missingFields: string[] = [];
+      if (!detailsState.name || detailsState.name.trim() === "") {
+        missingFields.push("Nombre");
+      }
+      if (!detailsState.sku || detailsState.sku.trim() === "") {
+        missingFields.push("SKU");
+      }
+      if (!detailsState.description || detailsState.description.trim() === "") {
+        missingFields.push("Descripción");
+      }
+      if (!detailsState.category) {
+        missingFields.push("Categoría");
+      }
+      
+      if (missingFields.length > 0) {
         toast({
           title: "Error",
           variant: "destructive",
-          description: "Por favor completa todos los campos requeridos",
+          description: `Por favor completa los siguientes campos requeridos: ${missingFields.join(", ")}`,
         });
         return;
       }
@@ -441,17 +457,19 @@ const NewProduct = () => {
       } else {
         // Create product - ProductCreateRequest format
         // Format variants (for SINGLE products, create a variant with the product name)
+        const productType = (detailsState.type || "SINGLE").toUpperCase();
         const variants: any[] = [];
-        if (detailsState.type === "SINGLE") {
+        
+        // Always create a variant for SINGLE products (default type)
+        // Since type defaults to SINGLE, we should always create a variant
+        if (productType === "SINGLE" || !detailsState.type) {
           variants.push({
             name: detailsState.name,
             sku: detailsState.sku || null,
             price: null,
             stockQuantity: null,
             attributes: [],
-            images: detailsState.imgUrl ? [{ path: detailsState.imgUrl, order: 0 }] : [],
-            notes: [],
-            technicalSheets: [],
+            images: [], // Images will be added after product creation
           });
         }
 
@@ -459,19 +477,36 @@ const NewProduct = () => {
           name: detailsState.name,
           sku: detailsState.sku || null,
           description: detailsState.description || null,
-          type: detailsState.type || "SINGLE",
+          type: productType,
           idCategory: categoryId,
-          references: currentReferenceIds,
-          attributes: formattedAttributes,
-          variants: variants,
+          references: [], // References should be imported separately
+          attributes: Array.isArray(formattedAttributes) ? formattedAttributes : [],
+          variants: variants, // Always include variants array (even if empty for KIT products)
         };
 
+        // If there's an image, add it to the payload
+        // The backend expects imageUrl or imgUrl
+        if (detailsState.imgUrl && detailsState.imgUrl.trim() !== "") {
+          // Check if it's a full URL or just a path
+          // If it's a full URL (starts with http), use it as imageUrl
+          // Otherwise, it's already a path and we can use it as imgUrl
+          if (detailsState.imgUrl.startsWith('http')) {
+            productPayload.imageUrl = detailsState.imgUrl;
+          } else {
+            productPayload.imgUrl = detailsState.imgUrl;
+          }
+        }
+
         await createProduct(productPayload);
+        
         toast({
           title: "Producto creado",
           variant: "success",
-          description: "El producto se ha creado correctamente",
+          description: "El producto se ha creado correctamente. Puedes importar referencias y aplicaciones desde las secciones de importación.",
         });
+        
+        // Refresh products list to show the new product
+        await getProducts();
       }
 
       // Ensure loader is shown for at least 800ms for better UX
@@ -486,12 +521,19 @@ const NewProduct = () => {
         navigate("/productos");
       }, remainingTime);
     } catch (error: any) {
+      console.error("Error in handleSubmit:", error);
       setIsSubmitting(false);
       savingStartTimeRef.current = null;
+      
+      const errorMessage = error.response?.data?.error || 
+                          error.response?.data?.message || 
+                          error.message || 
+                          "Error al guardar el producto";
+      
       toast({
         title: "Error",
         variant: "destructive",
-        description: error.response?.data?.error || error.message || "Error al guardar el producto",
+        description: errorMessage,
       });
     }
   };
@@ -534,10 +576,12 @@ const NewProduct = () => {
           attributesState={attributesState}
           setAttributesState={setAttributesState}
         />
-        <AdditionalInfo 
-          setCanContinue={setCanContinue}
-          product={isEditMode ? currentProduct : null}
-        />
+        {isEditMode && (
+          <AdditionalInfo 
+            setCanContinue={setCanContinue}
+            product={currentProduct}
+          />
+        )}
         <section className="flex justify-end gap-3 mt-4">
           <Link to="/productos">
             <Button variant="outline">Cancelar</Button>
