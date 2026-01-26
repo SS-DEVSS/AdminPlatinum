@@ -67,7 +67,7 @@ const BlogPostCU = ({ blogPost }: BlogPostCUProps) => {
   const { uploadFile } = useS3FileManager();
 
   const [form, setForm] = useState<FormTypes>(FormInitialState);
-  const [image, setImage] = useState<File>({} as File);
+  const [image, setImage] = useState<File | null>(null);
   const [components, setComponents] = useState<Component[]>([]);
 
   useEffect(() => {
@@ -80,7 +80,7 @@ const BlogPostCU = ({ blogPost }: BlogPostCUProps) => {
   }, [blogPost]);
 
   useEffect(() => {
-    if (image.name !== form.coverImagePath) {
+    if (image?.name && image.name !== form.coverImagePath) {
       setForm((prevForm) => ({
         ...prevForm,
         coverImagePath: image.name,
@@ -106,6 +106,8 @@ const BlogPostCU = ({ blogPost }: BlogPostCUProps) => {
   );
 
   const handleSubmit = async () => {
+    if (!image) return;
+    
     let contentString = "";
     components.forEach((component) => {
       contentString += `<${component.type}>${component.content}</${component.type}>`;
