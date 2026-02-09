@@ -45,12 +45,12 @@ const CardTemplate = ({
 
   const viewCategoriesFromBrand = (id: Brand["id"]) => {
     setSelectedBrand(id);
-    navigate("/categorias");
+    navigate("/dashboard/categorias");
   };
 
   const navigateCreateCategory = (id: Brand["id"]) => {
     setSelectedBrand(id);
-    navigate("/categorias/nueva");
+    navigate("/dashboard/categorias/nueva");
   };
 
   const handleEditBrand = () => {
@@ -163,9 +163,9 @@ const CardTemplate = ({
               <DropdownMenuContent className="w-56">
                 <DropdownMenuLabel>Acciones</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                {pathname === "/categorias" && (
+                {pathname === "/dashboard/categorias" && (
                   <DropdownMenuGroup>
-                    <Link to="/categorias/editar">
+                    <Link to="/dashboard/categorias/editar">
                       <DropdownMenuItem
                         onClick={() => handleEditCategory(category?.id)}
                       >
@@ -174,7 +174,7 @@ const CardTemplate = ({
                     </Link>
                   </DropdownMenuGroup>
                 )}
-                {pathname === "/marcas" && (
+                {pathname === "/dashboard/marcas" && (
                   <DropdownMenuGroup>
                     <DropdownMenuItem onClick={handleEditBrand}>
                       Editar Marca

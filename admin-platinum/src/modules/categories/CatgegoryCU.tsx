@@ -323,7 +323,7 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
               imgUrl: location,
             } as any);
             if (response) {
-              navigate("/categorias");
+              navigate("/dashboard/categorias");
             }
           });
         } else {
@@ -337,7 +337,7 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
             ...updatePayload,
           } as any);
           if (response) {
-            navigate("/categorias");
+            navigate("/dashboard/categorias");
           }
         }
       } else if (addCategory && image) {
@@ -361,7 +361,7 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
 
           const response = (await addCategory(createPayload as any)) as { id: string } | undefined;
           if (response && response.id) {
-            navigate("/categorias");
+            navigate("/dashboard/categorias");
           }
         });
       }
@@ -388,7 +388,7 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
       <main>
       <header className="flex justify-between">
         <div className="flex items-center gap-4">
-          <Link to="/categorias">
+          <Link to="/dashboard/categorias">
             <Card className="p-2">
               <ChevronLeft className="h-4 w-4" />
             </Card>
@@ -604,7 +604,7 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
         />
       </section>
       <section className="mt-6 flex justify-end gap-3">
-        <Link to="/categorias">
+        <Link to="/dashboard/categorias">
           <Button variant={"outline"}>Cancelar</Button>
         </Link>
         <Button

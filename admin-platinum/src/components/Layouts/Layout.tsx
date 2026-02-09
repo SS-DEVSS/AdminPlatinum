@@ -29,10 +29,10 @@ type MenuItem = {
 };
 
 const menuItems: MenuItem[] = [
-  { href: "/productos", icon: Package, text: "Productos" },
-  { href: "/producto/importar/dashboard", icon: Import, text: "Importar" },
-  { href: "/marcas", icon: ShoppingCart, text: "Marcas" },
-  { href: "/categorias", icon: LayoutGrid, text: "Categorías" },
+  { href: "/dashboard/marcas", icon: ShoppingCart, text: "Marcas" },
+  { href: "/dashboard/categorias", icon: LayoutGrid, text: "Categorías" },
+  { href: "/dashboard/productos", icon: Package, text: "Productos" },
+  { href: "/dashboard/importaciones", icon: Import, text: "Importaciones" },
   // { href: "/boletines", icon: Newspaper, text: "Boletínes" },
   // { href: "/noticias", icon: Megaphone, text: "Noticias" },
   // { href: "/banners", icon: Dock, text: "Banners" },

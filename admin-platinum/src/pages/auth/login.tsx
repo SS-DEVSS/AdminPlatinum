@@ -33,7 +33,7 @@ const Login = () => {
 
     try {
       await signIn(email, password);
-      navigate("/productos");
+      navigate("/dashboard/productos");
     } catch (err: any) {
       setError(err.message || "Error al iniciar sesión");
     } finally {

@@ -10,7 +10,7 @@ const ImportJobsDashboardPage = () => {
     <Layout>
       <header className="flex justify-between items-center">
         <div className="flex items-center gap-4">
-          <Link to="/productos">
+          <Link to="/dashboard/productos">
             <Card className="p-2">
               <ChevronLeft className="h-4 w-4" />
             </Card>
@@ -19,7 +19,7 @@ const ImportJobsDashboardPage = () => {
             Dashboard de Importaciones
           </p>
         </div>
-        <Link to="/producto/importar">
+        <Link to="/dashboard/producto/importar">
           <Button className="flex items-center gap-2">
             <Upload className="h-4 w-4" />
             Nueva Importación

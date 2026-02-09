@@ -518,7 +518,7 @@ const NewProduct = () => {
         setIsSubmitting(false);
         savingStartTimeRef.current = null;
         // Navigate back to products list
-        navigate("/productos");
+        navigate("/dashboard/productos");
       }, remainingTime);
     } catch (error: any) {
       console.error("Error in handleSubmit:", error);
@@ -550,7 +550,7 @@ const NewProduct = () => {
       <Layout>
       <header className="flex justify-between">
         <div className="flex items-center gap-4">
-          <Link to="/productos">
+          <Link to="/dashboard/productos">
             <Card className="p-2">
               <ChevronLeft className="h-4 w-4" />
             </Card>
@@ -583,7 +583,7 @@ const NewProduct = () => {
           />
         )}
         <section className="flex justify-end gap-3 mt-4">
-          <Link to="/productos">
+          <Link to="/dashboard/productos">
             <Button variant="outline">Cancelar</Button>
           </Link>
           <Button disabled={!canContinue || isSubmitting} onClick={handleSubmit}>

@@ -19,7 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, CheckCircle2, Clock, XCircle, Loader2 } from "lucide-react";
+import { AlertCircle, CheckCircle2, Clock, XCircle, Loader2, RefreshCw, Ban, AlertTriangle } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -42,13 +42,13 @@ const getStatusBadge = (
 ) => {
   const hasErrors = errors.length > 0;
   const hasWarnings = warnings.length > 0;
-  
+
   // Determinar el color según el estado y los errores/advertencias
   let badgeClassName = "";
   let mainLabel = "";
   let Icon = Clock;
   let tooltipText: string | null = null;
-  
+
   if (status === "failed") {
     // Rojo: no terminó y hubo errores (failed)
     badgeClassName = "bg-red-500 text-white border-red-600 hover:bg-red-600";
@@ -303,27 +303,32 @@ const ImportJobsDashboard = ({ onJobClick }: ImportJobsDashboardProps) => {
                           <div className="text-sm space-y-1">
                             {job.status === "completed" && (
                               <>
-                                <div className="text-green-600">
-                                  ✓ Creados: {job.created}
+                                <div className="flex items-center gap-1.5 text-green-600">
+                                  <CheckCircle2 className="h-3.5 w-3.5" />
+                                  Creados: {job.created}
                                 </div>
-                                <div className="text-blue-600">
-                                  ↻ Actualizados: {job.updated}
+                                <div className="flex items-center gap-1.5 text-blue-600">
+                                  <RefreshCw className="h-3.5 w-3.5" />
+                                  Actualizados: {job.updated}
                                 </div>
                                 {job.skipped > 0 && (
-                                  <div className="text-yellow-600">
-                                    ⊘ Omitidos: {job.skipped}
+                                  <div className="flex items-center gap-1.5 text-yellow-600">
+                                    <Ban className="h-3.5 w-3.5" />
+                                    Omitidos: {job.skipped}
                                   </div>
                                 )}
                               </>
                             )}
                             {job.status === "failed" && job.failed > 0 && (
-                              <div className="text-red-600">
-                                ✗ Fallidos: {job.failed}
+                              <div className="flex items-center gap-1.5 text-red-600">
+                                <XCircle className="h-3.5 w-3.5" />
+                                Fallidos: {job.failed}
                               </div>
                             )}
                             {job.errors.length > 0 && (
-                              <div className="text-red-600">
-                                ⚠ Errores: {job.errors.length}
+                              <div className="flex items-center gap-1.5 text-red-600">
+                                <AlertTriangle className="h-3.5 w-3.5" />
+                                Errores: {job.errors.length}
                               </div>
                             )}
                           </div>

@@ -106,7 +106,7 @@ const Categorias = () => {
                   </SelectGroup>
                 </SelectContent>
               </Select>
-              <Link to="/categorias/nueva">
+              <Link to="/dashboard/categorias/nueva">
                 <Button size="sm" className="h-10 px-6 gap-1">
                   <PlusCircle className="h-3.5 w-3.5 mr-2" />
                   <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
