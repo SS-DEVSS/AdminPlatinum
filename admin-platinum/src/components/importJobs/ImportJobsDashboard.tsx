@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle, CheckCircle2, Clock, XCircle, Loader2, RefreshCw, Ban, AlertTriangle } from "lucide-react";
 import {
@@ -172,9 +172,10 @@ const getPageNumbers = (current: number, total: number): (number | "...")[] => {
 
 interface ImportJobsDashboardProps {
   onJobClick?: (jobId: string) => void;
+  headerActions?: React.ReactNode;
 }
 
-const ImportJobsDashboard = ({ onJobClick }: ImportJobsDashboardProps) => {
+const ImportJobsDashboard = ({ onJobClick, headerActions }: ImportJobsDashboardProps) => {
   const [typeFilter, setTypeFilter] = useState<ImportJobType | "all">("all");
   const [statusFilter, setStatusFilter] = useState<ImportJobStatus | "all">("all");
   const [page, setPage] = useState(1);
@@ -204,17 +205,12 @@ const ImportJobsDashboard = ({ onJobClick }: ImportJobsDashboardProps) => {
   };
 
   return (
-    <div className="space-y-4">
-      {/* Filtros */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Filtros</CardTitle>
-          <CardDescription>Filtra los jobs de importación por tipo y estado</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <label className="text-sm font-medium mb-2 block">Tipo de Importación</label>
+    <div className="w-full max-w-full">
+      <Card className="border-0 shadow-none w-full">
+        <CardHeader className="flex flex-row items-end p-0 m-0 pb-6 w-full">
+          <div className="flex flex-col gap-3">
+            <CardTitle>Importaciones</CardTitle>
+            <div className="flex gap-3">
               <Select
                 value={typeFilter}
                 onValueChange={(value) => {
@@ -222,19 +218,16 @@ const ImportJobsDashboard = ({ onJobClick }: ImportJobsDashboardProps) => {
                   setPage(1);
                 }}
               >
-                <SelectTrigger>
-                  <SelectValue />
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Tipo" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="all">Todos los tipos</SelectItem>
                   <SelectItem value="products">Productos</SelectItem>
                   <SelectItem value="references">Referencias</SelectItem>
                   <SelectItem value="applications">Aplicaciones</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-            <div className="flex-1">
-              <label className="text-sm font-medium mb-2 block">Estado</label>
               <Select
                 value={statusFilter}
                 onValueChange={(value) => {
@@ -242,11 +235,11 @@ const ImportJobsDashboard = ({ onJobClick }: ImportJobsDashboardProps) => {
                   setPage(1);
                 }}
               >
-                <SelectTrigger>
-                  <SelectValue />
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Estado" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="all">Todos los estados</SelectItem>
                   <SelectItem value="pending">Pendiente</SelectItem>
                   <SelectItem value="processing">En Progreso</SelectItem>
                   <SelectItem value="completed">Completado</SelectItem>
@@ -255,19 +248,13 @@ const ImportJobsDashboard = ({ onJobClick }: ImportJobsDashboardProps) => {
               </Select>
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Tabla de Jobs */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Jobs de Importación</CardTitle>
-          <CardDescription>
-            {pagination.total} job{pagination.total !== 1 ? "s" : ""} encontrado
-            {pagination.total !== 1 ? "s" : ""}
-          </CardDescription>
+          {headerActions && (
+            <div className="ml-auto flex items-center gap-3">
+              {headerActions}
+            </div>
+          )}
         </CardHeader>
-        <CardContent>
+        <div>
           {loading ? (
             <div className="flex justify-center items-center py-8">
               <Loader2 className="h-6 w-6 animate-spin" />
@@ -428,7 +415,7 @@ const ImportJobsDashboard = ({ onJobClick }: ImportJobsDashboardProps) => {
               )}
             </>
           )}
-        </CardContent>
+        </div>
       </Card>
 
       {/* Dialog de Detalles */}
