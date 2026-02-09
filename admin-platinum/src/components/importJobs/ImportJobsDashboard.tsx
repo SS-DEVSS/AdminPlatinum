@@ -33,7 +33,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, MoreVertical, Eye } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const getStatusBadge = (
   status: ImportJobStatus,
@@ -287,12 +293,12 @@ const ImportJobsDashboard = ({ onJobClick }: ImportJobsDashboardProps) => {
                       <TableHead>Archivo</TableHead>
                       <TableHead>Resultados</TableHead>
                       <TableHead>Fecha</TableHead>
-                      <TableHead>Acciones</TableHead>
+                      <TableHead></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {jobs.map((job) => (
-                      <TableRow key={job.id} className="cursor-pointer hover:bg-muted/50">
+                      <TableRow key={job.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleJobClick(job.id)}>
                         <TableCell className="font-medium">
                           {getTypeLabel(job.type)}
                         </TableCell>
@@ -340,13 +346,19 @@ const ImportJobsDashboard = ({ onJobClick }: ImportJobsDashboardProps) => {
                           {formatDate(job.createdAt)}
                         </TableCell>
                         <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleJobClick(job.id)}
-                          >
-                            Ver Detalles
-                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-muted/50" onClick={(e) => e.stopPropagation()}>
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleJobClick(job.id); }}>
+                                <Eye className="h-4 w-4 mr-2" />
+                                Ver Detalles
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
                     ))}

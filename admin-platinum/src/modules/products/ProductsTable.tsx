@@ -9,7 +9,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { MoreHorizontal } from "lucide-react";
+import { MoreVertical, Upload } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -61,6 +61,7 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
   const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const uploadInProgressRef = useRef(false);
   const lastUploadedFileRef = useRef<string>("");
   const { uploading } = useS3FileManager();
@@ -103,12 +104,11 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
 
   const handleDeleteImage = async (variant?: Variant | null) => {
     const variantToDelete = variant || selectedVariant;
-    if (!variantToDelete) return;
+    if (!variantToDelete || isDeleting) return;
 
     const isPseudoVariant = variantToDelete.id === variantToDelete.idProduct;
-    
+
     if (!isPseudoVariant) {
-      // Para variants, necesitaríamos un endpoint diferente o manejar de otra forma
       toast({
         title: "No se puede eliminar la imagen de un variant desde aquí",
         variant: "destructive",
@@ -116,18 +116,17 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
       return;
     }
 
+    setIsDeleting(true);
     try {
       await client.delete(`/products/${variantToDelete.id}/images`);
-      
+
       toast({
         title: "Imagen eliminada correctamente",
         variant: "success",
       });
 
-      // Actualizar la lista de productos
       await getProducts();
-      
-      // Cerrar los diálogos
+
       setPreviewDialogOpen(false);
       setImageDialogOpen(false);
       setSelectedVariant(null);
@@ -140,6 +139,8 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
         variant: "destructive",
         description: error.response?.data?.error || error.message || "Error desconocido",
       });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -163,12 +164,12 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
       // Check if this is a real variant or a pseudo-variant (product without variants)
       // If idProduct === id, it means it's a SINGLE product without variants
       const isPseudoVariant = selectedVariant.id === selectedVariant.idProduct;
-      
+
       if (isPseudoVariant) {
         // For SINGLE products, use the POST /products/:id/images endpoint
         // This endpoint accepts files directly and creates ProductImage records
         // We'll use replace=true query parameter to replace existing images
-        
+
         // Convertir imagen a WebP antes de subir
         let fileToUpload = imageFile;
         if (imageFile.type.startsWith('image/')) {
@@ -179,29 +180,29 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
             fileToUpload = imageFile;
           }
         }
-        
+
         const formData = new FormData();
         formData.append('images', fileToUpload);
-        
+
         await client.post(`/products/${selectedVariant.id}/images?replace=true`, formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
         });
-        
+
         toast({
           title: "Imagen actualizada correctamente",
           variant: "success",
         });
-        
+
         // Fetch the updated product to get the new image
         try {
           const updatedProduct = await client.get(`/products/${selectedVariant.id}`);
           const productData = updatedProduct.data;
-          
+
           // Try to get images from different possible locations
           let updatedImages: any[] = [];
-          
+
           // Check if images are directly on the product
           if (productData.images && Array.isArray(productData.images)) {
             updatedImages = productData.images;
@@ -210,7 +211,7 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
           else if (productData.variants && Array.isArray(productData.variants) && productData.variants.length > 0) {
             updatedImages = productData.variants[0].images || [];
           }
-          
+
           // Update the local state with the new product data
           setMappedData((prevData) => {
             return prevData.map((variant) => {
@@ -223,7 +224,7 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
               return variant;
             });
           });
-          
+
           // Also refresh the products list to ensure consistency
           await getProducts();
         } catch (error) {
@@ -235,7 +236,7 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
         // For variants, we need to upload the file first, then use PATCH with imageUrl
         // Since there's no POST /variants/:id/images endpoint, we'll use the file upload endpoint
         // and then PATCH with the imageUrl
-        
+
         // Convertir imagen a WebP antes de subir
         let fileToUpload = imageFile;
         if (imageFile.type.startsWith('image/')) {
@@ -246,34 +247,34 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
             fileToUpload = imageFile;
           }
         }
-        
+
         // Upload the file to get the URL
         const formData = new FormData();
         formData.append('file', fileToUpload);
-        
+
         const fileUploadResponse = await client.post('/files/images', formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
         });
-        
+
         const imageUrl = fileUploadResponse.data.url;
-        
+
         // Now update the variant with the imageUrl
         await client.patch(`/variants/${selectedVariant.id}`, {
           imageUrl: imageUrl,
         });
-        
+
         toast({
           title: "Imagen actualizada correctamente",
           variant: "success",
         });
-        
+
         // Fetch the updated variant to get the new image
         try {
           const updatedVariant = await client.get(`/variants/${selectedVariant.id}`);
           const updatedImages = (updatedVariant.data as any).images || [];
-          
+
           // Update the local state with the new variant data
           setMappedData((prevData) => {
             return prevData.map((variant) => {
@@ -292,7 +293,7 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
           await getProducts();
         }
       }
-      
+
       setImageDialogOpen(false);
       setImageFile({} as File);
       setSelectedVariant(null);
@@ -302,7 +303,7 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
     } catch (error: any) {
       console.error("[ProductsTable] Error uploading/updating image:", error);
       console.error("[ProductsTable] Error response:", error.response);
-      
+
       let errorMessage = "Error desconocido";
       if (error.response?.status === 404) {
         errorMessage = `Endpoint no encontrado. El ${selectedVariant.id === selectedVariant.idProduct ? 'producto' : 'variant'} con ID ${selectedVariant.id} no existe o el endpoint no está disponible.`;
@@ -311,7 +312,7 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
       } else if (error.message) {
         errorMessage = error.message;
       }
-      
+
       toast({
         title: "Error al subir imagen",
         variant: "destructive",
@@ -348,7 +349,7 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
           const itemSku = (item as any).sku || "";
           const itemAttributeValues = item.attributeValues || [];
           const itemDescription = item.description || "";
-          
+
           return [{
             id: item.id,
             idProduct: item.id,
@@ -372,7 +373,7 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
         return variants.map((variant: Variant): Variant => {
           // Get description from parent item if variant doesn't have one
           const variantDescription = (variant as any).description || item.description || "";
-          
+
           return {
             ...variant,
             // Include description from parent item if variant doesn't have one
@@ -398,7 +399,7 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
     if (!attributes) {
       return false;
     }
-    
+
     // Handle both array and object formats
     let productAttributes: any[] = [];
     if (Array.isArray(attributes)) {
@@ -406,37 +407,37 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
     } else if (typeof attributes === 'object' && 'product' in attributes) {
       productAttributes = (attributes as { product: any[] }).product || [];
     }
-    
+
     const descripcionAttribute = productAttributes.find(
-      (attr: any) => 
+      (attr: any) =>
         (attr.name === "Descripción" || attr.name === "descripción" || attr.name.toLowerCase() === "descripcion") &&
         attr.scope === "PRODUCT"
     );
-    
+
     if (descripcionAttribute) {
       // Check both camelCase and snake_case versions
       const visibleInCatalog = descripcionAttribute.visibleInCatalog ?? descripcionAttribute.visible_in_catalog;
       return visibleInCatalog === false;
     }
-    
+
     return false;
   }, [attributes]);
 
   const columns = useMemo(() => {
-    
+
     // Build base columns
     const baseColumns = [
       {
         accessorKey: "images",
         header: "",
         cell: ({ row }: { row: any }) => (
-          <div 
-            className="w-20 h-20 bg-slate-300 rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
+          <div
+            className="w-12 h-12 bg-white border border-gray-200 rounded-md cursor-pointer hover:opacity-80 transition-opacity"
             onClick={() => handleImageClick(row.original)}
           >
             {row.getValue("images") && Array.isArray(row.getValue("images")) && row.getValue("images").length > 0 ? (
               <img
-                className="m-auto aspect-square p-2 w-full h-full object-contain rounded-lg cursor-pointer"
+                className="m-auto aspect-square p-1 w-full h-full object-contain rounded-md cursor-pointer"
                 src={row.getValue("images")[row.getValue("images").length - 1].url}
                 alt={row.original.name}
                 onClick={(e) => {
@@ -446,7 +447,7 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-center text-xs text-gray-500">
-                Haz clic para subir
+                <Upload className="w-4 h-4" />
               </div>
             )}
           </div>
@@ -466,11 +467,11 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
         cell: ({ row }: { row: any }) => <div>{row.getValue("name")}</div>,
       },
     ];
-    
+
     // Don't add a fixed description column - let the dynamic columns handle it
     // The dynamic columns will show/hide based on visibleInCatalog
     const initialColumns = baseColumns;
-    
+
     // Add type column
     initialColumns.push({
       accessorKey: "type",
@@ -494,7 +495,7 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-muted/50">
                   <span className="sr-only">Open menu</span>
-                  <MoreHorizontal className="h-4 w-4 text-foreground" />
+                  <MoreVertical className="h-4 w-4 text-foreground" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -535,7 +536,7 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
             (attrValue: AttributeValue) =>
               attrValue?.idAttribute === attribute.id
           );
-        
+
         // Special case: if attribute is "Descripción" and not found, use product description
         if (!found && (attribute.name === "Descripción" || attribute.name === "descripción" || attribute.name.toLowerCase() === "descripcion")) {
           const productDescription = row.original?.description || "";
@@ -551,7 +552,7 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
             } as AttributeValue;
           }
         }
-        
+
         return found;
       };
 
@@ -577,9 +578,9 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
         (attributes as any)?.[attributeType]?.filter((attribute: any) => {
           // Filter out "Descripción" attribute if it should be hidden
           if (attributeType === "product" && shouldHideDescription) {
-            const isDescripcion = attribute.name === "Descripción" || 
-                                  attribute.name === "descripción" || 
-                                  attribute.name.toLowerCase() === "descripcion";
+            const isDescripcion = attribute.name === "Descripción" ||
+              attribute.name === "descripción" ||
+              attribute.name.toLowerCase() === "descripcion";
             if (isDescripcion) {
               return false;
             }
@@ -613,11 +614,11 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
     const filteredProducts = products.filter(
       (product: Item) => product.category.id === category?.id
     );
-    
+
     const flattenedData = flattenVariants(filteredProducts);
     // También guardar el item original para cada variant para tener acceso a references y applications
     const flattenedWithItem = flattenedData.map((variant) => {
-      const originalItem = filteredProducts.find(item => 
+      const originalItem = filteredProducts.find(item =>
         item.id === variant.idProduct || (item.variants?.some(v => v.id === variant.id) || (!item.variants || item.variants.length === 0) && item.id === variant.id)
       );
       return {
@@ -635,21 +636,21 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
     }
 
     const searchTerm = searchFilter.toLowerCase().trim();
-    
+
     return mappedData.filter((variant: Variant) => {
       const variantAny = variant as any;
-      
+
       // Buscar en nombre
       const nameMatch = variant.name?.toLowerCase().includes(searchTerm) || false;
-      
+
       // Buscar en SKU
       const skuMatch = (variant.sku || "")?.toLowerCase().includes(searchTerm) || false;
-      
+
       // Buscar en descripción (puede estar en variant o item)
       const descriptionMatch = (variantAny.description || "")?.toLowerCase().includes(searchTerm) || false;
-      
+
       // Buscar en atributos (valores de atributos del producto y variant)
-      const attributeMatch = 
+      const attributeMatch =
         (variant.attributeValues || []).some((attr: any) => {
           const value = attr.valueString || attr.valueNumber || attr.valueBoolean || attr.valueDate;
           return value?.toString().toLowerCase().includes(searchTerm);
@@ -658,7 +659,7 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
           const value = attr.valueString || attr.valueNumber || attr.valueBoolean || attr.valueDate;
           return value?.toString().toLowerCase().includes(searchTerm);
         });
-      
+
       // Buscar en referencias
       const referencesMatch = (variantAny.references || []).some((ref: any) => {
         return (
@@ -675,7 +676,7 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
           })
         );
       });
-      
+
       // Buscar en aplicaciones
       const applicationsMatch = (variantAny.applications || []).some((app: any) => {
         // Las aplicaciones del backend tienen: id, sku, origin, attributeValues
@@ -698,7 +699,7 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
           })
         );
       });
-      
+
       return nameMatch || skuMatch || descriptionMatch || attributeMatch || referencesMatch || applicationsMatch;
     });
   }, [searchFilter, mappedData]);
@@ -760,9 +761,9 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
               <Button
                 variant="destructive"
                 onClick={() => handleDeleteImage()}
-                disabled={uploading || isUploading}
+                disabled={uploading || isUploading || isDeleting}
               >
-                Eliminar Imagen
+                {isDeleting ? "Eliminando..." : "Eliminar Imagen"}
               </Button>
             )}
             <Button
@@ -799,8 +800,9 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
               <Button
                 variant="destructive"
                 onClick={() => handleDeleteImage(previewVariant)}
+                disabled={isDeleting}
               >
-                Eliminar Imagen
+                {isDeleting ? "Eliminando..." : "Eliminar Imagen"}
               </Button>
               <Button
                 variant="outline"
