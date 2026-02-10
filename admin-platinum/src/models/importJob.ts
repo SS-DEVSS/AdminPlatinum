@@ -25,6 +25,12 @@ export interface ImportJob {
   localFilePath: string | null;
   createdAt: Date;
   updatedAt: Date;
+  runtime?: {
+    lastHeartbeatAt: Date | null;
+    secondsSinceHeartbeat: number;
+    isStale: boolean;
+    staleAfterSeconds: number;
+  };
 }
 
 export interface ImportJobsResponse {

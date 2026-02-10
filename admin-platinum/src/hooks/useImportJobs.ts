@@ -81,7 +81,15 @@ export const useImportJobs = (options: UseImportJobsOptions = {}) => {
         processingJobs.map(async (job) => {
           try {
             const response = await client.get<ImportJob>(`/jobs/${job.id}`);
-            return response.data;
+            const updatedJob = response.data;
+            
+            // Stop polling if job is stale (backend detected it's not actually running)
+            if (updatedJob.runtime?.isStale && updatedJob.status === "processing") {
+              // Job is stale - mark as failed in local state
+              return { ...updatedJob, status: "failed" as ImportJobStatus };
+            }
+            
+            return updatedJob;
           } catch (err) {
             // If individual job fetch fails, return null to skip update
             return null;
@@ -116,7 +124,7 @@ export const useImportJobs = (options: UseImportJobsOptions = {}) => {
       return;
     }
 
-    // Poll every 3 seconds if there are jobs in progress
+    // Poll every 15 seconds if there are jobs in progress (less frequent since progress updates are infrequent)
     // Only poll when page is visible to save resources
     const handleVisibilityChange = () => {
       // Pause polling when tab is hidden
@@ -135,7 +143,7 @@ export const useImportJobs = (options: UseImportJobsOptions = {}) => {
 
     poll();
 
-    const interval = setInterval(poll, 5000);
+    const interval = setInterval(poll, 15000);
 
     return () => {
       clearInterval(interval);

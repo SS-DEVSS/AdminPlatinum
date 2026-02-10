@@ -316,15 +316,22 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
 
         // Si hay una nueva imagen (File object), subirla primero
         if (image && image instanceof File && image.name && image.name !== category.imgUrl) {
-          uploadFile(image, async (_, location) => {
-            const response = await updateCategory({
-              id: category.id, // El ID va en el objeto Category para la URL
-              ...updatePayload,
-              imgUrl: location,
-            } as any);
-            if (response) {
-              navigate("/dashboard/categorias");
-            }
+          await new Promise<void>((resolve, reject) => {
+            uploadFile(image, async (_, location) => {
+              try {
+                const response = await updateCategory({
+                  id: category.id, // El ID va en el objeto Category para la URL
+                  ...updatePayload,
+                  imgUrl: location,
+                } as any);
+                if (response) {
+                  navigate("/dashboard/categorias");
+                }
+                resolve();
+              } catch (error) {
+                reject(error);
+              }
+            });
           });
         } else {
           // Si no hay nueva imagen, actualizar directamente
@@ -342,27 +349,34 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
         }
       } else if (addCategory && image) {
         // Creating new category - formato según Postman
-        uploadFile(image, async (_, location) => {
-          const createPayload = {
-            name: form.name,
-            description: form.description,
-            imgUrl: location,
-            brands: form.brands, // Array de strings (IDs)
-            attributes: form.attributes.map(attr => ({
-              name: attr.display_name || attr.name,
-              csvName: attr.csv_name || attr.name,
-              displayName: attr.display_name || attr.name,
-              type: attr.type,
-              required: attr.required,
-              order: attr.order,
-              scope: attr.scope, // "PRODUCT", "APPLICATION" (mayúsculas)
-            })),
-          };
+        await new Promise<void>((resolve, reject) => {
+          uploadFile(image, async (_, location) => {
+            try {
+              const createPayload = {
+                name: form.name,
+                description: form.description,
+                imgUrl: location,
+                brands: form.brands, // Array de strings (IDs)
+                attributes: form.attributes.map(attr => ({
+                  name: attr.display_name || attr.name,
+                  csvName: attr.csv_name || attr.name,
+                  displayName: attr.display_name || attr.name,
+                  type: attr.type,
+                  required: attr.required,
+                  order: attr.order,
+                  scope: attr.scope, // "PRODUCT", "APPLICATION" (mayúsculas)
+                })),
+              };
 
-          const response = (await addCategory(createPayload as any)) as { id: string } | undefined;
-          if (response && response.id) {
-            navigate("/dashboard/categorias");
-          }
+              const response = (await addCategory(createPayload as any)) as { id: string } | undefined;
+              if (response && response.id) {
+                navigate("/dashboard/categorias");
+              }
+              resolve();
+            } catch (error) {
+              reject(error);
+            }
+          });
         });
       }
     } catch (error: any) {
