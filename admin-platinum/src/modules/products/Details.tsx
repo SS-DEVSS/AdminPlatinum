@@ -1,6 +1,7 @@
 import DetailsCard from "@/components/products/DetailsCard";
 import ReferencesCard from "@/components/products/ReferencesCard";
 import ApplicationsCard from "@/components/products/ApplicationsCard";
+import Attributes from "@/modules/products/Attributes";
 import { detailsType } from "@/hooks/useFormProduct";
 import { Reference } from "@/models/reference";
 import { Application } from "@/models/application";
@@ -24,6 +25,9 @@ type DetailsInterface = {
     React.SetStateAction<{ applications: Application[] }>
   >;
   product?: Product | null;
+  attributesState?: any;
+  setAttributesState?: React.Dispatch<React.SetStateAction<any>>;
+  setCanContinue?: React.Dispatch<React.SetStateAction<boolean>>;
 };
 const Details = ({
   detailsState,
@@ -33,12 +37,24 @@ const Details = ({
   applicationsState,
   setApplicationsState,
   product,
+  attributesState,
+  setAttributesState,
+  setCanContinue,
 }: DetailsInterface) => {
   const isEditMode = !!product;
 
   return (
     <section className="flex flex-col gap-3 w-full">
-      <DetailsCard state={detailsState} setState={setDetailsState} />
+      <DetailsCard state={detailsState} setState={setDetailsState} product={product} />
+      
+      {attributesState && setAttributesState && setCanContinue && (
+        <Attributes
+          setCanContinue={setCanContinue}
+          categoryId={typeof detailsState.category === 'string' ? detailsState.category : detailsState.category?.id || undefined}
+          attributesState={attributesState}
+          setAttributesState={setAttributesState}
+        />
+      )}
       
       {isEditMode ? (
         <>

@@ -19,6 +19,9 @@ interface ImportContextType {
   importState: ImportState;
   startImport: (file: File, importType: ImportType, categoryId: string) => Promise<void>;
   clearImport: () => void;
+  bannerDismissed: boolean;
+  dismissBanner: () => void;
+  showBanner: () => void;
 }
 
 const ImportContext = createContext<ImportContextType | undefined>(undefined);
@@ -50,6 +53,7 @@ export const ImportProvider = ({
     jobStatus: null,
     startedAt: null,
   });
+  const [bannerDismissed, setBannerDismissed] = useState(false);
 
   const getImportTypeLabel = (type: ImportType) => {
     switch (type) {
@@ -156,6 +160,7 @@ export const ImportProvider = ({
       const startTime = new Date();
       startTimeRef.current = startTime;
 
+      setBannerDismissed(false);
       setImportState({
         isImporting: true,
         importType,
@@ -181,35 +186,13 @@ export const ImportProvider = ({
           jobStatus: status || "pending",
         }));
 
-        // Start polling job status every 2 seconds
         pollingIntervalRef.current = setInterval(() => {
           if (jobId) {
             checkJobStatus(jobId, importType);
           }
-        }, 2000);
+        }, 5000);
 
-        // Check immediately to see if job is already done (fast process)
         checkJobStatus(jobId, importType);
-        
-        // Only show initial toast if job is still processing (not a fast process)
-        // We'll check again after a short delay to see if it's still processing
-        setTimeout(async () => {
-          try {
-            const statusResponse = await client.get(`/jobs/${jobId}`);
-            const currentJob = statusResponse.data;
-            
-            // If still processing after 1 second, show the initial toast
-            if (currentJob.status === "pending" || currentJob.status === "processing") {
-              toast({
-                title: "Importación iniciada",
-                description: `La importación de ${getImportTypeLabel(importType)} ha comenzado. Puedes seguir navegando mientras se procesa.`,
-                variant: "default",
-              });
-            }
-          } catch (error) {
-            // Ignore errors in this check
-          }
-        }, 1000);
       } catch (error: any) {
         // Clear polling on error
         if (pollingIntervalRef.current) {
@@ -260,6 +243,56 @@ export const ImportProvider = ({
       startedAt: null,
     });
     startTimeRef.current = null;
+    setBannerDismissed(false);
+  }, []);
+
+  const dismissBanner = useCallback(() => {
+    setBannerDismissed(true);
+  }, []);
+
+  const showBanner = useCallback(() => {
+    setBannerDismissed(false);
+  }, []);
+
+  // On mount, check backend for any active jobs (pending/processing)
+  useEffect(() => {
+    const checkActiveJobs = async () => {
+      try {
+        const response = await client.get("/jobs?status=processing&limit=1");
+        let activeJob = response.data.jobs?.[0];
+
+        if (!activeJob) {
+          const pendingResponse = await client.get("/jobs?status=pending&limit=1");
+          activeJob = pendingResponse.data.jobs?.[0];
+        }
+
+        if (!activeJob) return;
+
+        const start = activeJob.createdAt ? new Date(activeJob.createdAt) : new Date();
+        startTimeRef.current = start;
+
+        setImportState({
+          isImporting: true,
+          importType: activeJob.type as ImportType,
+          progress: activeJob.progress || 0,
+          error: null,
+          jobId: activeJob.id,
+          jobStatus: activeJob.status,
+          startedAt: start,
+        });
+
+        pollingIntervalRef.current = setInterval(() => {
+          checkJobStatus(activeJob.id, activeJob.type as ImportType);
+        }, 5000);
+      } catch {
+        // Silently fail — no active jobs or network error
+      }
+    };
+
+    if (!importState.isImporting) {
+      checkActiveJobs();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Cleanup on unmount
@@ -277,6 +310,9 @@ export const ImportProvider = ({
         importState,
         startImport,
         clearImport,
+        bannerDismissed,
+        dismissBanner,
+        showBanner,
       }}
     >
       {children}

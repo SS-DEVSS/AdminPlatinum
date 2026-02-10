@@ -473,21 +473,21 @@ const CardAtributesVariants = ({
               size="sm"
               variant="outline"
               className="gap-1"
-              onClick={() => handleAddPredefinedField("Nombre", "string", "nombre")}
-              disabled={attributes.productAttributes.length >= 20 || attributes.productAttributes.some(a => a.name === "Nombre" || a.display_name === "Nombre")}
+              onClick={() => handleAddPredefinedField("Sistema", "string", "sistema")}
+              disabled={attributes.productAttributes.length >= 20 || attributes.productAttributes.some(a => a.name === "Sistema" || a.display_name === "Sistema")}
             >
               <PlusCircle className="h-3.5 w-3.5" />
-              Nombre
+              Sistema
             </Button>
             <Button
               size="sm"
               variant="outline"
               className="gap-1"
-              onClick={() => handleAddPredefinedField("Descripción", "string", "descripcion")}
-              disabled={attributes.productAttributes.length >= 20 || attributes.productAttributes.some(a => a.name === "Descripción" || a.display_name === "Descripción")}
+              onClick={() => handleAddPredefinedField("Tipo", "string", "tipo")}
+              disabled={attributes.productAttributes.length >= 20 || attributes.productAttributes.some(a => a.name === "Tipo" || a.display_name === "Tipo")}
             >
               <PlusCircle className="h-3.5 w-3.5" />
-              Descripción
+              Tipo
             </Button>
           </>
         )}
@@ -521,6 +521,16 @@ const CardAtributesVariants = ({
               size="sm"
               variant="outline"
               className="gap-1"
+              onClick={() => handleAddPredefinedField("Fabricante", "string", "fabricante")}
+              disabled={attributes.applicationAttributes.length >= 20 || attributes.applicationAttributes.some(a => a.name === "Modelo" || a.display_name === "Modelo")}
+            >
+              <PlusCircle className="h-3.5 w-3.5" />
+              Fabricante
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1"
               onClick={() => handleAddPredefinedField("Modelo", "string", "modelo")}
               disabled={attributes.applicationAttributes.length >= 20 || attributes.applicationAttributes.some(a => a.name === "Modelo" || a.display_name === "Modelo")}
             >
@@ -531,21 +541,21 @@ const CardAtributesVariants = ({
               size="sm"
               variant="outline"
               className="gap-1"
-              onClick={() => handleAddPredefinedField("Año", "date", "año")}
-              disabled={attributes.applicationAttributes.length >= 20 || attributes.applicationAttributes.some(a => a.name === "Año" || a.display_name === "Año")}
-            >
-              <PlusCircle className="h-3.5 w-3.5" />
-              Año
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="gap-1"
               onClick={() => handleAddPredefinedField("Submodelo", "string", "submodelo")}
               disabled={attributes.applicationAttributes.length >= 20 || attributes.applicationAttributes.some(a => a.name === "Submodelo" || a.display_name === "Submodelo")}
             >
               <PlusCircle className="h-3.5 w-3.5" />
               Submodelo
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1"
+              onClick={() => handleAddPredefinedField("Año", "date", "año")}
+              disabled={attributes.applicationAttributes.length >= 20 || attributes.applicationAttributes.some(a => a.name === "Año" || a.display_name === "Año")}
+            >
+              <PlusCircle className="h-3.5 w-3.5" />
+              Año
             </Button>
           </>
         )}
@@ -590,7 +600,7 @@ const CardAtributesVariants = ({
               )}
             </>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="w-[90%] max-w-2xl">
             <DialogHeader>
               <DialogTitle className="mb-2">
                 {dialogMode === "edit"
@@ -621,7 +631,7 @@ const CardAtributesVariants = ({
             </DialogHeader>
             <div className="flex items-center gap-2">
               <Label htmlFor="display_name">
-                <span className="text-redLabel">*</span>Nombre para Mostrar
+                Nombre para Mostrar<span className="text-redLabel">*</span>
               </Label>
               <TooltipProvider>
                 <Tooltip>
@@ -652,7 +662,7 @@ const CardAtributesVariants = ({
             />
             <div className="flex items-center gap-2">
               <Label htmlFor="csv_name">
-                <span className="text-redLabel">*</span>Nombre CSV
+                Nombre CSV<span className="text-redLabel">*</span>
               </Label>
               <TooltipProvider>
                 <Tooltip>
@@ -676,7 +686,7 @@ const CardAtributesVariants = ({
             />
             <div className="flex items-center gap-2">
               <Label htmlFor="data-type">
-                <span className="text-redLabel">*</span>Tipo de Dato
+                Tipo de Dato<span className="text-redLabel">*</span>
               </Label>
               <TooltipProvider>
                 <Tooltip>
@@ -714,7 +724,7 @@ const CardAtributesVariants = ({
             </Select>
             <div className="flex items-center gap-2">
               <Label>
-                <span className="text-redLabel">*</span>Requerido
+                Requerido<span className="text-redLabel">*</span>
               </Label>
               <TooltipProvider>
                 <Tooltip>

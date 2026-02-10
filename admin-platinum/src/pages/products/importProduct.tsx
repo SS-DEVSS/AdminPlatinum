@@ -64,23 +64,20 @@ const ImportProduct = () => {
       return;
     }
 
-    // Start import using context (this allows navigation)
     await startImport(file, importType, categoryId);
 
-    // Clear form
     setImportType("");
     setCategoryId("");
     setFile(null);
-    
-    // Allow navigation - user can navigate away and the import will continue
-    // The toast will show the result when it completes
+
+    navigate("/dashboard/importaciones");
   };
 
   return (
     <Layout>
       <header className="flex justify-between">
         <div className="flex items-center gap-4">
-          <Link to="/productos">
+          <Link to="/dashboard/productos">
             <Card className="p-2">
               <ChevronLeft className="h-4 w-4" />
             </Card>
@@ -89,7 +86,7 @@ const ImportProduct = () => {
             Importar Productos
           </p>
         </div>
-        <Link to="/producto/importar/dashboard">
+        <Link to="/dashboard/importaciones">
           <Button variant="outline" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             Ver Dashboard
@@ -156,13 +153,12 @@ const ImportProduct = () => {
               </Label>
               <div
                 {...getRootProps()}
-                className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-                  isDragActive
-                    ? "bg-[#F5F9FD] border-[#0bbff4]"
-                    : file
+                className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${isDragActive
+                  ? "bg-[#F5F9FD] border-[#0bbff4]"
+                  : file
                     ? "bg-green-50 border-green-400"
                     : "border-[#94A3B8] hover:border-[#0bbff4]"
-                }`}
+                  }`}
               >
                 <input {...getInputProps()} />
                 {file ? (
@@ -191,7 +187,7 @@ const ImportProduct = () => {
 
             <div className="flex justify-end gap-3 pt-4">
               <Button
-                onClick={() => navigate("/productos")}
+                onClick={() => navigate("/dashboard/productos")}
                 variant="outline"
                 disabled={importState.isImporting}
               >

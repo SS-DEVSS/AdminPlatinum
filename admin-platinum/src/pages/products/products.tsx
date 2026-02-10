@@ -126,7 +126,7 @@ const Products = () => {
             <div className="ml-auto flex items-center gap-3">
               <div className="rounded-lg flex bg-[#F4F4F5]">
                 <div
-                  onClick={() => navigate("/producto/importar/dashboard")}
+                  onClick={() => navigate("/dashboard/importaciones")}
                   className="flex hover:cursor-pointer gap-3 items-center hover:bg-primary hover:text-white hover:[&>svg]:text-white rounded-lg m-1 px-3"
                 >
                   <Import />
@@ -138,7 +138,7 @@ const Products = () => {
                   </Button>
                 </div>
               </div>
-              <Link to="/producto/new-product">
+              <Link to="/dashboard/producto/new-product">
                 <Button size="sm" className="h-10 px-6 gap-1">
                   <PlusCircle className="h-3.5 w-3.5 mr-2" />
                   <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">

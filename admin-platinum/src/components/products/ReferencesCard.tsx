@@ -147,24 +147,26 @@ const ReferencesCard = ({ state, setState, product }: ReferencesCardProps) => {
             </p>
           </NoData>
         ) : (
-          <section className="flex gap-4 flex-wrap">
+          <section className="flex gap-3 flex-wrap">
             {state.references.map((reference) => (
               <div
                 key={reference.id}
-                className="bg-black rounded-full text-white p-2 mb-2 flex gap-3 px-6 items-center"
+                className="bg-primary/10 border border-primary/20 text-foreground rounded-full px-4 py-2 flex items-center gap-3 transition-all duration-200 group"
               >
-                <span className="flex-1">
-                  {reference.referenceBrand && <span className="font-bold mr-1">{reference.referenceBrand}:</span>}
+                <span className="flex-1 text-sm font-medium">
+                  {reference.referenceBrand && (
+                    <span className="font-semibold mr-1.5">{reference.referenceBrand}:</span>
+                  )}
                   {reference.referenceNumber}
                 </span>
                 <div className="flex gap-2 items-center">
                   <Pencil
                     onClick={() => handleEditReference(reference)}
-                    className="cursor-pointer w-4 h-4 hover:text-blue-300 transition-colors"
+                    className="cursor-pointer h-3.5 w-3.5 text-muted-foreground hover:text-primary hover:scale-110 transition-all duration-200"
                   />
                   <X
                     onClick={() => handleRemoveReference(reference.id)}
-                    className="cursor-pointer w-4 h-4 hover:text-red-300 transition-colors"
+                    className="cursor-pointer h-3.5 w-3.5 text-muted-foreground hover:text-red-500 hover:scale-110 transition-all duration-200"
                   />
                 </div>
               </div>

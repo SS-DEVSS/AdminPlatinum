@@ -51,12 +51,12 @@ const router = createBrowserRouter([
     path: "/",
     element: (
       <ProtectedRoute>
-        <Navigate to="/productos" replace />
+        <Navigate to="/dashboard/productos" replace />
       </ProtectedRoute>
     ),
   },
   {
-    path: "/productos",
+    path: "/dashboard/productos",
     element: (
       <ProtectedRoute>
         <Products />
@@ -64,7 +64,7 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/producto/new-product",
+    path: "/dashboard/producto/new-product",
     element: (
       <ProtectedRoute>
         <NewProduct />
@@ -72,11 +72,11 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/producto/importar",
+    path: "/dashboard/producto/importar",
     element: <ImportProduct />,
   },
   {
-    path: "/producto/importar/dashboard",
+    path: "/dashboard/importaciones",
     element: (
       <ProtectedRoute>
         <ImportJobsDashboardPage />
@@ -84,7 +84,7 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/producto/:id",
+    path: "/dashboard/producto/:id",
     element: (
       <ProtectedRoute>
         <NewProduct />
@@ -92,7 +92,7 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/marcas",
+    path: "/dashboard/marcas",
     element: (
       <ProtectedRoute>
         <Marcas />
@@ -100,7 +100,7 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/categorias",
+    path: "/dashboard/categorias",
     element: (
       <ProtectedRoute>
         <Categorias />
@@ -108,7 +108,7 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/categorias/nueva",
+    path: "/dashboard/categorias/nueva",
     element: (
       <ProtectedRoute>
         <NewCategory />
@@ -116,7 +116,7 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/categorias/editar",
+    path: "/dashboard/categorias/editar",
     element: (
       <ProtectedRoute>
         <EditCategory />
@@ -124,7 +124,7 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/boletines",
+    path: "/dashboard/boletines",
     element: (
       <ProtectedRoute>
         <TechincalSheets />
@@ -132,7 +132,7 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/noticias",
+    path: "/dashboard/noticias",
     element: (
       <ProtectedRoute>
         <News />
@@ -140,7 +140,7 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/noticias/nueva",
+    path: "/dashboard/noticias/nueva",
     element: (
       <ProtectedRoute>
         <NewBlogPost />
@@ -148,7 +148,7 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/noticias/editar",
+    path: "/dashboard/noticias/editar",
     element: (
       <ProtectedRoute>
         <EditBlogPost />
@@ -156,7 +156,7 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/banners",
+    path: "/dashboard/banners",
     element: (
       <ProtectedRoute>
         <Banners />
@@ -164,7 +164,7 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/ajustes",
+    path: "/dashboard/ajustes",
     element: (
       <ProtectedRoute>
         <Ajustes />

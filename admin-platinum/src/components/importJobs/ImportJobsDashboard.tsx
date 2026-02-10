@@ -17,9 +17,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, CheckCircle2, Clock, XCircle, Loader2 } from "lucide-react";
+import { AlertCircle, CheckCircle2, Clock, XCircle, Loader2, RefreshCw, Ban, AlertTriangle } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -33,7 +33,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, MoreVertical, Eye } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const getStatusBadge = (
   status: ImportJobStatus,
@@ -42,16 +48,15 @@ const getStatusBadge = (
 ) => {
   const hasErrors = errors.length > 0;
   const hasWarnings = warnings.length > 0;
-  
+
   // Determinar el color según el estado y los errores/advertencias
   let badgeClassName = "";
   let mainLabel = "";
   let Icon = Clock;
   let tooltipText: string | null = null;
-  
+
   if (status === "failed") {
-    // Rojo: no terminó y hubo errores (failed)
-    badgeClassName = "bg-red-500 text-white border-red-600 hover:bg-red-600";
+    badgeClassName = "bg-red-50 text-red-700 border-red-200 hover:bg-red-100";
     mainLabel = "Fallido";
     Icon = XCircle;
     if (hasErrors) {
@@ -63,47 +68,39 @@ const getStatusBadge = (
     }
   } else if (status === "processing") {
     if (hasErrors) {
-      // Rojo: está en proceso pero ya hay errores
-      badgeClassName = "bg-red-500 text-white border-red-600 hover:bg-red-600";
+      badgeClassName = "bg-red-50 text-red-700 border-red-200 hover:bg-red-100";
       mainLabel = "En Progreso";
       Icon = AlertCircle;
       tooltipText = `${errors.length} error${errors.length !== 1 ? "es" : ""}. Consulta detalles para más información.`;
     } else if (hasWarnings) {
-      // Azul: está en proceso con advertencias
-      badgeClassName = "bg-blue-500 text-white border-blue-600 hover:bg-blue-600";
+      badgeClassName = "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100";
       mainLabel = "En Progreso";
       Icon = Loader2;
       tooltipText = `${warnings.length} advertencia${warnings.length !== 1 ? "s" : ""}. Consulta detalles para más información.`;
     } else {
-      // Azul: está en proceso sin errores ni advertencias
-      badgeClassName = "bg-blue-500 text-white border-blue-600 hover:bg-blue-600";
+      badgeClassName = "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100";
       mainLabel = "En Progreso";
       Icon = Loader2;
       tooltipText = "El job está siendo procesado. Consulta detalles para más información.";
     }
   } else if (status === "completed") {
     if (hasErrors) {
-      // Amarillo: terminó pero hubo errores
-      badgeClassName = "bg-yellow-500 text-white border-yellow-600 hover:bg-yellow-600";
+      badgeClassName = "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100";
       mainLabel = "Completado";
       tooltipText = `${errors.length} error${errors.length !== 1 ? "es" : ""}. Consulta detalles para más información.`;
       Icon = AlertCircle;
     } else if (hasWarnings) {
-      // Amarillo: terminó pero hubo advertencias
-      badgeClassName = "bg-yellow-500 text-white border-yellow-600 hover:bg-yellow-600";
+      badgeClassName = "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100";
       mainLabel = "Completado";
       tooltipText = `${warnings.length} advertencia${warnings.length !== 1 ? "s" : ""}. Consulta detalles para más información.`;
       Icon = AlertCircle;
     } else {
-      // Verde: terminó exitosamente - SIN TOOLTIP
-      badgeClassName = "bg-green-500 text-white border-green-600 hover:bg-green-600";
+      badgeClassName = "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100";
       mainLabel = "Completado";
       Icon = CheckCircle2;
-      // tooltipText permanece null
     }
   } else {
-    // pending - Azul: está pendiente
-    badgeClassName = "bg-blue-500 text-white border-blue-600 hover:bg-blue-600";
+    badgeClassName = "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100";
     mainLabel = "Pendiente";
     Icon = Clock;
     if (hasErrors) {
@@ -116,9 +113,9 @@ const getStatusBadge = (
   }
 
   const badgeContent = (
-    <Badge className={`flex items-center gap-1.5 w-fit border-transparent py-1 px-2.5 cursor-default ${badgeClassName}`}>
+    <Badge className={`flex items-center gap-1.5 w-fit border py-1 px-2.5 cursor-default ${badgeClassName}`}>
       <Icon className="h-3.5 w-3.5" />
-      <span className="text-xs font-semibold whitespace-nowrap">{mainLabel}</span>
+      <span className="text-xs font-medium whitespace-nowrap">{mainLabel}</span>
     </Badge>
   );
 
@@ -161,16 +158,29 @@ const formatDate = (date: Date | string | null) => {
   });
 };
 
+const getPageNumbers = (current: number, total: number): (number | "...")[] => {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const pages: (number | "...")[] = [1];
+  if (current > 3) pages.push("...");
+  const start = Math.max(2, current - 1);
+  const end = Math.min(total - 1, current + 1);
+  for (let i = start; i <= end; i++) pages.push(i);
+  if (current < total - 2) pages.push("...");
+  pages.push(total);
+  return pages;
+};
+
 interface ImportJobsDashboardProps {
   onJobClick?: (jobId: string) => void;
+  headerActions?: React.ReactNode;
 }
 
-const ImportJobsDashboard = ({ onJobClick }: ImportJobsDashboardProps) => {
+const ImportJobsDashboard = ({ onJobClick, headerActions }: ImportJobsDashboardProps) => {
   const [typeFilter, setTypeFilter] = useState<ImportJobType | "all">("all");
   const [statusFilter, setStatusFilter] = useState<ImportJobStatus | "all">("all");
   const [page, setPage] = useState(1);
   const [selectedJob, setSelectedJob] = useState<string | null>(null);
-  const limit = 20;
+  const limit = 10;
 
   const { jobs, loading, error, pagination } = useImportJobs({
     type: typeFilter !== "all" ? typeFilter : undefined,
@@ -195,17 +205,12 @@ const ImportJobsDashboard = ({ onJobClick }: ImportJobsDashboardProps) => {
   };
 
   return (
-    <div className="space-y-4">
-      {/* Filtros */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Filtros</CardTitle>
-          <CardDescription>Filtra los jobs de importación por tipo y estado</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <label className="text-sm font-medium mb-2 block">Tipo de Importación</label>
+    <div className="w-full max-w-full">
+      <Card className="border-0 shadow-none w-full">
+        <CardHeader className="flex flex-row items-end p-0 m-0 pb-6 w-full">
+          <div className="flex flex-col gap-3">
+            <CardTitle>Importaciones</CardTitle>
+            <div className="flex gap-3">
               <Select
                 value={typeFilter}
                 onValueChange={(value) => {
@@ -213,19 +218,16 @@ const ImportJobsDashboard = ({ onJobClick }: ImportJobsDashboardProps) => {
                   setPage(1);
                 }}
               >
-                <SelectTrigger>
-                  <SelectValue />
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Tipo" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="all">Todos los tipos</SelectItem>
                   <SelectItem value="products">Productos</SelectItem>
                   <SelectItem value="references">Referencias</SelectItem>
                   <SelectItem value="applications">Aplicaciones</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-            <div className="flex-1">
-              <label className="text-sm font-medium mb-2 block">Estado</label>
               <Select
                 value={statusFilter}
                 onValueChange={(value) => {
@@ -233,11 +235,11 @@ const ImportJobsDashboard = ({ onJobClick }: ImportJobsDashboardProps) => {
                   setPage(1);
                 }}
               >
-                <SelectTrigger>
-                  <SelectValue />
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Estado" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="all">Todos los estados</SelectItem>
                   <SelectItem value="pending">Pendiente</SelectItem>
                   <SelectItem value="processing">En Progreso</SelectItem>
                   <SelectItem value="completed">Completado</SelectItem>
@@ -246,19 +248,13 @@ const ImportJobsDashboard = ({ onJobClick }: ImportJobsDashboardProps) => {
               </Select>
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Tabla de Jobs */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Jobs de Importación</CardTitle>
-          <CardDescription>
-            {pagination.total} job{pagination.total !== 1 ? "s" : ""} encontrado
-            {pagination.total !== 1 ? "s" : ""}
-          </CardDescription>
+          {headerActions && (
+            <div className="ml-auto flex items-center gap-3">
+              {headerActions}
+            </div>
+          )}
         </CardHeader>
-        <CardContent>
+        <div>
           {loading ? (
             <div className="flex justify-center items-center py-8">
               <Loader2 className="h-6 w-6 animate-spin" />
@@ -275,7 +271,7 @@ const ImportJobsDashboard = ({ onJobClick }: ImportJobsDashboardProps) => {
             </div>
           ) : (
             <>
-              <div className="rounded-md border">
+              <div className="rounded-md border overflow-auto max-h-[60vh]">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -284,12 +280,12 @@ const ImportJobsDashboard = ({ onJobClick }: ImportJobsDashboardProps) => {
                       <TableHead>Archivo</TableHead>
                       <TableHead>Resultados</TableHead>
                       <TableHead>Fecha</TableHead>
-                      <TableHead>Acciones</TableHead>
+                      <TableHead></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {jobs.map((job) => (
-                      <TableRow key={job.id} className="cursor-pointer hover:bg-muted/50">
+                      <TableRow key={job.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleJobClick(job.id)}>
                         <TableCell className="font-medium">
                           {getTypeLabel(job.type)}
                         </TableCell>
@@ -303,27 +299,32 @@ const ImportJobsDashboard = ({ onJobClick }: ImportJobsDashboardProps) => {
                           <div className="text-sm space-y-1">
                             {job.status === "completed" && (
                               <>
-                                <div className="text-green-600">
-                                  ✓ Creados: {job.created}
+                                <div className="flex items-center gap-1.5 text-green-600">
+                                  <CheckCircle2 className="h-3.5 w-3.5" />
+                                  Creados: {job.created}
                                 </div>
-                                <div className="text-blue-600">
-                                  ↻ Actualizados: {job.updated}
+                                <div className="flex items-center gap-1.5 text-blue-600">
+                                  <RefreshCw className="h-3.5 w-3.5" />
+                                  Actualizados: {job.updated}
                                 </div>
                                 {job.skipped > 0 && (
-                                  <div className="text-yellow-600">
-                                    ⊘ Omitidos: {job.skipped}
+                                  <div className="flex items-center gap-1.5 text-yellow-600">
+                                    <Ban className="h-3.5 w-3.5" />
+                                    Omitidos: {job.skipped}
                                   </div>
                                 )}
                               </>
                             )}
                             {job.status === "failed" && job.failed > 0 && (
-                              <div className="text-red-600">
-                                ✗ Fallidos: {job.failed}
+                              <div className="flex items-center gap-1.5 text-red-600">
+                                <XCircle className="h-3.5 w-3.5" />
+                                Fallidos: {job.failed}
                               </div>
                             )}
                             {job.errors.length > 0 && (
-                              <div className="text-red-600">
-                                ⚠ Errores: {job.errors.length}
+                              <div className="flex items-center gap-1.5 text-red-600">
+                                <AlertTriangle className="h-3.5 w-3.5" />
+                                Errores: {job.errors.length}
                               </div>
                             )}
                           </div>
@@ -332,13 +333,19 @@ const ImportJobsDashboard = ({ onJobClick }: ImportJobsDashboardProps) => {
                           {formatDate(job.createdAt)}
                         </TableCell>
                         <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleJobClick(job.id)}
-                          >
-                            Ver Detalles
-                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-muted/50" onClick={(e) => e.stopPropagation()}>
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleJobClick(job.id); }}>
+                                <Eye className="h-4 w-4 mr-2" />
+                                Ver Detalles
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -346,37 +353,69 @@ const ImportJobsDashboard = ({ onJobClick }: ImportJobsDashboardProps) => {
                 </Table>
               </div>
 
-              {/* Paginación */}
-              {pagination.totalPages > 1 && (
+              {pagination.totalPages >= 1 && (
                 <div className="flex items-center justify-between mt-4">
                   <div className="text-sm text-muted-foreground">
-                    Página {pagination.page} de {pagination.totalPages}
+                    Página {pagination.page} de {pagination.totalPages} ({pagination.total} registros)
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex items-center gap-1">
                     <Button
                       variant="outline"
-                      size="sm"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => handlePageChange(1)}
+                      disabled={page === 1}
+                    >
+                      <ChevronsLeft className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8"
                       onClick={() => handlePageChange(page - 1)}
                       disabled={page === 1}
                     >
                       <ChevronLeft className="h-4 w-4" />
-                      Anterior
                     </Button>
+                    {getPageNumbers(page, pagination.totalPages).map((p, i) =>
+                      p === "..." ? (
+                        <span key={`ellipsis-${i}`} className="px-1 text-muted-foreground">...</span>
+                      ) : (
+                        <Button
+                          key={p}
+                          variant={page === p ? "default" : "outline"}
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => handlePageChange(p as number)}
+                        >
+                          {p}
+                        </Button>
+                      )
+                    )}
                     <Button
                       variant="outline"
-                      size="sm"
+                      size="icon"
+                      className="h-8 w-8"
                       onClick={() => handlePageChange(page + 1)}
                       disabled={page === pagination.totalPages}
                     >
-                      Siguiente
                       <ChevronRight className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => handlePageChange(pagination.totalPages)}
+                      disabled={page === pagination.totalPages}
+                    >
+                      <ChevronsRight className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
               )}
             </>
           )}
-        </CardContent>
+        </div>
       </Card>
 
       {/* Dialog de Detalles */}

@@ -58,7 +58,7 @@ const CardBlogPost = ({ blogPost, deleteItem }: CardTemplateProps) => {
                 <DropdownMenuSeparator />
 
                 <DropdownMenuGroup>
-                  <Link to="/noticias/editar">
+                  <Link to="/dashboard/noticias/editar">
                     <DropdownMenuItem
                       onClick={() => handleEditBlogPost(blogPost?.id!)}
                     >

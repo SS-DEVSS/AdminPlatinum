@@ -117,7 +117,7 @@ const BlogPostCU = ({ blogPost }: BlogPostCUProps) => {
 
     uploadFile(image, (key) => {
       addBlogPost({ ...updatedForm, coverImagePath: key });
-      navigate("/noticias");
+      navigate("/dashboard/noticias");
     });
   };
 
@@ -172,7 +172,7 @@ const BlogPostCU = ({ blogPost }: BlogPostCUProps) => {
       <section className="max-w-[1000px] mx-auto">
         <header className="flex justify-between">
           <div className="flex items-center gap-4">
-            <Link to="/noticias">
+            <Link to="/dashboard/noticias">
               <Card className="p-2">
                 <ChevronLeft className="h-4 w-4" />
               </Card>
@@ -182,7 +182,7 @@ const BlogPostCU = ({ blogPost }: BlogPostCUProps) => {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <Link to="/noticias">
+            <Link to="/dashboard/noticias">
               <Button variant={"outline"}>Cancelar</Button>
             </Link>
             {!blogPost ? (
