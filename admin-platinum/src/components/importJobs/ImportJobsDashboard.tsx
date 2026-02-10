@@ -147,7 +147,7 @@ const getTypeLabel = (type: ImportJobType) => {
 };
 
 const formatDate = (date: Date | string | null) => {
-  if (!date) return "N/A";
+  if (!date) return "-";
   const d = new Date(date);
   return d.toLocaleString("es-ES", {
     year: "numeric",
