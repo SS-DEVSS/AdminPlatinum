@@ -64,7 +64,7 @@ const ApplicationsCard = ({ state, setState, product }: ApplicationsCardProps) =
     const categoryId = typeof productCategory === 'string' ? productCategory : (productCategory as any).id;
     const category = categories.find((c) => c.id === categoryId);
     if (!category?.attributes) return [];
-    
+
     if (Array.isArray(category.attributes)) {
       // Filter to only application attributes
       return category.attributes.filter((attr) => {
@@ -72,11 +72,11 @@ const ApplicationsCard = ({ state, setState, product }: ApplicationsCardProps) =
         return scope === "APPLICATION" || scope === "APLICACION";
       });
     }
-    
+
     if (typeof category.attributes === 'object' && 'application' in category.attributes) {
       return (category.attributes as { application: CategoryAtributes[] }).application || [];
     }
-    
+
     return [];
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [(product as any)?.category, product?.idCategory, categories]);
@@ -114,16 +114,16 @@ const ApplicationsCard = ({ state, setState, product }: ApplicationsCardProps) =
 
       // Extract key attributes from attributeValues
       const getAttributeValue = (attrName: string) => {
-        const attr = app.attributeValues?.find((av: any) => 
-          av.attribute?.name === attrName || 
+        const attr = app.attributeValues?.find((av: any) =>
+          av.attribute?.name === attrName ||
           av.attribute?.name?.toLowerCase() === attrName.toLowerCase()
         );
         if (!attr) return null;
-        
-        const isYearAttribute = attrName.toLowerCase().includes("año") || 
-                               attrName.toLowerCase().includes("anio") || 
-                               attrName.toLowerCase().includes("year");
-        
+
+        const isYearAttribute = attrName.toLowerCase().includes("año") ||
+          attrName.toLowerCase().includes("anio") ||
+          attrName.toLowerCase().includes("year");
+
         // For year attributes, prioritize valueNumber (as it's stored now)
         if (isYearAttribute) {
           if (attr.valueNumber !== null && attr.valueNumber !== undefined) {
@@ -152,11 +152,11 @@ const ApplicationsCard = ({ state, setState, product }: ApplicationsCardProps) =
           }
           return null;
         }
-        
+
         // For non-year attributes, use standard priority
         return attr.valueString || attr.valueNumber || attr.valueBoolean || null;
       };
-      
+
       // Try common attribute names
       const modelo = getAttributeValue('Modelo');
       const submodelo = getAttributeValue('Submodelo');
@@ -169,10 +169,10 @@ const ApplicationsCard = ({ state, setState, product }: ApplicationsCardProps) =
       const motor = getAttributeValue('Motor');
       const tipoMotor = getAttributeValue('Tipo_Motor');
       const transmision = getAttributeValue('Transmisión') || getAttributeValue('Transmision');
-      
+
       // Build display text from available attributes
       const parts: string[] = [];
-      
+
       if (modelo) parts.push(String(modelo));
       if (submodelo) parts.push(String(submodelo));
       if (año) {
@@ -191,7 +191,7 @@ const ApplicationsCard = ({ state, setState, product }: ApplicationsCardProps) =
         }
         parts.push(añoStr);
       }
-      
+
       if (motor) {
         parts.push(String(motor));
       } else if (tipoMotor) {
@@ -203,22 +203,22 @@ const ApplicationsCard = ({ state, setState, product }: ApplicationsCardProps) =
       } else if (cidMotor) {
         parts.push(`${cidMotor}CID`);
       }
-      
+
       if (cilindrosMotor && !motor) {
         parts.push(`${cilindrosMotor}cil`);
       }
-      
+
       if (bloqueMotor) {
         parts.push(bloqueMotor);
       }
-      
+
       if (transmision) {
         parts.push(transmision);
       }
-      
+
       // Always append a short version of the ID
       const shortId = app.id.substring(app.id.length - 8).toUpperCase();
-      
+
       // Build display text
       let displayText = '';
       if (parts.length > 0) {
@@ -226,7 +226,7 @@ const ApplicationsCard = ({ state, setState, product }: ApplicationsCardProps) =
       } else {
         displayText = `Aplicación (${shortId})`;
       }
-      
+
       return {
         id: app.id,
         sku: app.sku || "",
@@ -242,14 +242,14 @@ const ApplicationsCard = ({ state, setState, product }: ApplicationsCardProps) =
     if (!product) {
       return;
     }
-    
+
     const productApplications = (product as any).applications;
-    
+
     if (productApplications && productApplications.length > 0) {
       // Always format applications to ensure they have proper structure
       // This ensures the table grouping works correctly from the start
       const formattedApplications = formatApplications(productApplications);
-      
+
       // Always update to ensure applications are formatted correctly
       // This ensures grouping works correctly even if state already has applications
       setState({ applications: formattedApplications });
@@ -278,16 +278,16 @@ const ApplicationsCard = ({ state, setState, product }: ApplicationsCardProps) =
 
   // Helper function to extract attribute value from application
   const getAttributeValue = (application: Application, attrName: string): any => {
-    const attr = application.attributeValues?.find((av: any) => 
-      av.attribute?.name === attrName || 
+    const attr = application.attributeValues?.find((av: any) =>
+      av.attribute?.name === attrName ||
       av.attribute?.name?.toLowerCase() === attrName.toLowerCase()
     );
     if (!attr) return null;
-    
-    const isYearAttribute = attrName.toLowerCase().includes("año") || 
-                           attrName.toLowerCase().includes("anio") || 
-                           attrName.toLowerCase().includes("year");
-    
+
+    const isYearAttribute = attrName.toLowerCase().includes("año") ||
+      attrName.toLowerCase().includes("anio") ||
+      attrName.toLowerCase().includes("year");
+
     // For year attributes, prioritize valueNumber (as it's stored now)
     if (isYearAttribute) {
       if (attr.valueNumber !== null && attr.valueNumber !== undefined) {
@@ -311,7 +311,7 @@ const ApplicationsCard = ({ state, setState, product }: ApplicationsCardProps) =
       }
       return null;
     }
-    
+
     // For non-year attributes, use standard priority
     return attr.valueString || attr.valueNumber || attr.valueBoolean || null;
   };
@@ -330,7 +330,7 @@ const ApplicationsCard = ({ state, setState, product }: ApplicationsCardProps) =
     const motor = getAttributeValue(application, 'Motor') || "";
     const tipoMotor = getAttributeValue(application, 'Tipo_Motor') || "";
     const transmision = getAttributeValue(application, 'Transmisión') || getAttributeValue(application, 'Transmision') || "";
-    
+
     // Create key from all attributes except Año
     return `${origin}|${fabricante}|${modelo}|${submodelo}|${litrosMotor}|${ccMotor}|${cidMotor}|${cilindrosMotor}|${bloqueMotor}|${motor}|${tipoMotor}|${transmision}`;
   };
@@ -340,17 +340,17 @@ const ApplicationsCard = ({ state, setState, product }: ApplicationsCardProps) =
     // First, try to get from attributeValues directly (checking valueDate)
     const attr = application.attributeValues?.find((av: any) => {
       const attrName = av.attribute?.name || "";
-      return attrName.toLowerCase().includes("año") || 
-             attrName.toLowerCase().includes("anio") || 
-             attrName.toLowerCase().includes("year");
+      return attrName.toLowerCase().includes("año") ||
+        attrName.toLowerCase().includes("anio") ||
+        attrName.toLowerCase().includes("year");
     });
-    
+
     if (attr) {
       // Prioritize valueNumber (as year is stored as number now)
       if (attr.valueNumber !== null && attr.valueNumber !== undefined) {
         return typeof attr.valueNumber === 'number' ? attr.valueNumber : parseInt(String(attr.valueNumber), 10);
       }
-      
+
       // Fallback to valueDate - extract year from date
       if (attr.valueDate) {
         const date = new Date(attr.valueDate);
@@ -358,7 +358,7 @@ const ApplicationsCard = ({ state, setState, product }: ApplicationsCardProps) =
           return date.getFullYear();
         }
       }
-      
+
       // Handle valueString (could be range or single year)
       if (attr.valueString) {
         const match = attr.valueString.match(/^(\d{4})\s*[-–]\s*(\d{4})$/);
@@ -368,17 +368,17 @@ const ApplicationsCard = ({ state, setState, product }: ApplicationsCardProps) =
         const singleYear = parseInt(attr.valueString, 10);
         if (!isNaN(singleYear)) return singleYear;
       }
-      
+
       // Handle valueNumber (legacy support)
       if (typeof attr.valueNumber === "number") {
         return attr.valueNumber;
       }
     }
-    
+
     // Fallback to getAttributeValue helper
     const añoValue = getAttributeValue(application, 'Año');
     if (!añoValue) return null;
-    
+
     // If it's a range string like "1998-2024", extract the first year
     if (typeof añoValue === "string") {
       const match = añoValue.match(/^(\d{4})\s*[-–]\s*(\d{4})$/);
@@ -389,12 +389,12 @@ const ApplicationsCard = ({ state, setState, product }: ApplicationsCardProps) =
       const singleYear = parseInt(añoValue, 10);
       if (!isNaN(singleYear)) return singleYear;
     }
-    
+
     // If it's a number
     if (typeof añoValue === "number") {
       return añoValue;
     }
-    
+
     return null;
   };
 
@@ -406,7 +406,7 @@ const ApplicationsCard = ({ state, setState, product }: ApplicationsCardProps) =
 
     // Group applications by their grouping key
     const groups = new Map<string, Application[]>();
-    
+
     state.applications.forEach((app: Application) => {
       const key = getGroupingKey(app);
       if (!groups.has(key)) {
@@ -415,11 +415,11 @@ const ApplicationsCard = ({ state, setState, product }: ApplicationsCardProps) =
       groups.get(key)!.push(app);
     });
 
-    
+
     // Convert groups to GroupedApplication format
     const grouped = Array.from(groups.entries()).map(([, applications]) => {
       const firstApp = applications[0];
-      
+
       // Extract all years from applications in this group
       const years = applications
         .map(app => extractYear(app))
@@ -436,7 +436,7 @@ const ApplicationsCard = ({ state, setState, product }: ApplicationsCardProps) =
       const ccMotor = getAttributeValue(firstApp, 'CC_Motor');
       const cilindrosMotor = getAttributeValue(firstApp, 'Cilindros_Motor');
       const bloqueMotor = getAttributeValue(firstApp, 'Bloque_Motor');
-      
+
       let motorDescripcion = "";
       if (motor) {
         motorDescripcion = String(motor);
@@ -475,7 +475,7 @@ const ApplicationsCard = ({ state, setState, product }: ApplicationsCardProps) =
         especificaciones,
       };
     });
-    
+
     return grouped;
   }, [state.applications]);
 
@@ -500,12 +500,12 @@ const ApplicationsCard = ({ state, setState, product }: ApplicationsCardProps) =
 
       application.attributeValues.forEach((attr: any) => {
         const attrName = attr.attribute?.name || "";
-        const isYearAttribute = attrName.toLowerCase().includes("año") || 
-                               attrName.toLowerCase().includes("anio") || 
-                               attrName.toLowerCase().includes("year");
-        
+        const isYearAttribute = attrName.toLowerCase().includes("año") ||
+          attrName.toLowerCase().includes("anio") ||
+          attrName.toLowerCase().includes("year");
+
         let value: any = null;
-        
+
         if (isYearAttribute) {
           // Prioritize valueNumber (as it's stored now)
           if (attr.valueNumber !== null && attr.valueNumber !== undefined) {
@@ -526,7 +526,7 @@ const ApplicationsCard = ({ state, setState, product }: ApplicationsCardProps) =
           } else {
             value = null;
           }
-          
+
           // Final check: if value is still a long string/timestamp, extract year
           if (value && typeof value === "string" && (value.includes('T') || value.length > 4)) {
             const normalized = normalizeToYear(value);
@@ -550,7 +550,7 @@ const ApplicationsCard = ({ state, setState, product }: ApplicationsCardProps) =
             if (normalized) value = normalized;
           }
         }
-        
+
         // If value is a string that looks like a timestamp, extract year
         if (typeof value === "string" && isYearAttribute) {
           if (value.includes('T') || (value.includes('-') && value.length > 4)) {
@@ -560,7 +560,7 @@ const ApplicationsCard = ({ state, setState, product }: ApplicationsCardProps) =
             }
           }
         }
-        
+
         if (value !== null && value !== undefined && attrName) {
           parts.push(`${attrName}: ${value}`);
         }
@@ -571,7 +571,7 @@ const ApplicationsCard = ({ state, setState, product }: ApplicationsCardProps) =
     }
 
     // Fallback to ID
-    const idSuffix = application.id ? application.id.substring(application.id.length - 8).toUpperCase() : 'N/A';
+    const idSuffix = application.id ? application.id.substring(application.id.length - 8).toUpperCase() : '-';
     return `Aplicación (${idSuffix})`;
   };
 
@@ -584,7 +584,7 @@ const ApplicationsCard = ({ state, setState, product }: ApplicationsCardProps) =
         </CardDescription>
         <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
           <p className="text-sm text-blue-800">
-            <strong>Nota:</strong> Cada aplicación muestra información del vehículo (Modelo, Submodelo, Año, etc.) seguida de un identificador único entre paréntesis. 
+            <strong>Nota:</strong> Cada aplicación muestra información del vehículo (Modelo, Submodelo, Año, etc.) seguida de un identificador único entre paréntesis.
             Este identificador corresponde a los últimos 8 caracteres del ID de la aplicación en la base de datos, lo que permite diferenciar cada aplicación y facilitar su búsqueda o referencia si es necesario.
             Si aparece "BASE" o "Aplicación", significa que esa aplicación no tiene información adicional de vehículo, pero el identificador único permite diferenciarla de las demás.
           </p>
@@ -603,122 +603,122 @@ const ApplicationsCard = ({ state, setState, product }: ApplicationsCardProps) =
             return (
               <div className="w-full overflow-x-auto">
                 <Table>
-              <TableHeader>
-                <TableRow className="bg-blue-600 hover:bg-blue-600">
-                  <TableHead className="text-white font-semibold">Origen</TableHead>
-                  <TableHead className="text-white font-semibold">Fabricante</TableHead>
-                  <TableHead className="text-white font-semibold">Modelo</TableHead>
-                  <TableHead className="text-white font-semibold">Submodelo</TableHead>
-                  <TableHead className="text-white font-semibold">Año</TableHead>
-                  <TableHead className="text-white font-semibold">Litros Motor</TableHead>
-                  <TableHead className="text-white font-semibold">CC Motor</TableHead>
-                  <TableHead className="text-white font-semibold">CID Motor</TableHead>
-                  <TableHead className="text-white font-semibold">Cilindros Motor</TableHead>
-                  <TableHead className="text-white font-semibold">Bloque Motor</TableHead>
-                  <TableHead className="text-white font-semibold">Motor Descripción</TableHead>
-                  <TableHead className="text-white font-semibold">Especificaciones</TableHead>
-                  <TableHead className="text-white font-semibold">Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {groupedApplications.map((group, index) => {
-                  const isExpanded = expandedRows.has(index);
-                  return (
-                    <React.Fragment key={index}>
-                      <TableRow>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            {group.applications.length > 1 && (
-                              <button
-                                onClick={() => toggleRowExpand(index)}
-                                className="p-1 hover:bg-gray-100 rounded"
-                                title={isExpanded ? "Colapsar" : "Expandir para ver aplicaciones"}
-                              >
-                                {isExpanded ? (
-                                  <ChevronUp className="h-4 w-4" />
-                                ) : (
-                                  <ChevronDown className="h-4 w-4" />
-                                )}
-                              </button>
-                            )}
-                            <span>{group.origin || "-"}</span>
-                            {group.applications.length > 1 && (
-                              <span className="text-xs text-gray-500">
-                                ({group.applications.length} aplicaciones)
-                              </span>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>{group.fabricante || "-"}</TableCell>
-                        <TableCell>{group.modelo || "-"}</TableCell>
-                        <TableCell>{group.submodelo || "-"}</TableCell>
-                        <TableCell>
-                          {group.añoMin && group.añoMax
-                            ? group.añoMin === group.añoMax
-                              ? String(group.añoMin)
-                              : `${group.añoMin}-${group.añoMax}`
-                            : group.añoMin
-                            ? String(group.añoMin)
-                            : "-"}
-                        </TableCell>
-                        <TableCell>{group.litrosMotor ? String(group.litrosMotor) : "-"}</TableCell>
-                        <TableCell>{group.ccMotor ? String(group.ccMotor) : "-"}</TableCell>
-                        <TableCell>{group.cidMotor ? String(group.cidMotor) : "-"}</TableCell>
-                        <TableCell>{group.cilindrosMotor ? String(group.cilindrosMotor) : "-"}</TableCell>
-                        <TableCell>{group.bloqueMotor || "-"}</TableCell>
-                        <TableCell>{group.motorDescripcion || "-"}</TableCell>
-                        <TableCell>{group.especificaciones || "-"}</TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            {group.applications.length > 0 && (
-                              <Pencil
-                                onClick={() => handleEditApplication(group.applications[0])}
-                                className="cursor-pointer w-4 h-4 hover:text-blue-600 transition-colors"
-                              />
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                      {isExpanded && group.applications.length > 0 && (
-                        <TableRow className="bg-gray-50">
-                          <TableCell colSpan={13} className="p-4">
-                            <div className="space-y-2">
-                              <h4 className="font-semibold text-sm mb-3">
-                                Aplicaciones individuales en este grupo ({group.applications.length}):
-                              </h4>
-                              <div className="flex flex-wrap gap-2">
-                                {group.applications.map((app) => (
-                                  <div
-                                    key={app.id}
-                                    className="bg-white border rounded-lg p-3 flex items-center justify-between gap-3 min-w-[200px]"
+                  <TableHeader>
+                    <TableRow className="bg-blue-600 hover:bg-blue-600">
+                      <TableHead className="text-white font-semibold">Origen</TableHead>
+                      <TableHead className="text-white font-semibold">Fabricante</TableHead>
+                      <TableHead className="text-white font-semibold">Modelo</TableHead>
+                      <TableHead className="text-white font-semibold">Submodelo</TableHead>
+                      <TableHead className="text-white font-semibold">Año</TableHead>
+                      <TableHead className="text-white font-semibold">Litros Motor</TableHead>
+                      <TableHead className="text-white font-semibold">CC Motor</TableHead>
+                      <TableHead className="text-white font-semibold">CID Motor</TableHead>
+                      <TableHead className="text-white font-semibold">Cilindros Motor</TableHead>
+                      <TableHead className="text-white font-semibold">Bloque Motor</TableHead>
+                      <TableHead className="text-white font-semibold">Motor Descripción</TableHead>
+                      <TableHead className="text-white font-semibold">Especificaciones</TableHead>
+                      <TableHead className="text-white font-semibold">Acciones</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {groupedApplications.map((group, index) => {
+                      const isExpanded = expandedRows.has(index);
+                      return (
+                        <React.Fragment key={index}>
+                          <TableRow>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                {group.applications.length > 1 && (
+                                  <button
+                                    onClick={() => toggleRowExpand(index)}
+                                    className="p-1 hover:bg-gray-100 rounded"
+                                    title={isExpanded ? "Colapsar" : "Expandir para ver aplicaciones"}
                                   >
-                                    <div className="flex-1">
-                                      <p className="text-sm font-medium">
-                                        {getApplicationDisplayText(app)}
-                                      </p>
-                                      <p className="text-xs text-gray-500 mt-1">
-                                        ID: {app.id.substring(app.id.length - 8).toUpperCase()}
-                                      </p>
-                                    </div>
-                                    <div className="flex gap-2">
-                                    <Pencil
-                                      onClick={() => handleEditApplication(app)}
-                                      className="cursor-pointer w-4 h-4 hover:text-blue-600 transition-colors"
-                                    />
-                                    </div>
-                                  </div>
-                                ))}
+                                    {isExpanded ? (
+                                      <ChevronUp className="h-4 w-4" />
+                                    ) : (
+                                      <ChevronDown className="h-4 w-4" />
+                                    )}
+                                  </button>
+                                )}
+                                <span>{group.origin || "-"}</span>
+                                {group.applications.length > 1 && (
+                                  <span className="text-xs text-gray-500">
+                                    ({group.applications.length} aplicaciones)
+                                  </span>
+                                )}
                               </div>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </React.Fragment>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
+                            </TableCell>
+                            <TableCell>{group.fabricante || "-"}</TableCell>
+                            <TableCell>{group.modelo || "-"}</TableCell>
+                            <TableCell>{group.submodelo || "-"}</TableCell>
+                            <TableCell>
+                              {group.añoMin && group.añoMax
+                                ? group.añoMin === group.añoMax
+                                  ? String(group.añoMin)
+                                  : `${group.añoMin}-${group.añoMax}`
+                                : group.añoMin
+                                  ? String(group.añoMin)
+                                  : "-"}
+                            </TableCell>
+                            <TableCell>{group.litrosMotor ? String(group.litrosMotor) : "-"}</TableCell>
+                            <TableCell>{group.ccMotor ? String(group.ccMotor) : "-"}</TableCell>
+                            <TableCell>{group.cidMotor ? String(group.cidMotor) : "-"}</TableCell>
+                            <TableCell>{group.cilindrosMotor ? String(group.cilindrosMotor) : "-"}</TableCell>
+                            <TableCell>{group.bloqueMotor || "-"}</TableCell>
+                            <TableCell>{group.motorDescripcion || "-"}</TableCell>
+                            <TableCell>{group.especificaciones || "-"}</TableCell>
+                            <TableCell>
+                              <div className="flex gap-2">
+                                {group.applications.length > 0 && (
+                                  <Pencil
+                                    onClick={() => handleEditApplication(group.applications[0])}
+                                    className="cursor-pointer w-4 h-4 hover:text-blue-600 transition-colors"
+                                  />
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                          {isExpanded && group.applications.length > 0 && (
+                            <TableRow className="bg-gray-50">
+                              <TableCell colSpan={13} className="p-4">
+                                <div className="space-y-2">
+                                  <h4 className="font-semibold text-sm mb-3">
+                                    Aplicaciones individuales en este grupo ({group.applications.length}):
+                                  </h4>
+                                  <div className="flex flex-wrap gap-2">
+                                    {group.applications.map((app) => (
+                                      <div
+                                        key={app.id}
+                                        className="bg-white border rounded-lg p-3 flex items-center justify-between gap-3 min-w-[200px]"
+                                      >
+                                        <div className="flex-1">
+                                          <p className="text-sm font-medium">
+                                            {getApplicationDisplayText(app)}
+                                          </p>
+                                          <p className="text-xs text-gray-500 mt-1">
+                                            ID: {app.id.substring(app.id.length - 8).toUpperCase()}
+                                          </p>
+                                        </div>
+                                        <div className="flex gap-2">
+                                          <Pencil
+                                            onClick={() => handleEditApplication(app)}
+                                            className="cursor-pointer w-4 h-4 hover:text-blue-600 transition-colors"
+                                          />
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
             );
           })()
         )}

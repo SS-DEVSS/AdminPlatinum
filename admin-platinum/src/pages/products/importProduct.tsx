@@ -105,7 +105,7 @@ const ImportProduct = () => {
           <CardContent className="space-y-6">
             <div className="grid gap-3">
               <Label htmlFor="importType">
-                <span className="text-red-500">*</span> Tipo de Importación
+                Tipo de Importación<span className="text-red-500">*</span>
               </Label>
               <Select value={importType} onValueChange={(value) => setImportType(value as ImportType)}>
                 <SelectTrigger className="w-full">
@@ -124,7 +124,7 @@ const ImportProduct = () => {
 
             <div className="grid gap-3">
               <Label htmlFor="category">
-                <span className="text-red-500">*</span> Categoría
+                Categoría<span className="text-red-500">*</span>
               </Label>
               <Select
                 value={categoryId}
@@ -149,7 +149,7 @@ const ImportProduct = () => {
 
             <div className="grid gap-3">
               <Label htmlFor="file">
-                <span className="text-red-500">*</span> Archivo CSV
+                Archivo CSV<span className="text-red-500">*</span>
               </Label>
               <div
                 {...getRootProps()}
