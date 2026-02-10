@@ -40,7 +40,7 @@ type DetailsCardProps = {
   product?: Product | null;
 };
 
-const DetailsCard = ({ state, setState }: DetailsCardProps) => {
+const DetailsCard = ({ state, setState, product }: DetailsCardProps) => {
   const { brands } = useBrands();
   const { categories } = useCategoryContext();
   const { uploadFile, uploading } = useS3FileManager();
@@ -58,6 +58,42 @@ const DetailsCard = ({ state, setState }: DetailsCardProps) => {
     }
   }, [state.imgUrl, imageFile]);
 
+  // When editing a product with an existing image, set imageFile to null so MyDropzone can display it
+  useEffect(() => {
+    if (product && state.imgUrl) {
+      // Only set to null if imageFile is not already null and not a valid File
+      setImageFile((currentFile) => {
+        if (currentFile && !(currentFile instanceof File && currentFile.name)) {
+          console.log("[DetailsCard] Setting imageFile to null for editing");
+          return null; // Ensure imageFile is null so currentImageUrl can be displayed
+        }
+        return currentFile;
+      });
+    }
+  }, [product, state.imgUrl, imageUrl, imageFile]);
+
+  // Update brand from category when category changes or when component loads with a category
+  useEffect(() => {
+    if (state.category) {
+      const categoryId = typeof state.category === 'string' ? state.category : state.category.id;
+      const selectedCategory = categories.find((cat) => cat.id === categoryId);
+
+      if (selectedCategory?.brands && selectedCategory.brands.length > 0) {
+        const categoryBrandId = selectedCategory.brands[0].id || "";
+        // Only update if brand is not already set or is different
+        setState((prevForm) => {
+          if (prevForm.brand !== categoryBrandId) {
+            return {
+              ...prevForm,
+              brand: categoryBrandId,
+            };
+          }
+          return prevForm;
+        });
+      }
+    }
+  }, [state.category, categories, setState, state.brand]);
+
   const handleFormChange = (e: any) => {
     const { name, value } = e.target;
     setState((prevForm) => ({
@@ -66,19 +102,17 @@ const DetailsCard = ({ state, setState }: DetailsCardProps) => {
     }));
   };
 
-  const handleBrandChange = (value: string) => {
-    setState((prevForm) => ({
-      ...prevForm,
-      brand: value === "none" ? "" : value, // Convert "none" to empty string for backend
-      category: null,
-    }));
-  };
-
   const handleCategoryChange = (value: string) => {
     const selectedCategory = categories.find((cat) => cat.id === value);
+    // Get brand from category - use first brand if available
+    const categoryBrandId = selectedCategory?.brands && selectedCategory.brands.length > 0
+      ? selectedCategory.brands[0].id || ""
+      : "";
+
     setState((prevForm) => ({
       ...prevForm,
       category: selectedCategory ? { id: selectedCategory.id, name: selectedCategory.name } : null,
+      brand: categoryBrandId, // Set brand from category
     }));
   };
 
@@ -94,10 +128,12 @@ const DetailsCard = ({ state, setState }: DetailsCardProps) => {
           imgUrl: location, // Use location (full URL) instead of key
         }));
       });
-    } else if (!imageFile) {
+    } else if (!imageFile && !state.imgUrl) {
+      // Only clear imageUrl if there's no existing image (not editing)
+      // When editing, we want to keep the existing imageUrl
       setImageUrl("");
     }
-  }, [imageFile, uploadFile, setState]);
+  }, [imageFile, uploadFile, setState, state.imgUrl]);
 
   const handlePreviewImage = (url: string) => {
     setPreviewImageUrl(url);
@@ -143,14 +179,14 @@ const DetailsCard = ({ state, setState }: DetailsCardProps) => {
       <CardHeader>
         <CardTitle>Detalles</CardTitle>
         <CardDescription>
-          Ingrese la información deseada de la categoría.
+          Ingrese los detalles
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-1">
         <div className="grid gap-6">
           <div className="grid gap-3">
             <Label htmlFor="name">
-              <span className="text-redLabel">*</span>Nombre del Producto
+              Nombre<span className="text-redLabel">*</span>
             </Label>
             <Input
               id="name"
@@ -164,7 +200,7 @@ const DetailsCard = ({ state, setState }: DetailsCardProps) => {
           </div>
           <div className="grid gap-3">
             <Label htmlFor="sku">
-              <span className="text-redLabel">*</span>SKU
+              SKU<span className="text-redLabel">*</span>
             </Label>
             <Input
               id="sku"
@@ -178,7 +214,7 @@ const DetailsCard = ({ state, setState }: DetailsCardProps) => {
           </div>
           <div className="grid gap-3">
             <Label htmlFor="description">
-              <span className="text-redLabel">*</span>Description
+              Descripción<span className="text-redLabel">*</span>
             </Label>
             <Textarea
               id="description"
@@ -190,12 +226,12 @@ const DetailsCard = ({ state, setState }: DetailsCardProps) => {
             />
           </div>
           <section className="flex gap-4">
-            <div className="grid gap-3 w-full">
+            <div className="flex flex-col gap-3 w-full">
               <Label htmlFor="brand">
                 Marca
               </Label>
-              <Select onValueChange={handleBrandChange} value={state.brand || "none"}>
-                <SelectTrigger className="w-full">
+              <Select value={state.brand || "none"} disabled>
+                <SelectTrigger className="w-full bg-muted cursor-not-allowed">
                   <SelectValue placeholder="Selecciona una marca (opcional)" />
                 </SelectTrigger>
                 <SelectContent>
@@ -212,10 +248,13 @@ const DetailsCard = ({ state, setState }: DetailsCardProps) => {
                   </SelectGroup>
                 </SelectContent>
               </Select>
+              <p className="text-xs text-muted-foreground">
+                La marca se asigna automáticamente desde la categoría seleccionada
+              </p>
             </div>
-            <div className="grid gap-3 w-full">
+            <div className="flex flex-col gap-3 w-full">
               <Label htmlFor="category">
-                <span className="text-redLabel">*</span>Categoría
+                Categoría<span className="text-redLabel">*</span>
               </Label>
               <Select
                 onValueChange={handleCategoryChange}
@@ -246,7 +285,7 @@ const DetailsCard = ({ state, setState }: DetailsCardProps) => {
           </section>
           <div className="grid gap-3">
             <Label htmlFor="image">
-              <span className="text-redLabel">*</span>Imagen del Producto
+              Imagen<span className="text-redLabel">*</span>
             </Label>
             <div className="relative">
               <MyDropzone
@@ -254,7 +293,15 @@ const DetailsCard = ({ state, setState }: DetailsCardProps) => {
                 fileSetter={setImageFile}
                 type="image"
                 className="p-8 min-h-[200px]"
-                currentImageUrl={imageUrl && !imageFile ? imageUrl : undefined}
+                currentImageUrl={(() => {
+                  const url = imageUrl && !imageFile ? imageUrl : undefined;
+                  console.log("[DetailsCard] MyDropzone currentImageUrl:", {
+                    imageUrl,
+                    imageFile: imageFile ? (imageFile instanceof File ? `File: ${imageFile.name}` : 'Object') : 'null',
+                    result: url
+                  });
+                  return url;
+                })()}
                 onImageClick={() => {
                   if (imageUrl && !imageFile) {
                     handlePreviewImage(imageUrl);

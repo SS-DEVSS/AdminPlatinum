@@ -593,7 +593,7 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
             </section>
           </section>
         </section>
-        <section className="mt-4 flex flex-col gap-3 w-full">
+        <section className="mt-4 flex flex-col gap-3 w-full pb-24">
           <CardAtributesVariants
             form={form}
             setForm={setForm}
@@ -606,21 +606,6 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
             title={"Atributos de Aplicaciones"}
             description={"Ingresa los atributos de aplicación para esta categoría"}
           />
-        </section>
-        <section className="mt-6 flex justify-end gap-3">
-          <Link to="/dashboard/categorias">
-            <Button variant={"outline"}>Cancelar</Button>
-          </Link>
-          <Button
-            size="sm"
-            disabled={!validateForm || isSubmitting}
-            className="h-10 px-6 gap-1"
-            onClick={() => handleSubmit(form)}
-          >
-            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-              {isSubmitting ? "Guardando..." : "Guardar"}
-            </span>
-          </Button>
         </section>
         <Dialog open={previewDialogOpen} onOpenChange={setPreviewDialogOpen}>
           <DialogContent className="sm:max-w-[600px]">
@@ -639,6 +624,23 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
           </DialogContent>
         </Dialog>
       </main>
+      <section className="fixed bottom-0 left-0 right-0 bg-background border-t shadow-lg z-50">
+        <div className="container mx-auto px-4 py-4 flex justify-end gap-3">
+          <Link to="/dashboard/categorias">
+            <Button variant={"outline"}>Cancelar</Button>
+          </Link>
+          <Button
+            size="sm"
+            disabled={!validateForm || isSubmitting}
+            className="h-10 px-6 gap-1"
+            onClick={() => handleSubmit(form)}
+          >
+            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+              {isSubmitting ? "Guardando..." : "Guardar"}
+            </span>
+          </Button>
+        </div>
+      </section>
     </>
   );
 };

@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useFormState } from "@/hooks/useFormProduct";
 import AdditionalInfo from "@/modules/products/AdditionalInfo";
-import Attributes from "@/modules/products/Attributes";
 import Details from "@/modules/products/Details";
 import { ChevronLeft } from "lucide-react";
 import { useProducts } from "@/hooks/useProducts";
@@ -49,9 +48,9 @@ const NewProduct = () => {
           // 1. Populate Details
           // Find the category object from context based on product.category.id
           const categoryId = product.category?.id || product.category;
-          
+
           let fullCategory = categories.find(c => c.id === categoryId) || null;
-          
+
           // If category not found in context, create a basic category object from product data
           if (!fullCategory && product.category) {
             fullCategory = {
@@ -61,9 +60,16 @@ const NewProduct = () => {
           }
 
           // Get the first image URL if available
-          const firstImage = product.images && product.images.length > 0 
-            ? product.images[0].url 
+          const firstImage = product.images && product.images.length > 0
+            ? product.images[0].url
             : "";
+
+          // Get brand from product, or from category's brands if product doesn't have one
+          let brandId = product.brand?.id || "";
+          if (!brandId && fullCategory?.brands && fullCategory.brands.length > 0) {
+            // Use the first brand from the category
+            brandId = fullCategory.brands[0].id || "";
+          }
 
           setDetailsState({
             id: product.id,
@@ -73,7 +79,7 @@ const NewProduct = () => {
             category: fullCategory, // Use the full category object found
             references: [], // Handled in referencesState
             sku: product.sku || "",
-            brand: product.brand?.id || "",
+            brand: brandId,
             imgUrl: firstImage, // Set initial image URL
           });
 
@@ -111,16 +117,16 @@ const NewProduct = () => {
               // Extract key attributes from attributeValues
               // Applications typically have: Modelo, Submodelo, Año, Litros_Motor, etc.
               const getAttributeValue = (attrName: string) => {
-                const attr = app.attributeValues?.find((av: any) => 
-                  av.attribute?.name === attrName || 
+                const attr = app.attributeValues?.find((av: any) =>
+                  av.attribute?.name === attrName ||
                   av.attribute?.name?.toLowerCase() === attrName.toLowerCase()
                 );
                 if (!attr) return null;
-                
-                const isYearAttribute = attrName.toLowerCase().includes("año") || 
-                                       attrName.toLowerCase().includes("anio") || 
-                                       attrName.toLowerCase().includes("year");
-                
+
+                const isYearAttribute = attrName.toLowerCase().includes("año") ||
+                  attrName.toLowerCase().includes("anio") ||
+                  attrName.toLowerCase().includes("year");
+
                 // For year attributes, prioritize valueNumber (as it's stored now)
                 if (isYearAttribute) {
                   if (attr.valueNumber !== null && attr.valueNumber !== undefined) {
@@ -144,11 +150,11 @@ const NewProduct = () => {
                   }
                   return null;
                 }
-                
+
                 // For non-year attributes, use standard priority
                 return attr.valueString || attr.valueNumber || attr.valueBoolean || null;
               };
-              
+
               // Try common attribute names
               const modelo = getAttributeValue('Modelo');
               const submodelo = getAttributeValue('Submodelo');
@@ -161,16 +167,16 @@ const NewProduct = () => {
               const motor = getAttributeValue('Motor');
               const tipoMotor = getAttributeValue('Tipo_Motor');
               const transmision = getAttributeValue('Transmisión') || getAttributeValue('Transmision');
-              
+
               // Build display text from available attributes (prioritize most distinctive ones)
               const parts: string[] = [];
-              
+
               // Modelo is usually the most distinctive
               if (modelo) parts.push(String(modelo));
-              
+
               // Submodelo adds more specificity
               if (submodelo) parts.push(String(submodelo));
-              
+
               // Año is important for differentiation - ensure it's always just the year number
               if (año) {
                 let añoStr = String(año);
@@ -187,7 +193,7 @@ const NewProduct = () => {
                 }
                 parts.push(añoStr);
               }
-              
+
               // Motor information
               if (motor) {
                 parts.push(String(motor));
@@ -200,27 +206,27 @@ const NewProduct = () => {
               } else if (cidMotor) {
                 parts.push(`${cidMotor}CID`);
               }
-              
+
               // Additional motor details if available
               if (cilindrosMotor && !motor) {
                 parts.push(`${cilindrosMotor}cil`);
               }
-              
+
               if (bloqueMotor) {
                 parts.push(bloqueMotor);
               }
-              
+
               if (transmision) {
                 parts.push(transmision);
               }
-              
+
               // If we have no distinctive attributes, don't add anything
               // We'll just use the ID to differentiate
-              
+
               // Always append a short version of the ID to make each application unique
               // Use last 8 characters of the ID (more readable than first 8)
               const shortId = app.id.substring(app.id.length - 8).toUpperCase();
-              
+
               // Build display text: combine attributes with ID
               // NEVER use app.sku as it's the same for all applications
               let displayText = '';
@@ -230,7 +236,7 @@ const NewProduct = () => {
                 // If no attributes, just show the ID
                 displayText = `Aplicación (${shortId})`;
               }
-              
+
               // Return Application format with displayText for UI display
               const formatted: any = {
                 id: app.id,
@@ -240,10 +246,10 @@ const NewProduct = () => {
                 // Store formatted display text for UI
                 displayText: displayText,
               };
-              
+
               return formatted;
             });
-            
+
             setApplicationsState({ applications: formattedApplications });
           } else {
           }
@@ -259,11 +265,11 @@ const NewProduct = () => {
 
   const handleSubmit = async () => {
     if (isSubmitting) return; // Prevent double submission
-    
+
     setIsSubmitting(true);
     const startTime = Date.now();
     savingStartTimeRef.current = startTime;
-    
+
     try {
       // Validate required fields
       const missingFields: string[] = [];
@@ -279,7 +285,7 @@ const NewProduct = () => {
       if (!detailsState.category) {
         missingFields.push("Categoría");
       }
-      
+
       if (missingFields.length > 0) {
         toast({
           title: "Error",
@@ -290,8 +296,8 @@ const NewProduct = () => {
       }
 
       // Get category ID
-      const categoryId = typeof detailsState.category === 'string' 
-        ? detailsState.category 
+      const categoryId = typeof detailsState.category === 'string'
+        ? detailsState.category
         : detailsState.category?.id;
 
       if (!categoryId) {
@@ -389,7 +395,7 @@ const NewProduct = () => {
 
       // Format references - compare with existing to only send changes
       const currentReferenceIds = referencesState.references.map(ref => ref.id).filter((id): id is string => !!id);
-      
+
       if (isEditMode && id) {
         // Update product - ProductUpdateRequest format
         // Always include name and description (they should always have values)
@@ -401,10 +407,10 @@ const NewProduct = () => {
         // Compare references with existing product to only send changes
         if (existingProduct && existingProduct.references) {
           const existingReferenceIds = existingProduct.references.map((ref: any) => ref.id).filter((id: any): id is string => !!id);
-          
+
           // Find references to add (in current but not in existing) - use IDs for new references
           const referencesToAdd = currentReferenceIds.filter((id: string) => !existingReferenceIds.includes(id));
-          
+
           // Find references to remove (in existing but not in current) - use referenceNumbers for removal
           const referencesToRemoveIds = existingReferenceIds.filter((id: string) => !currentReferenceIds.includes(id));
           // Map the IDs to referenceNumbers for the backend
@@ -412,12 +418,12 @@ const NewProduct = () => {
             .filter((ref: any) => referencesToRemoveIds.includes(ref.id))
             .map((ref: any) => ref.referenceNumber)
             .filter((num: any): num is string => !!num);
-          
+
           // Only include references if there are new ones to add (use IDs)
           if (referencesToAdd.length > 0) {
             productPayload.references = referencesToAdd;
           }
-          
+
           // Include removeReferences if there are any to remove (use referenceNumbers)
           if (referencesToRemove.length > 0) {
             productPayload.removeReferences = referencesToRemove;
@@ -448,7 +454,7 @@ const NewProduct = () => {
         }
 
         await updateProduct(id, productPayload);
-        
+
         toast({
           title: "Producto actualizado",
           variant: "success",
@@ -459,7 +465,7 @@ const NewProduct = () => {
         // Format variants (for SINGLE products, create a variant with the product name)
         const productType = (detailsState.type || "SINGLE").toUpperCase();
         const variants: any[] = [];
-        
+
         // Always create a variant for SINGLE products (default type)
         // Since type defaults to SINGLE, we should always create a variant
         if (productType === "SINGLE" || !detailsState.type) {
@@ -498,13 +504,13 @@ const NewProduct = () => {
         }
 
         await createProduct(productPayload);
-        
+
         toast({
           title: "Producto creado",
           variant: "success",
           description: "El producto se ha creado correctamente. Puedes importar referencias y aplicaciones desde las secciones de importación.",
         });
-        
+
         // Refresh products list to show the new product
         await getProducts();
       }
@@ -513,7 +519,7 @@ const NewProduct = () => {
       const elapsed = savingStartTimeRef.current ? Date.now() - savingStartTimeRef.current : 0;
       const minDisplayTime = 800;
       const remainingTime = Math.max(0, minDisplayTime - elapsed);
-      
+
       setTimeout(() => {
         setIsSubmitting(false);
         savingStartTimeRef.current = null;
@@ -524,12 +530,12 @@ const NewProduct = () => {
       console.error("Error in handleSubmit:", error);
       setIsSubmitting(false);
       savingStartTimeRef.current = null;
-      
-      const errorMessage = error.response?.data?.error || 
-                          error.response?.data?.message || 
-                          error.message || 
-                          "Error al guardar el producto";
-      
+
+      const errorMessage = error.response?.data?.error ||
+        error.response?.data?.message ||
+        error.message ||
+        "Error al guardar el producto";
+
       toast({
         title: "Error",
         variant: "destructive",
@@ -548,50 +554,49 @@ const NewProduct = () => {
         <Loader fullScreen message="Guardando cambios..." />
       )}
       <Layout>
-      <header className="flex justify-between">
-        <div className="flex items-center gap-4">
-          <Link to="/dashboard/productos">
-            <Card className="p-2">
-              <ChevronLeft className="h-4 w-4" />
-            </Card>
-          </Link>
-          <p className="text-2xl font-semibold leading-none tracking-tight">
-            {isEditMode ? "Editar Producto" : "Nuevo Producto"}
-          </p>
-        </div>
-      </header>
-      <section className="flex flex-col gap-4 mt-6 max-w-4xl mx-auto px-4">
-        <Details
-          detailsState={detailsState}
-          setDetailsState={setDetailsState}
-          referencesState={referencesState}
-          setReferencesState={setReferencesState}
-          applicationsState={applicationsState}
-          setApplicationsState={setApplicationsState}
-          product={isEditMode ? currentProduct : null}
-        />
-        <Attributes
-          setCanContinue={setCanContinue}
-          categoryId={typeof detailsState.category === 'string' ? detailsState.category : detailsState.category?.id || undefined}
-          attributesState={attributesState}
-          setAttributesState={setAttributesState}
-        />
-        {isEditMode && (
-          <AdditionalInfo 
+        <header className="flex justify-between">
+          <div className="flex items-center gap-4">
+            <Link to="/dashboard/productos">
+              <Card className="p-2">
+                <ChevronLeft className="h-4 w-4" />
+              </Card>
+            </Link>
+            <p className="text-2xl font-semibold leading-none tracking-tight">
+              {isEditMode ? "Editar Producto" : "Nuevo Producto"}
+            </p>
+          </div>
+        </header>
+        <section className="flex flex-col gap-4 mt-6 max-w-4xl mx-auto px-4 pb-24">
+          <Details
+            detailsState={detailsState}
+            setDetailsState={setDetailsState}
+            referencesState={referencesState}
+            setReferencesState={setReferencesState}
+            applicationsState={applicationsState}
+            setApplicationsState={setApplicationsState}
+            product={isEditMode ? currentProduct : null}
+            attributesState={attributesState}
+            setAttributesState={setAttributesState}
             setCanContinue={setCanContinue}
-            product={currentProduct}
           />
-        )}
-        <section className="flex justify-end gap-3 mt-4">
-          <Link to="/dashboard/productos">
-            <Button variant="outline">Cancelar</Button>
-          </Link>
-          <Button disabled={!canContinue || isSubmitting} onClick={handleSubmit}>
-            {isSubmitting ? "Guardando..." : isEditMode ? "Actualizar Producto" : "Publicar Producto"}
-          </Button>
+          {isEditMode && (
+            <AdditionalInfo
+              setCanContinue={setCanContinue}
+              product={currentProduct}
+            />
+          )}
         </section>
-      </section>
-    </Layout>
+        <section className="fixed bottom-0 left-0 right-0 bg-background border-t shadow-lg z-50">
+          <div className="max-w-4xl mx-auto px-4 py-4 flex justify-end gap-3">
+            <Link to="/dashboard/productos">
+              <Button variant="outline">Cancelar</Button>
+            </Link>
+            <Button disabled={!canContinue || isSubmitting} onClick={handleSubmit}>
+              {isSubmitting ? "Guardando..." : isEditMode ? "Actualizar Producto" : "Publicar Producto"}
+            </Button>
+          </div>
+        </section>
+      </Layout>
     </>
   );
 };

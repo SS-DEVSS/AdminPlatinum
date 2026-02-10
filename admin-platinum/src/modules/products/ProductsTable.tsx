@@ -20,7 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { AttributeValue, Item, Variant } from "@/models/product";
 import { useProducts } from "@/hooks/useProducts";
 import { Category } from "@/models/category";
@@ -53,6 +53,7 @@ interface DataTableProps {
 }
 
 const DataTable = ({ category, searchFilter }: DataTableProps) => {
+  const navigate = useNavigate();
   const [mappedData, setMappedData] = useState<Variant[]>([]);
   const [imageDialogOpen, setImageDialogOpen] = useState(false);
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
@@ -455,16 +456,32 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
       },
       {
         accessorKey: "sku",
-        header: "Sku",
+        header: "SKU",
         cell: ({ row }: { row: any }) => {
           const skuValue = row.getValue("sku") || row.original?.sku || "";
-          return <div>{skuValue || "N/A"}</div>;
+          return <div className='text-sm font-medium'>{skuValue || "-"}</div>;
         },
       },
       {
         accessorKey: "name",
         header: "Nombre",
-        cell: ({ row }: { row: any }) => <div>{row.getValue("name")}</div>,
+        cell: ({ row }: { row: any }) => {
+          // Get product ID from variant - use idProduct if available, otherwise use variant id
+          const productId = (row.original as any)?._originalItem?.id || (row.original as any)?.idProduct || row.original.id;
+          const productName = row.getValue("name");
+
+          return (
+            <div
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent row click
+                navigate(`/dashboard/producto/${productId}`);
+              }}
+              className="text-gray-600 hover:underline cursor-pointer"
+            >
+              {productName}
+            </div>
+          );
+        },
       },
     ];
 
@@ -475,7 +492,7 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
     // Add type column
     initialColumns.push({
       accessorKey: "type",
-      header: "Tipo",
+      header: "Composición",
       cell: ({ row }: { row: any }) => {
         return (
           <div>
@@ -501,7 +518,7 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Acciones</DropdownMenuLabel>
                 <Link to={`/dashboard/producto/${row.original.id}`}>
-                  <DropdownMenuItem>Editar</DropdownMenuItem>
+                  <DropdownMenuItem data-prevent-navigation>Editar</DropdownMenuItem>
                 </Link>
                 {/* <DropdownMenuItem
                   onClick={() => {
@@ -557,10 +574,10 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
       };
 
       const getDisplayValue = (value: AttributeValue | undefined) => {
-        if (!value) return "N/A";
+        if (!value) return "-";
         // Try all possible value types
         if (value.valueString !== null && value.valueString !== undefined && value.valueString !== "") {
-          return value.valueString;
+          return value.valueString.toLowerCase();
         }
         if (value.valueNumber !== null && value.valueNumber !== undefined) {
           return value.valueNumber.toString();
@@ -571,7 +588,7 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
         if (value.valueDate) {
           return new Date(value.valueDate).toLocaleDateString();
         }
-        return "N/A";
+        return "-";
       };
 
       return (
@@ -592,7 +609,8 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
             header: attribute.name,
             cell: ({ row }: { row: any }) => {
               const value = getAttributeValues(row, attribute);
-              return <div>{getDisplayValue(value)}</div>;
+              const displayValue = getDisplayValue(value);
+              return <div className="capitalize">{displayValue}</div>;
             },
           };
         }) || []
@@ -608,7 +626,7 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
       ...dynamicColumnsVariant,
       ...actionColumn,
     ];
-  }, [attributes, shouldHideDescription]);
+  }, [attributes, shouldHideDescription, navigate]);
 
   useEffect(() => {
     const filteredProducts = products.filter(
@@ -896,7 +914,7 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
           >
-            Previous
+            Anterior
           </Button>
           <Button
             variant="outline"
@@ -904,7 +922,7 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
           >
-            Next
+            Siguiente
           </Button>
         </div>
       </div>
