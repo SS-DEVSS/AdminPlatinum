@@ -40,6 +40,8 @@ const Marcas = () => {
   const [image, setImage] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const savingStartTimeRef = useRef<number | null>(null);
+  const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
+  const [previewImageUrl, setPreviewImageUrl] = useState<string>("");
 
   const [filterBrandSearch, setFilterBrandSearch] = useState("");
   const [form, setForm] = useState({
@@ -116,6 +118,11 @@ const Marcas = () => {
     setFilterBrandSearch(value.trim());
   };
 
+  const handlePreviewImage = (url: string) => {
+    setPreviewImageUrl(url);
+    setPreviewDialogOpen(true);
+  };
+
   const filterBrands = useMemo(
     () =>
       brands.filter((brand: Brand) =>
@@ -128,7 +135,7 @@ const Marcas = () => {
     setIsSubmitting(true);
     const startTime = Date.now();
     savingStartTimeRef.current = startTime;
-    
+
     const brandData = {
       ...form,
       id: brand ? brand.id : "",
@@ -196,152 +203,175 @@ const Marcas = () => {
         <Loader fullScreen message="Guardando cambios..." />
       )}
       <Layout>
-      <div>
-        <Card className="border-0 shadow-none">
-          <CardHeader className="flex flex-row p-0 m-0">
-            <div className="flex flex-col gap-3">
-              <CardTitle>Marcas</CardTitle>
-              <CardDescription>
-                Maneja tus marcas y las categorías asociadas a cada una de ellas
-              </CardDescription>
-            </div>
-            <div className="ml-auto flex gap-3">
-              <div className="relative ml-auto flex-1 md:grow-0">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="search"
-                  placeholder="Buscar Marca..."
-                  onChange={handleSearchFilter}
-                  value={filterBrandSearch}
-                  className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[336px]"
-                />
+        <div>
+          <Card className="border-0 shadow-none">
+            <CardHeader className="flex flex-row p-0 m-0">
+              <div className="flex flex-col gap-3">
+                <CardTitle>Marcas</CardTitle>
+                <CardDescription>
+                  Maneja tus marcas y las categorías asociadas a cada una de ellas
+                </CardDescription>
               </div>
-              <Dialog
-                open={isOpen}
-                onOpenChange={(open: boolean) => {
-                  if (!open) {
-                    setForm({
-                      name: "",
-                      description: "",
-                      logoImgUrl: "",
-                    });
-                    setIsEditMode(false);
-                    closeModal();
-                  }
-                }}
-              >
-                <DialogTrigger asChild>
-                  <Button
-                    size="sm"
-                    className="h-10 px-6 gap-1"
-                    onClick={() => handleOpenModal()}
-                  >
-                    <PlusCircle className="h-3.5 w-3.5 mr-2" />
-                    <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                      Agregar Marca
-                    </span>
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px]">
-                  {loading && isEditMode ? (
-                    <div className="flex justify-center items-center py-12">
-                      <div className="flex flex-col items-center gap-2">
-                        <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-                        <p className="text-sm text-muted-foreground">Cargando marca...</p>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                  <DialogHeader>
-                    <DialogTitle className="mb-2">{title}</DialogTitle>
-                    <DialogDescription>{description}</DialogDescription>
-                  </DialogHeader>
-                  <Label htmlFor="name">
-                    <span className="text-redLabel">*</span> Nombre
-                  </Label>
+              <div className="ml-auto flex gap-3">
+                <div className="relative ml-auto flex-1 md:grow-0">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
-                    id="name"
-                    name="name"
-                    type="text"
-                    placeholder="ej. Platinum"
-                    value={form.name}
-                    onChange={handleForm}
-                    maxLength={255}
-                    required
+                    type="search"
+                    placeholder="Buscar Marca..."
+                    onChange={handleSearchFilter}
+                    value={filterBrandSearch}
+                    className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[336px]"
                   />
-                  <Label htmlFor="description">
-                    <span className="text-redLabel">*</span> Descripción
-                  </Label>
-                  <Textarea
-                    id="description"
-                    name="description"
-                    placeholder="ej. Marca de lujo"
-                    value={form.description}
-                    onChange={handleForm}
-                    required
-                  />
-                  <Label htmlFor="logoImgUrl">
-                    <span className="text-redLabel">*</span> Imagen
-                  </Label>
-                  <MyDropzone
-                    file={image}
-                    fileSetter={setImage}
-                    className={`p-8`}
-                  />
-                  <DialogDescription>
-                    Formatos Válidos: jpg, png, jpeg
-                  </DialogDescription>
-                  <DialogFooter>
+                </div>
+                <Dialog
+                  open={isOpen}
+                  onOpenChange={(open: boolean) => {
+                    if (!open) {
+                      setForm({
+                        name: "",
+                        description: "",
+                        logoImgUrl: "",
+                      });
+                      setIsEditMode(false);
+                      closeModal();
+                    }
+                  }}
+                >
+                  <DialogTrigger asChild>
                     <Button
-                      disabled={!validateForm() || isSubmitting}
-                      onClick={handleSubmit}
-                      type="submit"
+                      size="sm"
+                      className="h-10 px-6 gap-1"
+                      onClick={() => handleOpenModal()}
                     >
-                      {isSubmitting ? "Guardando..." : isEditMode ? "Actualizar Marca" : "Agregar Marca"}
+                      <PlusCircle className="h-3.5 w-3.5 mr-2" />
+                      <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                        Agregar Marca
+                      </span>
                     </Button>
-                  </DialogFooter>
-                    </>
-                  )}
-                </DialogContent>
-              </Dialog>
-            </div>
-          </CardHeader>
-          {loading ? (
-            <div className="flex justify-center items-center py-12">
-              <div className="flex flex-col items-center gap-2">
-                <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-                <p className="text-sm text-muted-foreground">Cargando...</p>
+                  </DialogTrigger>
+                  <DialogContent className="w-[90%] max-w-2xl">
+                    {loading && isEditMode ? (
+                      <div className="flex justify-center items-center py-12">
+                        <div className="flex flex-col items-center gap-2">
+                          <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                          <p className="text-sm text-muted-foreground">Cargando marca...</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <DialogHeader>
+                          <DialogTitle className="mb-2">{title}</DialogTitle>
+                          <DialogDescription>{description}</DialogDescription>
+                        </DialogHeader>
+                        <Label htmlFor="name">
+                          Nombre<span className="text-redLabel">*</span>
+                        </Label>
+                        <Input
+                          id="name"
+                          name="name"
+                          type="text"
+                          placeholder="ej. Platinum"
+                          value={form.name}
+                          onChange={handleForm}
+                          maxLength={255}
+                          required
+                        />
+                        <Label htmlFor="description">
+                          Descripción<span className="text-redLabel">*</span>
+                        </Label>
+                        <Textarea
+                          id="description"
+                          name="description"
+                          placeholder="ej. Marca de lujo"
+                          value={form.description}
+                          onChange={handleForm}
+                          required
+                        />
+                        <Label htmlFor="logoImgUrl">
+                          Imagen<span className="text-redLabel">*</span>
+                        </Label>
+                        <MyDropzone
+                          file={image}
+                          fileSetter={setImage}
+                          type="image"
+                          className="p-8 min-h-[200px]"
+                          currentImageUrl={form.logoImgUrl && !image ? form.logoImgUrl : undefined}
+                          onImageClick={() => {
+                            if (form.logoImgUrl && !image) {
+                              handlePreviewImage(form.logoImgUrl);
+                            }
+                          }}
+                        />
+                        <DialogDescription>
+                          Formatos Válidos: .jpg, .png, .jpeg, .webp
+                        </DialogDescription>
+                        <DialogFooter>
+                          <Button
+                            disabled={!validateForm() || isSubmitting}
+                            onClick={handleSubmit}
+                            type="submit"
+                          >
+                            {isSubmitting ? "Guardando..." : isEditMode ? "Actualizar Marca" : "Agregar Marca"}
+                          </Button>
+                        </DialogFooter>
+                      </>
+                    )}
+                  </DialogContent>
+                </Dialog>
               </div>
-            </div>
-          ) : brands.length === 0 || filterBrands.length === 0 ? (
-            <div className="mt-4">
-              <NoData>
-                <AlertTriangle className="text-[#4E5154]" />
-                <p className="text-[#4E5154]">
-                  No se ha encontrado ninguna marca
-                </p>
-                <p className="text-[#94A3B8] font-semibold text-sm">
-                  Agrega uno en la parte posterior
-                </p>
-              </NoData>
-            </div>
-          ) : (
-            <CardSectionLayout>
-              {(filterBrands.length > 0 ? filterBrands : brands).map(
-                (brand) => (
-                  <CardTemplate
-                    key={brand.id}
-                    brand={brand}
-                    getBrandById={getBrandById}
-                    getItems={getBrands}
-                  />
-                )
-              )}
-            </CardSectionLayout>
-          )}
-        </Card>
-      </div>
-    </Layout>
+            </CardHeader>
+            {loading ? (
+              <div className="flex justify-center items-center py-12">
+                <div className="flex flex-col items-center gap-2">
+                  <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                  <p className="text-sm text-muted-foreground">Cargando...</p>
+                </div>
+              </div>
+            ) : brands.length === 0 || filterBrands.length === 0 ? (
+              <div className="mt-4">
+                <NoData>
+                  <AlertTriangle className="text-[#4E5154]" />
+                  <p className="text-[#4E5154]">
+                    No se ha encontrado ninguna marca
+                  </p>
+                  <p className="text-[#94A3B8] font-semibold text-sm">
+                    Agrega uno en la parte posterior
+                  </p>
+                </NoData>
+              </div>
+            ) : (
+              <CardSectionLayout>
+                {(filterBrands.length > 0 ? filterBrands : brands).map(
+                  (brand) => (
+                    <CardTemplate
+                      key={brand.id}
+                      brand={brand}
+                      getBrandById={getBrandById}
+                      getItems={getBrands}
+                    />
+                  )
+                )}
+              </CardSectionLayout>
+            )}
+          </Card>
+        </div>
+      </Layout>
+      <Dialog open={previewDialogOpen} onOpenChange={setPreviewDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Vista Previa de Imagen</DialogTitle>
+          </DialogHeader>
+          <div className="py-4 flex justify-center">
+            {previewImageUrl && (
+              <img
+                src={previewImageUrl}
+                alt="Vista previa"
+                className="max-w-full max-h-[500px] object-contain rounded-lg"
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

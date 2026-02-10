@@ -42,7 +42,7 @@ const menuItems: MenuItem[] = [
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const [menuLarge, setMenuLarge] = useState<boolean>(false);
   const { signOut } = useAuthContext();
-  const { importState } = useImportContext();
+  const { importState, bannerDismissed } = useImportContext();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -240,7 +240,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
           </SheetContent>
         </Sheet>
       </header>
-      <div className={`flex-1 overflow-y-auto px-4 md:px-6 py-0 md:my-5 min-w-0 ${importState.isImporting ? 'pt-20' : ''}`}>
+      <div className={`flex-1 overflow-y-auto px-4 md:px-6 py-0 md:my-5 min-w-0 ${importState.isImporting && !bannerDismissed ? 'pt-20' : ''}`}>
         {children}
       </div>
     </div>

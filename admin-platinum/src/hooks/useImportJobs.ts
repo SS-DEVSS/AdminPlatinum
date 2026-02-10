@@ -127,18 +127,15 @@ export const useImportJobs = (options: UseImportJobsOptions = {}) => {
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    // Poll every 3 seconds (optimized from 2s to reduce server load)
-    // Only poll if page is visible
     const poll = () => {
       if (!document.hidden) {
         updateJobsInProgress();
       }
     };
 
-    // Initial poll
     poll();
 
-    const interval = setInterval(poll, 3000);
+    const interval = setInterval(poll, 5000);
 
     return () => {
       clearInterval(interval);

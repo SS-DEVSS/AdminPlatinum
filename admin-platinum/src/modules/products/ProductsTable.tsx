@@ -500,7 +500,7 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                <Link to={`/producto/${row.original.id}`}>
+                <Link to={`/dashboard/producto/${row.original.id}`}>
                   <DropdownMenuItem>Editar</DropdownMenuItem>
                 </Link>
                 {/* <DropdownMenuItem

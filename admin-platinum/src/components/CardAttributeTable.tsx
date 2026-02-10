@@ -62,6 +62,7 @@ const CardAttributeTable = ({
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-[50px] text-center">#</TableHead>
               <TableHead>Nombre</TableHead>
               <TableHead>Tipo de Dato</TableHead>
               <TableHead>Requerido</TableHead>
@@ -69,8 +70,11 @@ const CardAttributeTable = ({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {attributes.map((attribute: CategoryAtributes) => (
+            {attributes.map((attribute: CategoryAtributes, index: number) => (
               <TableRow key={attribute.name}>
+                <TableCell className="text-center text-muted-foreground">
+                  {index + 1}
+                </TableCell>
                 <TableCell className="font-semibold">
                   {attribute.name}
                 </TableCell>

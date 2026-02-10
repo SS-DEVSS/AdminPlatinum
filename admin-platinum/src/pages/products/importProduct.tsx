@@ -64,16 +64,13 @@ const ImportProduct = () => {
       return;
     }
 
-    // Start import using context (this allows navigation)
     await startImport(file, importType, categoryId);
 
-    // Clear form
     setImportType("");
     setCategoryId("");
     setFile(null);
 
-    // Allow navigation - user can navigate away and the import will continue
-    // The toast will show the result when it completes
+    navigate("/dashboard/importaciones");
   };
 
   return (

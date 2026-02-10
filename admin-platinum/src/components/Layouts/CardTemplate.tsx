@@ -1,6 +1,5 @@
 import {
-  ExternalLink,
-  MoreHorizontal,
+  MoreVertical,
   PlusCircle,
 } from "lucide-react";
 import { Badge } from "../ui/badge";
@@ -58,7 +57,7 @@ const CardTemplate = ({
       getBrandById(brand?.id!);
       openModalBrand({
         title: "Editar Marca",
-        description: "Edita una marca existente.",
+        description: "Edita la marca seleccionada.",
         action: "",
       });
     }
@@ -152,15 +151,15 @@ const CardTemplate = ({
           </svg>
         </div>
         <CardContent className="border-t">
-          <div className="flex justify-between items-center">
-            <CardTitle className="mt-6 mb-3">
-              {brand ? brand?.name : category?.name}
+          <div className="flex justify-between items-center pt-8">
+            <CardTitle className="!text-xl capitalize">
+              {(brand ? brand?.name : category?.name)?.toLowerCase()}
             </CardTitle>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <MoreHorizontal className="hover:cursor-pointer" />
+                <MoreVertical className="hover:cursor-pointer w-5 h-5" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56">
+              <DropdownMenuContent className="w-40">
                 <DropdownMenuLabel>Acciones</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {pathname === "/dashboard/categorias" && (
@@ -193,16 +192,21 @@ const CardTemplate = ({
             <Separator />
             <CardContent className="mt-4">
               <p className="font-bold">Marcas Asociadas</p>
-              <div className="rounded-md my-3 py-1">
+              <div className="rounded-md my-3 py-1 flex flex-wrap gap-2">
                 {category!.brands.map((brand: any) => (
-                  <Badge className="mr-3" key={brand!.id}>
-                    {brand!.name}
+                  <Badge
+                    className="text-sm font-medium px-3 py-1.5 bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200 shadow-sm hover:shadow-md"
+                    key={brand!.id}
+                  >
+                    <span className="capitalize">{brand!.name.toLowerCase()}</span>
                   </Badge>
                 ))}
               </div>
-              <p className="font-medium text-sm text-slate-400">
-                {category.products?.length} productos asociados a la categoría.
-              </p>
+              {category.products && category.products.length > 0 && (
+                <p className="font-medium text-sm text-slate-400">
+                  {category.products.length} productos asociados a la categoría.
+                </p>
+              )}
             </CardContent>
           </section>
         )}
@@ -210,17 +214,18 @@ const CardTemplate = ({
           <>
             <Separator />
             <CardContent className="mt-3">
-              <p className="font-bold mb-4">Categorías Asociadas</p>
-              <section className="flex flex-wrap gap-2"></section>
-              {brand?.categories?.map((category: Category) => (
-                <Badge
-                  key={category.id}
-                  onClick={() => viewCategoriesFromBrand(brand.id)}
-                  className="px-4 py-1 mr-3 hover:underline hover:cursor-pointer"
-                >
-                  {category.name} <ExternalLink className="ml-2 w-5" />
-                </Badge>
-              ))}
+              <p className="mb-4 text-md font-600">Categorías Asociadas</p>
+              <section className="flex flex-wrap gap-2">
+                {brand?.categories?.map((category: Category) => (
+                  <Badge
+                    key={category.id}
+                    onClick={() => viewCategoriesFromBrand(brand.id)}
+                    className="text-sm font-medium px-3 py-1.5 bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer flex items-center gap-1.5 group"
+                  >
+                    <span className="capitalize">{category.name.toLowerCase()}</span>
+                  </Badge>
+                ))}
+              </section>
             </CardContent>
           </>
         )}

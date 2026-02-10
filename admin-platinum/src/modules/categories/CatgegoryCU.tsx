@@ -27,7 +27,6 @@ import {
   PlusCircleIcon,
   XCircleIcon,
   Info,
-  Save,
 } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { useState } from "react";
@@ -121,7 +120,8 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
         attributes: attributesArray,
       });
       // No establecer image.name con la URL, solo imageUrl
-      setImage({ name: "" } as File);
+      // Set image to null so MyDropzone can display currentImageUrl
+      setImage(null);
       setImageUrl(category.imgUrl || "");
       const tempSet = new Set();
 
@@ -372,7 +372,7 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
       const elapsed = savingStartTime ? Date.now() - savingStartTime : 0;
       const minDisplayTime = 800;
       const remainingTime = Math.max(0, minDisplayTime - elapsed);
-      
+
       setTimeout(() => {
         setIsSubmitting(false);
         setSavingStartTime(null);
@@ -386,256 +386,259 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
         <Loader fullScreen message="Guardando cambios..." />
       )}
       <main>
-      <header className="flex justify-between">
-        <div className="flex items-center gap-4">
-          <Link to="/dashboard/categorias">
-            <Card className="p-2">
-              <ChevronLeft className="h-4 w-4" />
-            </Card>
-          </Link>
-          <p className="text-2xl font-semibold leading-none tracking-tight">
-            {!category ? "Nueva Categoría" : `${category.name}`}
-          </p>
-        </div>
-      </header>
-      <section>
-        <section className="mt-4 flex flex-col md:flex-row justify-between gap-3 w-full">
-          <Card x-chunk="dashboard-07-chunk-0" className="w-1/2">
-            <CardHeader>
-              <CardTitle>Detalles</CardTitle>
-              <CardDescription>
-                Ingrese la información deseada de la categoría.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-6">
-                <div className="grid gap-3">
-                  <div className="flex items-center gap-2">
-                    <Label htmlFor="name">Nombre</Label>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>El nombre de la categoría que se mostrará en el sistema</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                  <Input
-                    id="name"
-                    name="name"
-                    type="text"
-                    className="w-full"
-                    placeholder="Clutch, Frenos..."
-                    onChange={handleFormInput}
-                    value={form.name}
-                    maxLength={255}
-                  />
-                </div>
-                <div className="grid gap-3">
-                  <div className="flex items-center gap-2">
-                    <Label htmlFor="description">Descripción</Label>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Una descripción breve de la categoría y su propósito</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                  <Textarea
-                    id="description"
-                    name="description"
-                    placeholder="Lorem ipsum dolor sit amet."
-                    onChange={handleFormInput}
-                    value={form.description}
-                    className="min-h-20"
-                    maxLength={255}
-                  />
-                </div>
-                <div className="grid gap-3">
-                  <div className="flex items-center gap-2">
-                    <Label htmlFor="image">Imagen de la Categoría</Label>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>La imagen representativa de la categoría que se mostrará en el catálogo</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                  <div className="relative">
-                    <MyDropzone
-                      file={image}
-                      fileSetter={setImage}
-                      type="image"
-                      className="p-8 min-h-[200px]"
-                      currentImageUrl={imageUrl && !image?.name ? imageUrl : undefined}
-                      onImageClick={() => {
-                        if (imageUrl && !image?.name) {
-                          handlePreviewImage(imageUrl);
-                        }
-                      }}
-                    />
-                    {imageUrl && !image?.name && category?.id && (
-                      <div className="mt-3 flex justify-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handlePreviewImage(imageUrl)}
-                          type="button"
-                        >
-                          Previsualizar
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={handleDeleteImage}
-                          disabled={uploading}
-                          type="button"
-                        >
-                          Eliminar Imagen
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                  {uploading && (
-                    <p className="text-sm text-muted-foreground mt-2">Subiendo imagen...</p>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <section className="w-1/2 flex flex-col justify-between gap-4">
-            <Card x-chunk="dashboard-07-chunk-0" className="flex-grow">
+        <header className="flex justify-between">
+          <div className="flex items-center gap-4">
+            <Link to="/dashboard/categorias">
+              <Card className="p-2">
+                <ChevronLeft className="h-4 w-4" />
+              </Card>
+            </Link>
+            <p className="text-2xl font-semibold leading-none tracking-tight">
+              {!category ? "Nueva Categoría" : `${category.name}`}
+            </p>
+          </div>
+        </header>
+        <section>
+          <section className="mt-4 flex flex-col md:flex-row justify-between gap-3 w-full">
+            <Card x-chunk="dashboard-07-chunk-0" className="w-1/2">
               <CardHeader>
-                <div className="flex items-center gap-2">
-                  <CardTitle>Asociar a Marcas</CardTitle>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Las marcas asociadas a esta categoría. Los productos de estas marcas podrán usar esta categoría como template</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
+                <CardTitle>Detalles</CardTitle>
                 <CardDescription>
-                  Selecciones una marca si desea asociarla a la categoría.
+                  Ingrese la información deseada de la categoría.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <CardTitle className="text-base">Marcas Asociadas:</CardTitle>
-                <section className="flex mt-4 gap-3">
-                  {[...selectedBrandIds].map((id) => {
-                    const brand = brands.find((brand) => brand.id === id);
-                    return brand ? (
-                      <Badge
-                        className="text-base px-5 py-2 flex gap-3"
-                        key={brand.id}
-                      >
-                        {brand.name}
-                        <XCircleIcon
-                          onClick={() => toggleBrandSelection(brand.id!)}
-                          className="hover:cursor-pointer"
-                        />
-                      </Badge>
-                    ) : null;
-                  })}
-                </section>
-              </CardContent>
-              <Separator />
-              <CardContent>
-                <CardTitle className="text-base my-5">
-                  Marcas por explorar:
-                </CardTitle>
-                <section className="flex gap-3 flex-wrap">
-                  {brands.map((brand) => {
-                    const isSelected = selectedBrandIds.has(brand.id!);
-                    return (
-                      <Badge
-                        key={brand.id}
-                        variant={`${isSelected ? "default" : "secondary"}`}
-                        className="text-base px-5 py-2 flex gap-3"
-                      >
-                        {brand.name}
-                        {!isSelected ? (
-                          <PlusCircleIcon
-                            onClick={() => toggleBrandSelection(brand.id!)}
-                            className="hover:cursor-pointer"
-                          />
-                        ) : (
-                          <XCircleIcon
-                            onClick={() => toggleBrandSelection(brand.id!)}
-                            className="hover:cursor-pointer"
-                          />
-                        )}
-                      </Badge>
-                    );
-                  })}
-                </section>
+                <div className="grid gap-6">
+                  <div className="grid gap-3">
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="name">Nombre</Label>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>El nombre de la categoría que se mostrará en el sistema</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                    <Input
+                      id="name"
+                      name="name"
+                      type="text"
+                      className="w-full"
+                      placeholder="Clutch, Frenos..."
+                      onChange={handleFormInput}
+                      value={form.name}
+                      maxLength={255}
+                    />
+                  </div>
+                  <div className="grid gap-3">
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="description">Descripción</Label>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Una descripción breve de la categoría y su propósito</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                    <Textarea
+                      id="description"
+                      name="description"
+                      placeholder="Lorem ipsum dolor sit amet."
+                      onChange={handleFormInput}
+                      value={form.description}
+                      className="min-h-20"
+                      maxLength={255}
+                    />
+                  </div>
+                  <div className="grid gap-3">
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="image">Imagen de la Categoría</Label>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>La imagen representativa de la categoría que se mostrará en el catálogo</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                    <div className="relative">
+                      <MyDropzone
+                        file={image}
+                        fileSetter={setImage}
+                        type="image"
+                        className="p-8 min-h-[200px]"
+                        currentImageUrl={imageUrl && !image ? imageUrl : undefined}
+                        onImageClick={() => {
+                          if (imageUrl && !image) {
+                            handlePreviewImage(imageUrl);
+                          }
+                        }}
+                      />
+                      {imageUrl && !image && category?.id && (
+                        <div className="mt-3 flex justify-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handlePreviewImage(imageUrl)}
+                            type="button"
+                          >
+                            Previsualizar
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={handleDeleteImage}
+                            disabled={uploading}
+                            type="button"
+                          >
+                            Eliminar Imagen
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                    {uploading && (
+                      <p className="text-sm text-muted-foreground mt-2">Subiendo imagen...</p>
+                    )}
+                  </div>
+                </div>
               </CardContent>
             </Card>
+            <section className="w-1/2 flex flex-col justify-between gap-4">
+              <Card x-chunk="dashboard-07-chunk-0" className="flex-grow">
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <CardTitle>Asociar a Marcas</CardTitle>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Las marcas asociadas a esta categoría. Los productos de estas marcas podrán usar esta categoría como template</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                  <CardDescription>
+                    Selecciones una marca si desea asociarla a la categoría.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <CardTitle className="text-base">Marcas Asociadas:</CardTitle>
+                  <section className="flex mt-4 gap-3 flex-wrap">
+                    {[...selectedBrandIds].map((id) => {
+                      const brand = brands.find((brand) => brand.id === id);
+                      return brand ? (
+                        <Badge
+                          className="text-sm font-medium px-4 py-2 flex items-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90 transition-colors duration-200 shadow-sm"
+                          key={brand.id}
+                        >
+                          <span className="capitalize">{brand.name.toLowerCase()}</span>
+                          <XCircleIcon
+                            onClick={() => toggleBrandSelection(brand.id!)}
+                            className="h-3.5 w-3.5 hover:scale-110 transition-transform cursor-pointer"
+                          />
+                        </Badge>
+                      ) : null;
+                    })}
+                  </section>
+                </CardContent>
+                {(() => {
+                  // Filter to only show brands that are NOT selected
+                  const unselectedBrands = brands.filter((brand) => !selectedBrandIds.has(brand.id!));
+
+                  // Only render the section if there are unselected brands
+                  if (unselectedBrands.length === 0) {
+                    return null;
+                  }
+
+                  return (
+                    <>
+                      <Separator />
+                      <CardContent>
+                        <CardTitle className="text-base my-5">
+                          Marcas por explorar:
+                        </CardTitle>
+                        <section className="flex gap-3 flex-wrap">
+                          {unselectedBrands.map((brand) => (
+                            <Badge
+                              key={brand.id}
+                              variant="secondary"
+                              className="text-sm font-medium px-4 py-2 flex items-center gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer"
+                            >
+                              <span className="capitalize">{brand.name.toLowerCase()}</span>
+                              <PlusCircleIcon
+                                onClick={() => toggleBrandSelection(brand.id!)}
+                                className="h-3.5 w-3.5 hover:scale-110 transition-transform"
+                              />
+                            </Badge>
+                          ))}
+                        </section>
+                      </CardContent>
+                    </>
+                  );
+                })()}
+              </Card>
+            </section>
           </section>
         </section>
-      </section>
-      <section className="mt-4 flex flex-col gap-3 w-full">
-        <CardAtributesVariants
-          form={form}
-          setForm={setForm}
-          title={"Atributos de Producto"}
-          description={"Ingresa los atributos de producto para esta categoría"}
-        />
-        <CardAtributesVariants
-          form={form}
-          setForm={setForm}
-          title={"Atributos de Aplicaciones"}
-          description={"Ingresa los atributos de aplicación para esta categoría"}
-        />
-      </section>
-      <section className="mt-6 flex justify-end gap-3">
-        <Link to="/dashboard/categorias">
-          <Button variant={"outline"}>Cancelar</Button>
-        </Link>
-        <Button
-          size="sm"
-          disabled={!validateForm || isSubmitting}
-          className="h-10 px-6 gap-1"
-          onClick={() => handleSubmit(form)}
-        >
-          <Save className="h-3.5 w-3.5 mr-2" />
-          <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-            {isSubmitting ? "Guardando..." : "Guardar"}
-          </span>
-        </Button>
-      </section>
-      <Dialog open={previewDialogOpen} onOpenChange={setPreviewDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>Vista Previa de Imagen</DialogTitle>
-          </DialogHeader>
-          <div className="py-4 flex justify-center">
-            {previewImageUrl && (
-              <img
-                src={previewImageUrl}
-                alt="Vista previa"
-                className="max-w-full max-h-[500px] object-contain rounded-lg"
-              />
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-    </main>
+        <section className="mt-4 flex flex-col gap-3 w-full">
+          <CardAtributesVariants
+            form={form}
+            setForm={setForm}
+            title={"Atributos de Producto"}
+            description={"Ingresa los atributos de producto para esta categoría"}
+          />
+          <CardAtributesVariants
+            form={form}
+            setForm={setForm}
+            title={"Atributos de Aplicaciones"}
+            description={"Ingresa los atributos de aplicación para esta categoría"}
+          />
+        </section>
+        <section className="mt-6 flex justify-end gap-3">
+          <Link to="/dashboard/categorias">
+            <Button variant={"outline"}>Cancelar</Button>
+          </Link>
+          <Button
+            size="sm"
+            disabled={!validateForm || isSubmitting}
+            className="h-10 px-6 gap-1"
+            onClick={() => handleSubmit(form)}
+          >
+            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+              {isSubmitting ? "Guardando..." : "Guardar"}
+            </span>
+          </Button>
+        </section>
+        <Dialog open={previewDialogOpen} onOpenChange={setPreviewDialogOpen}>
+          <DialogContent className="sm:max-w-[600px]">
+            <DialogHeader>
+              <DialogTitle>Vista Previa de Imagen</DialogTitle>
+            </DialogHeader>
+            <div className="py-4 flex justify-center">
+              {previewImageUrl && (
+                <img
+                  src={previewImageUrl}
+                  alt="Vista previa"
+                  className="max-w-full max-h-[500px] object-contain rounded-lg"
+                />
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+      </main>
     </>
   );
 };

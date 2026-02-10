@@ -3,11 +3,13 @@ import { Loader2, X, CheckCircle2, XCircle } from "lucide-react";
 import { Button } from "./ui/button";
 
 export const ImportStatusBanner = () => {
-  const { importState, clearImport } = useImportContext();
+  const { importState, clearImport, bannerDismissed, dismissBanner } = useImportContext();
 
-  // Show banner if importing or if job is still processing
-  const shouldShow = importState.isImporting || 
+  const isActive = importState.isImporting ||
     (importState.jobStatus && (importState.jobStatus === "pending" || importState.jobStatus === "processing"));
+  const isFinished = importState.jobStatus === "completed" || importState.jobStatus === "failed";
+
+  const shouldShow = (isActive && !bannerDismissed) || (isFinished && !bannerDismissed);
 
   if (!shouldShow) {
     return null;
@@ -80,7 +82,7 @@ export const ImportStatusBanner = () => {
   const isProcessing = importState.jobStatus === "pending" || importState.jobStatus === "processing";
 
   return (
-    <div 
+    <div
       className={`fixed top-0 left-0 right-0 z-[10000] ${statusInfo.bgColor} text-white shadow-lg animate-in slide-in-from-top`}
     >
       <div className="container mx-auto px-4 py-3">
@@ -100,17 +102,15 @@ export const ImportStatusBanner = () => {
               )}
             </div>
           </div>
-          {!isProcessing && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={clearImport}
-              className="text-white hover:bg-white/20 hover:text-white"
-              title="Cerrar"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={isProcessing ? dismissBanner : clearImport}
+            className="text-white hover:bg-white/20 hover:text-white"
+            title="Cerrar"
+          >
+            <X className="h-4 w-4" />
+          </Button>
         </div>
       </div>
     </div>
