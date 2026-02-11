@@ -66,6 +66,9 @@ export type Product = {
   references: Reference[];
   variants?: ProductVariant[];
   attributes?: CategoryAttributesTypes[];
+  isFeatured?: boolean;
+  featuredApplicationId?: string | null;
+  applications?: any[];
 };
 
 export type ProductVariant = {

@@ -35,7 +35,6 @@ import { useToast } from "@/hooks/use-toast";
 import axiosClient from "@/services/axiosInstance";
 import FeatureProductModal from "./FeatureProductModal";
 import { Star } from "lucide-react";
-import { Application } from "@/models/application";
 
 type DetailsCardProps = {
   state: detailsType;

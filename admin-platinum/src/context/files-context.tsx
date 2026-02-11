@@ -1,9 +1,11 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
-import { fileService, File, ListFilesResponse } from '@/services/fileService';
+import { fileService, File as FileType } from '@/services/fileService';
 import { useToast } from '@/hooks/use-toast';
 
+export type { FileType as File };
+
 interface FilesContextType {
-  files: File[];
+  files: FileType[];
   loading: boolean;
   error: string | null;
   total: number;
@@ -12,7 +14,7 @@ interface FilesContextType {
   filterType: 'all' | 'image' | 'document';
   getFiles: (type?: 'image' | 'document', page?: number, limit?: number, searchQuery?: string, sortBy?: 'name' | 'createdAt', sortOrder?: 'asc' | 'desc') => Promise<void>;
   uploadFiles: (
-    files: File[],
+    files: globalThis.File[],
     type: 'image' | 'document',
     onProgress?: (progress: number) => void
   ) => Promise<void>;
@@ -25,7 +27,7 @@ interface FilesContextType {
 const FilesContext = createContext<FilesContextType | undefined>(undefined);
 
 export const FilesProvider = ({ children }: { children: ReactNode }) => {
-  const [files, setFiles] = useState<File[]>([]);
+  const [files, setFiles] = useState<FileType[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
@@ -65,7 +67,7 @@ export const FilesProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const uploadFiles = async (
-    filesToUpload: File[],
+    filesToUpload: globalThis.File[],
     type: 'image' | 'document',
     onProgress?: (progress: number) => void
   ) => {

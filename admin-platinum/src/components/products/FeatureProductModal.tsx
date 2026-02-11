@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Application } from "@/models/application";
 import { Product } from "@/models/product";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { productService } from "@/services/productService";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -84,7 +84,7 @@ const FeatureProductModal = ({
         av.attribute?.name?.toLowerCase() === attrName.toLowerCase()
       );
       if (!attr) return null;
-      
+
       // If it's a date value, extract just the year
       if (attr.valueDate) {
         const date = new Date(attr.valueDate);
@@ -92,7 +92,7 @@ const FeatureProductModal = ({
           return date.getFullYear().toString();
         }
       }
-      
+
       return attr.valueString || attr.valueNumber || attr.valueBoolean || null;
     };
 
@@ -129,7 +129,7 @@ const FeatureProductModal = ({
     try {
       const applicationId = selectedApplicationId || null;
       await productService.setFeaturedProduct(product.id, applicationId);
-      
+
       toast({
         title: "Éxito",
         description: applicationId
@@ -142,17 +142,17 @@ const FeatureProductModal = ({
     } catch (error: any) {
       console.error('[FeatureProductModal] Error setting featured product:', error);
       let errorMessage = "Error al actualizar el producto destacado.";
-      
+
       if (error.response?.data) {
         // Try to get the error message from the response
-        errorMessage = error.response.data.message || 
-                       error.response.data.error || 
-                       error.response.data.errorMessage ||
-                       errorMessage;
+        errorMessage = error.response.data.message ||
+          error.response.data.error ||
+          error.response.data.errorMessage ||
+          errorMessage;
       } else if (error.message) {
         errorMessage = error.message;
       }
-      
+
       toast({
         title: "Error",
         description: errorMessage,
@@ -244,16 +244,16 @@ const FeatureProductModal = ({
                 } catch (error: any) {
                   console.error('[FeatureProductModal] Error removing featured product:', error);
                   let errorMessage = "Error al desmarcar el producto.";
-                  
+
                   if (error.response?.data) {
-                    errorMessage = error.response.data.message || 
-                                   error.response.data.error || 
-                                   error.response.data.errorMessage ||
-                                   errorMessage;
+                    errorMessage = error.response.data.message ||
+                      error.response.data.error ||
+                      error.response.data.errorMessage ||
+                      errorMessage;
                   } else if (error.message) {
                     errorMessage = error.message;
                   }
-                  
+
                   toast({
                     title: "Error",
                     description: errorMessage,

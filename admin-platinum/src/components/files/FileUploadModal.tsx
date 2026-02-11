@@ -24,7 +24,7 @@ interface FileUploadModalProps {
 
 const FileUploadModal = ({ open, onOpenChange, onUploadComplete }: FileUploadModalProps) => {
   const [fileType, setFileType] = useState<FileType>('image');
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<globalThis.File[]>([]);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const { uploadFiles } = useFilesContext();
@@ -42,7 +42,7 @@ const FileUploadModal = ({ open, onOpenChange, onUploadComplete }: FileUploadMod
   };
 
   const onDrop = useCallback(
-    (acceptedFiles: File[]) => {
+    (acceptedFiles: globalThis.File[]) => {
       if (acceptedFiles.length > 0) {
         setSelectedFiles((prev) => [...prev, ...acceptedFiles]);
       }

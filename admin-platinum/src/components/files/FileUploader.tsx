@@ -16,7 +16,7 @@ interface FileUploaderProps {
 
 const FileUploader = ({ onUploadComplete }: FileUploaderProps) => {
   const [fileType, setFileType] = useState<FileType>('image');
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<globalThis.File[]>([]);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const { uploadFiles } = useFilesContext();
@@ -34,7 +34,7 @@ const FileUploader = ({ onUploadComplete }: FileUploaderProps) => {
   };
 
   const onDrop = useCallback(
-    (acceptedFiles: File[]) => {
+    (acceptedFiles: globalThis.File[]) => {
       if (acceptedFiles.length > 0) {
         setSelectedFiles((prev) => [...prev, ...acceptedFiles]);
       }
@@ -122,13 +122,12 @@ const FileUploader = ({ onUploadComplete }: FileUploaderProps) => {
           <Label>Archivos</Label>
           <div
             {...getRootProps()}
-            className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-              isDragActive
+            className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${isDragActive
                 ? 'bg-[#F5F9FD] border-[#0bbff4] cursor-pointer'
                 : selectedFiles.length > 0
-                ? 'bg-green-50 border-green-400 cursor-pointer'
-                : 'border-[#94A3B8] hover:border-[#0bbff4] cursor-pointer'
-            } ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  ? 'bg-green-50 border-green-400 cursor-pointer'
+                  : 'border-[#94A3B8] hover:border-[#0bbff4] cursor-pointer'
+              } ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             <input {...getInputProps()} disabled={isUploading} />
             {isDragActive ? (

@@ -55,7 +55,7 @@ export const fileService = {
    * Upload a single file
    */
   uploadFile: async (
-    file: File,
+    file: globalThis.File,
     type: 'image' | 'document'
   ): Promise<{ id: string; url: string; key: string }> => {
     const client = axiosClient();
@@ -77,7 +77,7 @@ export const fileService = {
    * Upload multiple files
    */
   uploadFiles: async (
-    files: File[],
+    files: globalThis.File[],
     type: 'image' | 'document',
     onProgress?: (progress: number) => void
   ): Promise<Array<{ id: string; url: string; key: string }>> => {
@@ -86,7 +86,7 @@ export const fileService = {
 
     for (let i = 0; i < files.length; i++) {
       try {
-        const result = await fileService.uploadFile(files[i], type);
+        const result = await fileService.uploadFile(files[i] as globalThis.File, type);
         results.push(result);
         if (onProgress) {
           onProgress(((i + 1) / total) * 100);
