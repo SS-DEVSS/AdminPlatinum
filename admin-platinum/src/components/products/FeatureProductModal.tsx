@@ -140,10 +140,19 @@ const FeatureProductModal = ({
       onSuccess?.();
       onOpenChange(false);
     } catch (error: any) {
-      const errorMessage =
-        error.response?.data?.message ||
-        error.message ||
-        "Error al actualizar el producto destacado.";
+      console.error('[FeatureProductModal] Error setting featured product:', error);
+      let errorMessage = "Error al actualizar el producto destacado.";
+      
+      if (error.response?.data) {
+        // Try to get the error message from the response
+        errorMessage = error.response.data.message || 
+                       error.response.data.error || 
+                       error.response.data.errorMessage ||
+                       errorMessage;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Error",
         description: errorMessage,
@@ -154,7 +163,7 @@ const FeatureProductModal = ({
     }
   };
 
-  const isAtMaxLimit = featuredCount !== null && featuredCount >= 10 && !isCurrentlyFeatured;
+  const isAtMaxLimit = featuredCount !== null && featuredCount >= 6 && !isCurrentlyFeatured;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -171,18 +180,18 @@ const FeatureProductModal = ({
         </DialogHeader>
 
         {isAtMaxLimit && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Ya hay 10 productos destacados. Por favor, deselecciona uno primero.
+          <Alert className="bg-yellow-50 border-yellow-200 text-yellow-800">
+            <AlertCircle className="h-4 w-4 text-yellow-600" />
+            <AlertDescription className="text-yellow-800">
+              Ya hay 6 productos destacados. Por favor, deselecciona uno primero.
             </AlertDescription>
           </Alert>
         )}
 
-        {applications.length === 0 && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
+        {applications.length === 0 && !isAtMaxLimit && (
+          <Alert className="bg-yellow-50 border-yellow-200 text-yellow-800">
+            <AlertCircle className="h-4 w-4 text-yellow-600" />
+            <AlertDescription className="text-yellow-800">
               Este producto no tiene aplicaciones. Agrega al menos una aplicación antes de destacarlo.
             </AlertDescription>
           </Alert>
@@ -233,10 +242,18 @@ const FeatureProductModal = ({
                   onSuccess?.();
                   onOpenChange(false);
                 } catch (error: any) {
-                  const errorMessage =
-                    error.response?.data?.message ||
-                    error.message ||
-                    "Error al desmarcar el producto.";
+                  console.error('[FeatureProductModal] Error removing featured product:', error);
+                  let errorMessage = "Error al desmarcar el producto.";
+                  
+                  if (error.response?.data) {
+                    errorMessage = error.response.data.message || 
+                                   error.response.data.error || 
+                                   error.response.data.errorMessage ||
+                                   errorMessage;
+                  } else if (error.message) {
+                    errorMessage = error.message;
+                  }
+                  
                   toast({
                     title: "Error",
                     description: errorMessage,

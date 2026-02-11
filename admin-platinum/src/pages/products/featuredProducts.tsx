@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { productService, FeaturedProduct } from '@/services/productService';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Star, X, Plus, Search } from 'lucide-react';
+import { Loader2, Star, Plus, Search, MoreVertical, Edit, Trash2 } from 'lucide-react';
 import FeatureProductModal from '@/components/products/FeatureProductModal';
 import { Product } from '@/models/product';
 import { Application } from '@/models/application';
@@ -18,6 +18,22 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const FeaturedProducts = () => {
   const { toast } = useToast();
@@ -36,7 +52,7 @@ const FeaturedProducts = () => {
       setLoading(true);
       const response = await productService.getFeaturedProducts();
       setFeaturedProducts(response.products);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Error',
         description: 'Error al cargar productos destacados.',
@@ -49,6 +65,7 @@ const FeaturedProducts = () => {
 
   useEffect(() => {
     fetchFeaturedProducts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchAvailableProducts = async (searchQuery: string = '') => {
@@ -57,13 +74,13 @@ const FeaturedProducts = () => {
       const client = axiosClient();
       const response = await client.get(`/products?type=all&page=1&pageSize=100${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ''}`);
       const { products } = response.data;
-      
+
       // Filter out already featured products
       const featuredProductIds = new Set(featuredProducts.map(p => p.id));
       const filteredProducts = products.filter((p: Product) => !featuredProductIds.has(p.id));
-      
+
       setAvailableProducts(filteredProducts);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Error',
         description: 'Error al cargar productos disponibles.',
@@ -89,7 +106,7 @@ const FeaturedProducts = () => {
       setSelectedProductApplications(productData.applications || []);
       setProductSelectModalOpen(false);
       setFeatureModalOpen(true);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Error',
         description: 'Error al cargar el producto.',
@@ -111,7 +128,7 @@ const FeaturedProducts = () => {
       setSelectedProduct(productData);
       setSelectedProductApplications(productData.applications || []);
       setFeatureModalOpen(true);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Error',
         description: 'Error al cargar el producto.',
@@ -128,16 +145,17 @@ const FeaturedProducts = () => {
         description: 'Producto desmarcado como destacado.',
       });
       fetchFeaturedProducts();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Error al desmarcar el producto.';
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Error al desmarcar el producto.',
+        description: errorMessage,
         variant: 'destructive',
       });
     }
   };
 
-  const formatApplicationDisplay = (app: any): string => {
+  const formatApplicationDisplay = (app: { displayText?: string; id: string; attributeValues?: Array<{ attribute?: { name?: string }; valueString?: string | null; valueNumber?: number | null; valueBoolean?: boolean | null; valueDate?: string | null }> }): string => {
     if (app.displayText) {
       return app.displayText;
     }
@@ -146,12 +164,21 @@ const FeaturedProducts = () => {
     const attributeValues = app.attributeValues || [];
 
     const getAttributeValue = (attrName: string) => {
-      const attr = attributeValues.find((av: any) =>
+      const attr = attributeValues.find((av) =>
         av.attribute?.name === attrName ||
         av.attribute?.name?.toLowerCase() === attrName.toLowerCase()
       );
       if (!attr) return null;
-      return attr.valueString || attr.valueNumber || attr.valueBoolean || attr.valueDate;
+
+      // If it's a date value, extract just the year
+      if (attr.valueDate) {
+        const date = new Date(attr.valueDate);
+        if (!isNaN(date.getTime())) {
+          return date.getFullYear().toString();
+        }
+      }
+
+      return attr.valueString || attr.valueNumber || attr.valueBoolean || null;
     };
 
     const modelo = getAttributeValue('Modelo');
@@ -162,7 +189,7 @@ const FeaturedProducts = () => {
     if (modelo) parts.push(String(modelo));
     if (submodelo) parts.push(String(submodelo));
     if (año) parts.push(String(año));
-    if (litrosMotor) parts.push(`${litrosMotor} LTS`);
+    if (litrosMotor) parts.push(String(litrosMotor));
 
     const shortId = app.id.substring(app.id.length - 8).toUpperCase();
     if (parts.length > 0) {
@@ -179,18 +206,18 @@ const FeaturedProducts = () => {
             <div className="flex flex-col gap-3">
               <CardTitle>Productos Destacados</CardTitle>
               <CardDescription>
-                Gestiona los productos destacados que se muestran en la página principal (máximo 10)
+                Gestiona los productos destacados que se muestran en la página principal (máximo 6)
               </CardDescription>
             </div>
             <Button
               onClick={handleOpenProductSelect}
-              disabled={featuredProducts.length >= 10}
+              disabled={featuredProducts.length >= 6}
             >
               <Plus className="h-4 w-4 mr-2" />
               Agregar Producto
             </Button>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-0">
             {loading ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -203,56 +230,79 @@ const FeaturedProducts = () => {
               </div>
             ) : (
               <>
-                {featuredProducts.length >= 10 && (
+                {featuredProducts.length >= 6 && (
                   <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                     <p className="text-sm text-yellow-800">
-                      <strong>Límite alcanzado:</strong> Ya tienes 10 productos destacados. Desmarca uno para agregar otro.
+                      <strong>Límite alcanzado:</strong> Ya tienes 6 productos destacados. Desmarca uno para agregar otro.
                     </p>
                   </div>
                 )}
-                <div className="grid gap-4">
-                  {featuredProducts.map((product) => (
-                    <Card key={product.id}>
-                      <CardContent className="p-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[50px]"></TableHead>
+                        <TableHead>SKU</TableHead>
+                        <TableHead>Nombre</TableHead>
+                        <TableHead>Aplicación Destacada</TableHead>
+                        <TableHead className="w-[50px]"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {featuredProducts.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={5} className="h-24 text-center">
+                            No hay productos destacados.
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        featuredProducts.map((product) => (
+                          <TableRow key={product.id}>
+                            <TableCell>
                               <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-                              <h3 className="font-semibold">{product.sku}</h3>
-                              <span className="text-sm text-muted-foreground">-</span>
-                              <span className="text-sm">{product.name}</span>
-                            </div>
-                            {product.featuredApplication && (
-                              <div className="ml-7 text-sm text-muted-foreground">
-                                <strong>Aplicación destacada:</strong>{' '}
-                                {formatApplicationDisplay(product.featuredApplication)}
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleEditProduct(product)}
-                            >
-                              Editar
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => handleRemoveFeatured(product.id)}
-                            >
-                              <X className="h-4 w-4 mr-1" />
-                              Quitar
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                            </TableCell>
+                            <TableCell className="font-semibold">{product.sku}</TableCell>
+                            <TableCell>{product.name}</TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {product.featuredApplication
+                                ? formatApplicationDisplay(product.featuredApplication)
+                                : 'Sin aplicación destacada'}
+                            </TableCell>
+                            <TableCell>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" className="h-8 w-8 p-0">
+                                    <span className="sr-only">Abrir menú</span>
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    onClick={() => handleEditProduct(product)}
+                                  >
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    Editar
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => handleRemoveFeatured(product.id)}
+                                    className="text-destructive"
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Quitar
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
                 </div>
-                <div className="mt-4 text-sm text-muted-foreground">
-                  Total: {featuredProducts.length} / 10 productos destacados
+                <div className="mt-4 text-sm text-muted-foreground px-6">
+                  Total: {featuredProducts.length} / 6 productos destacados
                 </div>
               </>
             )}
@@ -265,7 +315,7 @@ const FeaturedProducts = () => {
         product={selectedProduct}
         applications={selectedProductApplications}
         isCurrentlyFeatured={selectedProduct ? featuredProducts.some(p => p.id === selectedProduct.id) : false}
-        currentFeaturedApplicationId={selectedProduct?.featuredApplicationId || null}
+        currentFeaturedApplicationId={(selectedProduct as { featuredApplicationId?: string | null })?.featuredApplicationId || null}
         onSuccess={() => {
           fetchFeaturedProducts();
           setSelectedProduct(null);
@@ -317,7 +367,7 @@ const FeaturedProducts = () => {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="font-semibold">{product.sku}</p>
-                          <p className="text-sm text-muted-foreground">{product.name}</p>
+                          <p className="text-sm text-muted-foreground">{(product as { name?: string }).name || product.sku}</p>
                         </div>
                         <Button variant="outline" size="sm">
                           Seleccionar

@@ -19,7 +19,7 @@ export const useProducts = () => {
     try {
       setLoading(true);
       const firstPage = await client.get(`/products?type=all&page=1&pageSize=100`);
-      
+
       const { totalPages, products: firstPageProducts } = firstPage.data;
       let allProducts = [...firstPageProducts];
 
@@ -31,9 +31,10 @@ export const useProducts = () => {
           allProducts = [...allProducts, ...pageData.data.products];
         }
       }
-      
+
       setProducts(allProducts);
     } catch (error) {
+      console.error('[useProducts] Error fetching products:', error);
     } finally {
       setLoading(false);
     }
@@ -64,12 +65,12 @@ export const useProducts = () => {
   const createProduct = async (productData: any) => {
     try {
       setLoading(true);
-      
+
       const { data } = await client.post('/products', productData, {
         timeout: 120000, // 2 minutes timeout for product creation
       });
-      
-      
+
+
       // Refresh the list in background (don't wait for it)
       getProducts().catch((err) => {
         console.error("Error refreshing products list:", err);
