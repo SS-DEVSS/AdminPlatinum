@@ -84,7 +84,16 @@ const FeatureProductModal = ({
         av.attribute?.name?.toLowerCase() === attrName.toLowerCase()
       );
       if (!attr) return null;
-      return attr.valueString || attr.valueNumber || attr.valueBoolean || attr.valueDate;
+      
+      // If it's a date value, extract just the year
+      if (attr.valueDate) {
+        const date = new Date(attr.valueDate);
+        if (!isNaN(date.getTime())) {
+          return date.getFullYear().toString();
+        }
+      }
+      
+      return attr.valueString || attr.valueNumber || attr.valueBoolean || null;
     };
 
     const modelo = getAttributeValue("Modelo");

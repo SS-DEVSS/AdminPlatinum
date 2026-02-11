@@ -16,6 +16,9 @@ export type Item = {
   references: Reference[];
   variants?: Variant[];
   attributeValues: AttributeValue[];
+  isFeatured?: boolean;
+  featuredApplicationId?: string | null;
+  applications?: any[];
 };
 
 export type Variant = {

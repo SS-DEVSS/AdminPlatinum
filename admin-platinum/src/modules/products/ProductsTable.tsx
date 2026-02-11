@@ -440,8 +440,9 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
         cell: ({ row }: { row: any }) => {
           const productId = (row.original as any)?._originalItem?.id || (row.original as any)?.idProduct || row.original.id;
           const product = products?.find((p: any) => p.id === productId);
-          const isFeatured = product?.isFeatured || false;
-          const featuredApplicationId = product?.featuredApplicationId || null;
+          // Check both camelCase and snake_case for isFeatured
+          const isFeatured = product?.isFeatured || product?.is_featured || false;
+          const featuredApplicationId = product?.featuredApplicationId || product?.featured_application_id || null;
           const productApplications = (product as any)?.applications || [];
 
           return (
