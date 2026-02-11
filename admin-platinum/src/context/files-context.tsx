@@ -10,7 +10,7 @@ interface FilesContextType {
   totalPages: number;
   currentPage: number;
   filterType: 'all' | 'image' | 'document';
-  getFiles: (type?: 'image' | 'document', page?: number, limit?: number, searchQuery?: string) => Promise<void>;
+  getFiles: (type?: 'image' | 'document', page?: number, limit?: number, searchQuery?: string, sortBy?: 'name' | 'createdAt', sortOrder?: 'asc' | 'desc') => Promise<void>;
   uploadFiles: (
     files: File[],
     type: 'image' | 'document',
@@ -38,12 +38,14 @@ export const FilesProvider = ({ children }: { children: ReactNode }) => {
     type?: 'image' | 'document',
     page: number = 1,
     limit: number = 20,
-    searchQuery?: string
+    searchQuery?: string,
+    sortBy?: 'name' | 'createdAt',
+    sortOrder?: 'asc' | 'desc'
   ) => {
     try {
       setLoading(true);
       setError(null);
-      const result = await fileService.getFiles(type, page, limit, searchQuery);
+      const result = await fileService.getFiles(type, page, limit, searchQuery, sortBy, sortOrder);
       setFiles(result.files);
       setTotal(result.total);
       setTotalPages(result.totalPages);

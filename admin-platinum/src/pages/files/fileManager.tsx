@@ -2,10 +2,9 @@ import { useEffect, useState } from 'react';
 import { useFilesContext } from '@/context/files-context';
 import Layout from '@/components/Layouts/Layout';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ChevronLeft, ChevronRight, Loader2, Upload, Search, Grid3x3, List } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2, Upload, Search, Grid3x3, List, X, ArrowUpDown } from 'lucide-react';
 import FileList from '@/components/files/FileList';
 import FileUploadModal from '@/components/files/FileUploadModal';
 
@@ -16,6 +15,7 @@ const FileManager = () => {
   const {
     files,
     loading,
+    total,
     totalPages,
     currentPage,
     filterType,
@@ -28,6 +28,8 @@ const FileManager = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [viewType, setViewType] = useState<ViewType>('cards');
+  const [sortBy, setSortBy] = useState<'name' | 'createdAt'>('createdAt');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const limit = 20;
 
   // Debounce search query
@@ -49,10 +51,10 @@ const FileManager = () => {
     const search = debouncedSearch && debouncedSearch.trim() ? debouncedSearch.trim() : undefined;
     // Only fetch if we have a search query or if debouncedSearch is empty (to show all files)
     if (search !== undefined || debouncedSearch === '') {
-      getFiles(type, page, limit, search);
+      getFiles(type, page, limit, search, sortBy, sortOrder);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterType, page, debouncedSearch]);
+  }, [filterType, page, debouncedSearch, sortBy, sortOrder]);
 
   const handleFilterChange = (value: string) => {
     setContextFilterType(value as FilterType);
@@ -66,15 +68,35 @@ const FileManager = () => {
 
   const handleRefresh = () => {
     const type = filterType === 'all' ? undefined : filterType;
-    getFiles(type, page, limit, debouncedSearch || undefined);
+    getFiles(type, page, limit, debouncedSearch || undefined, sortBy, sortOrder);
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery('');
+    setDebouncedSearch('');
+    setPage(1);
+  };
+
+  const handleSortChange = (value: string) => {
+    const [field, order] = value.split('-');
+    setSortBy(field as 'name' | 'createdAt');
+    setSortOrder(order as 'asc' | 'desc');
+    setPage(1);
   };
 
   return (
     <Layout>
       <header className="flex justify-between items-center mb-8">
-        <h1 className="text-2xl font-semibold leading-none tracking-tight">
-          Administrador de Archivos
-        </h1>
+        <div>
+          <h1 className="text-2xl font-semibold leading-none tracking-tight">
+            Administrador de Archivos
+          </h1>
+          {total !== undefined && (
+            <p className="text-sm text-muted-foreground mt-1">
+              {total} archivo(s) en total
+            </p>
+          )}
+        </div>
         <Button onClick={() => setUploadModalOpen(true)}>
           <Upload className="h-4 w-4 mr-2" />
           Subir Archivos
@@ -90,42 +112,63 @@ const FileManager = () => {
                 placeholder="Buscar por nombre de archivo..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="pl-10 pr-10"
               />
-            </div>
-            <div className="flex items-center gap-2">
-              <Label htmlFor="filterType">Tipo:</Label>
-              <Select value={filterType} onValueChange={handleFilterChange}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Todos" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="image">Imágenes</SelectItem>
-                  <SelectItem value="document">Documentos</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center gap-2">
-              <Label>Vista:</Label>
-              <div className="flex border rounded-md">
+              {searchQuery && (
                 <Button
-                  variant={viewType === 'cards' ? 'default' : 'ghost'}
+                  variant="ghost"
                   size="sm"
-                  className="rounded-r-none"
-                  onClick={() => setViewType('cards')}
+                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0 hover:bg-transparent"
+                  onClick={handleClearSearch}
                 >
-                  <Grid3x3 className="h-4 w-4" />
+                  <X className="h-4 w-4 text-muted-foreground" />
                 </Button>
-                <Button
-                  variant={viewType === 'table' ? 'default' : 'ghost'}
-                  size="sm"
-                  className="rounded-l-none"
-                  onClick={() => setViewType('table')}
-                >
-                  <List className="h-4 w-4" />
-                </Button>
-              </div>
+              )}
+            </div>
+            <Select
+              value={`${sortBy}-${sortOrder}`}
+              onValueChange={handleSortChange}
+            >
+              <SelectTrigger className="w-[220px]">
+                <div className="flex items-center gap-2 whitespace-nowrap">
+                  <ArrowUpDown className="h-4 w-4 flex-shrink-0" />
+                  <SelectValue />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="createdAt-desc">Fecha (Más reciente)</SelectItem>
+                <SelectItem value="createdAt-asc">Fecha (Más antiguo)</SelectItem>
+                <SelectItem value="name-asc">Nombre (A-Z)</SelectItem>
+                <SelectItem value="name-desc">Nombre (Z-A)</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={filterType} onValueChange={handleFilterChange}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="image">Imágenes</SelectItem>
+                <SelectItem value="document">Documentos</SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="flex border rounded-md">
+              <Button
+                variant={viewType === 'cards' ? 'default' : 'ghost'}
+                size="sm"
+                className="rounded-r-none"
+                onClick={() => setViewType('cards')}
+              >
+                <Grid3x3 className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={viewType === 'table' ? 'default' : 'ghost'}
+                size="sm"
+                className="rounded-l-none"
+                onClick={() => setViewType('table')}
+              >
+                <List className="h-4 w-4" />
+              </Button>
             </div>
             <Button
               variant="outline"
@@ -149,7 +192,12 @@ const FileManager = () => {
           </div>
         ) : (
           <>
-            <FileList files={files} onFileDeleted={handleRefresh} viewType={viewType} />
+            <FileList
+              files={files}
+              onFileDeleted={handleRefresh}
+              viewType={viewType}
+              hasSearchQuery={!!debouncedSearch}
+            />
 
             {totalPages > 1 && (
               <div className="flex items-center justify-between mt-6 pt-4 border-t">

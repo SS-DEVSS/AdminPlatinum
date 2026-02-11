@@ -38,9 +38,10 @@ interface FileListProps {
   files: File[];
   onFileDeleted?: () => void;
   viewType?: ViewType;
+  hasSearchQuery?: boolean;
 }
 
-const FileList = ({ files, onFileDeleted, viewType = 'cards' }: FileListProps) => {
+const FileList = ({ files, onFileDeleted, viewType = 'cards', hasSearchQuery = false }: FileListProps) => {
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
@@ -142,7 +143,11 @@ const FileList = ({ files, onFileDeleted, viewType = 'cards' }: FileListProps) =
     return (
       <div className="py-12 text-center">
         <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-        <p className="text-muted-foreground">No hay archivos para mostrar</p>
+        <p className="text-muted-foreground">
+          {hasSearchQuery
+            ? 'No se encontraron archivos que coincidan con la búsqueda'
+            : 'No hay archivos para mostrar'}
+        </p>
       </div>
     );
   }
@@ -162,6 +167,17 @@ const FileList = ({ files, onFileDeleted, viewType = 'cards' }: FileListProps) =
                 ? `${selectedFiles.size} archivo(s) seleccionado(s)`
                 : 'Seleccionar todos'}
             </span>
+            {selectedFiles.size > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedFiles(new Set())}
+                disabled={loading}
+                className="text-muted-foreground"
+              >
+                Limpiar selección
+              </Button>
+            )}
           </div>
           {selectedFiles.size > 0 && (
             <div className="flex items-center gap-2">

@@ -28,18 +28,22 @@ export interface BulkDeleteResponse {
 
 export const fileService = {
   /**
-   * Get all files with optional filtering, search, and pagination
+   * Get all files with optional filtering, search, sorting, and pagination
    */
   getFiles: async (
     type?: 'image' | 'document',
     page: number = 1,
     limit: number = 20,
-    searchQuery?: string
+    searchQuery?: string,
+    sortBy?: 'name' | 'createdAt',
+    sortOrder?: 'asc' | 'desc'
   ): Promise<ListFilesResponse> => {
     const client = axiosClient();
     const params = new URLSearchParams();
     if (type) params.append('type', type);
     if (searchQuery) params.append('search', searchQuery);
+    if (sortBy) params.append('sortBy', sortBy);
+    if (sortOrder) params.append('sortOrder', sortOrder);
     params.append('page', page.toString());
     params.append('limit', limit.toString());
 
