@@ -41,10 +41,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+import { ImportJobError } from "@/models/importJob";
+
 const getStatusBadge = (
   status: ImportJobStatus,
-  errors: string[] = [],
-  warnings: string[] = []
+  errors: ImportJobError[] = [],
+  warnings: ImportJobError[] = []
 ) => {
   const hasErrors = errors.length > 0;
   const hasWarnings = warnings.length > 0;
@@ -507,11 +509,18 @@ const ImportJobsDashboard = ({ onJobClick, headerActions }: ImportJobsDashboardP
                   </label>
                   <div className="bg-destructive/10 rounded-md p-3 max-h-48 overflow-y-auto">
                     <ul className="space-y-1 text-sm">
-                      {selectedJobData.errors.map((error, index) => (
-                        <li key={index} className="text-destructive">
-                          • {error}
-                        </li>
-                      ))}
+                      {selectedJobData.errors.map((error, index) => {
+                        // Handle both string errors and object errors with {category, message, row}
+                        const errorText = typeof error === 'string'
+                          ? error
+                          : error?.message || error?.category || JSON.stringify(error);
+                        const errorRow = typeof error === 'object' && error?.row ? ` (Fila ${error.row})` : '';
+                        return (
+                          <li key={index} className="text-destructive">
+                            • {errorText}{errorRow}
+                          </li>
+                        );
+                      })}
                     </ul>
                   </div>
                 </div>
@@ -524,11 +533,18 @@ const ImportJobsDashboard = ({ onJobClick, headerActions }: ImportJobsDashboardP
                   </label>
                   <div className="bg-yellow-50 rounded-md p-3 max-h-48 overflow-y-auto">
                     <ul className="space-y-1 text-sm">
-                      {selectedJobData.warnings.map((warning, index) => (
-                        <li key={index} className="text-yellow-800">
-                          • {warning}
-                        </li>
-                      ))}
+                      {selectedJobData.warnings.map((warning, index) => {
+                        // Handle both string warnings and object warnings
+                        const warningText = typeof warning === 'string'
+                          ? warning
+                          : warning?.message || warning?.category || JSON.stringify(warning);
+                        const warningRow = typeof warning === 'object' && warning?.row ? ` (Fila ${warning.row})` : '';
+                        return (
+                          <li key={index} className="text-yellow-800">
+                            • {warningText}{warningRow}
+                          </li>
+                        );
+                      })}
                     </ul>
                   </div>
                 </div>

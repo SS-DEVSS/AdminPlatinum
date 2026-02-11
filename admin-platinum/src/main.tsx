@@ -30,6 +30,9 @@ import Ajustes from "./pages/ajustes";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { ImportStatusBanner } from "./components/ImportStatusBanner";
 import { App } from "./components/App";
+import FileManager from "./pages/files/fileManager";
+import { FilesProvider } from "./context/files-context";
+import FeaturedProducts from "./pages/products/featuredProducts";
 
 const router = createBrowserRouter([
   {
@@ -171,6 +174,22 @@ const router = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
+  {
+    path: "/dashboard/archivos",
+    element: (
+      <ProtectedRoute>
+        <FileManager />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/dashboard/productos-destacados",
+    element: (
+      <ProtectedRoute>
+        <FeaturedProducts />
+      </ProtectedRoute>
+    ),
+  },
     ],
   },
 ]);
@@ -183,10 +202,12 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           <CategoryContextProvider>
             <NewsProvider>
               <ImportProvider>
-                <DeleteModal />
-                <RouterProvider router={router} />
-                <Toaster />
-                <ImportStatusBanner />
+                <FilesProvider>
+                  <DeleteModal />
+                  <RouterProvider router={router} />
+                  <Toaster />
+                  <ImportStatusBanner />
+                </FilesProvider>
               </ImportProvider>
             </NewsProvider>
           </CategoryContextProvider>

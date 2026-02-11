@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/table";
 import { CategoryAtributes, CategoryAttributesTypes } from "@/models/category";
 import NoData from "./NoData";
+import { translateAttributeName } from "@/utils/attributeTranslations";
 
 // Mapeo de tipos técnicos a nombres amigables para el usuario
 const typeDisplayNames: Record<string, string> = {
@@ -76,7 +77,7 @@ const CardAttributeTable = ({
                   {index + 1}
                 </TableCell>
                 <TableCell className="font-semibold">
-                  {attribute.name}
+                  {translateAttributeName(attribute.name, false)}
                 </TableCell>
                 <TableCell>
                   {getTypeDisplayName(attribute.type)}

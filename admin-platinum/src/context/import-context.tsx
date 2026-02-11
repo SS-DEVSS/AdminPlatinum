@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useCallback, ReactNode, useEffect,
 import { useToast } from "@/hooks/use-toast";
 import axiosClient from "@/services/axiosInstance";
 import { ImportJobStatus } from "@/models/importJob";
+import { useAuthContext } from "./auth-context";
 
 type ImportType = "products" | "references" | "applications";
 
@@ -17,7 +18,7 @@ interface ImportState {
 
 interface ImportContextType {
   importState: ImportState;
-  startImport: (file: File, importType: ImportType, categoryId: string) => Promise<void>;
+  startImport: (file: File, importType: ImportType, categoryId: string, columnMapping?: { [csvColumn: string]: string | null }) => Promise<void>;
   clearImport: () => void;
   bannerDismissed: boolean;
   dismissBanner: () => void;
@@ -40,9 +41,12 @@ export const ImportProvider = ({
   children: ReactNode;
 }) => {
   const { toast } = useToast();
+  const { authState } = useAuthContext();
   const client = axiosClient();
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<Date | null>(null);
+  const lastProgressRef = useRef<number | null>(null);
+  const pollingIntervalMsRef = useRef<number>(10000);
 
   const [importState, setImportState] = useState<ImportState>({
     isImporting: false,
@@ -74,11 +78,51 @@ export const ImportProvider = ({
         const response = await client.get(`/jobs/${jobId}`);
         const job = response.data;
 
+        // Check if job is stale (using new runtime field from backend)
+        if (job.runtime?.isStale) {
+          console.warn(`[Import] Job ${jobId} is stale, stopping polling`);
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+            pollingIntervalRef.current = null;
+          }
+          setImportState((prev) => ({
+            ...prev,
+            jobStatus: "failed" as ImportJobStatus,
+            error: job.runtime?.isStale 
+              ? "El trabajo de importación parece estar detenido. Por favor, revisa el dashboard."
+              : prev.error,
+          }));
+          return;
+        }
+
+        const currentProgress = job.progress || 0;
+        const progressChanged = lastProgressRef.current !== currentProgress;
+        lastProgressRef.current = currentProgress;
+
         setImportState((prev) => ({
           ...prev,
-          progress: job.progress || 0,
+          progress: currentProgress,
           jobStatus: job.status,
         }));
+
+        // Adaptive polling: if progress hasn't changed, poll less frequently
+        if (progressChanged) {
+          // Progress updated - reset to faster polling
+          pollingIntervalMsRef.current = 10000; // 10 seconds
+        } else {
+          // No progress - back off gradually (max 30s)
+          pollingIntervalMsRef.current = Math.min(30000, pollingIntervalMsRef.current + 5000);
+        }
+
+        // Restart polling with new interval if still processing
+        if (job.status === "processing" || job.status === "pending") {
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+          }
+          pollingIntervalRef.current = setInterval(() => {
+            checkJobStatus(jobId, importType);
+          }, pollingIntervalMsRef.current);
+        }
 
         // If job is completed or failed, stop polling and show final message
         if (job.status === "completed" || job.status === "failed") {
@@ -86,6 +130,8 @@ export const ImportProvider = ({
             clearInterval(pollingIntervalRef.current);
             pollingIntervalRef.current = null;
           }
+          pollingIntervalMsRef.current = 10000;
+          lastProgressRef.current = null;
 
           const elapsedTime = startTimeRef.current
             ? Date.now() - startTimeRef.current.getTime()
@@ -150,7 +196,7 @@ export const ImportProvider = ({
   );
 
   const startImport = useCallback(
-    async (file: File, importType: ImportType, categoryId: string) => {
+    async (file: File, importType: ImportType, categoryId: string, columnMapping?: { [csvColumn: string]: string | null }) => {
       // Clear any existing polling
       if (pollingIntervalRef.current) {
         clearInterval(pollingIntervalRef.current);
@@ -176,6 +222,10 @@ export const ImportProvider = ({
         formData.append("file", file);
         formData.append("importType", importType);
         formData.append("categoryId", categoryId);
+        
+        if (columnMapping) {
+          formData.append("columnMapping", JSON.stringify(columnMapping));
+        }
 
         const response = await client.post("/import", formData);
         const { jobId, status } = response.data;
@@ -186,11 +236,15 @@ export const ImportProvider = ({
           jobStatus: status || "pending",
         }));
 
+        // Reset polling state for new job
+        pollingIntervalMsRef.current = 10000; // Start with 10s
+        lastProgressRef.current = null;
+
         pollingIntervalRef.current = setInterval(() => {
           if (jobId) {
             checkJobStatus(jobId, importType);
           }
-        }, 5000);
+        }, pollingIntervalMsRef.current);
 
         checkJobStatus(jobId, importType);
       } catch (error: any) {
@@ -256,6 +310,11 @@ export const ImportProvider = ({
 
   // On mount, check backend for any active jobs (pending/processing)
   useEffect(() => {
+    // Only check for active jobs if user is authenticated
+    if (!authState.isAuthenticated || authState.loading) {
+      return;
+    }
+
     const checkActiveJobs = async () => {
       try {
         const response = await client.get("/jobs?status=processing&limit=1");
@@ -281,9 +340,11 @@ export const ImportProvider = ({
           startedAt: start,
         });
 
+        pollingIntervalMsRef.current = 10000;
+        lastProgressRef.current = activeJob.progress || null;
         pollingIntervalRef.current = setInterval(() => {
           checkJobStatus(activeJob.id, activeJob.type as ImportType);
-        }, 5000);
+        }, pollingIntervalMsRef.current);
       } catch {
         // Silently fail — no active jobs or network error
       }
@@ -293,16 +354,30 @@ export const ImportProvider = ({
       checkActiveJobs();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [authState.isAuthenticated, authState.loading]);
 
-  // Cleanup on unmount
+  // Cleanup on unmount or when user logs out
   useEffect(() => {
+    if (!authState.isAuthenticated && pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+      setImportState({
+        isImporting: false,
+        importType: null,
+        progress: null,
+        error: null,
+        jobId: null,
+        jobStatus: null,
+        startedAt: null,
+      });
+    }
+
     return () => {
       if (pollingIntervalRef.current) {
         clearInterval(pollingIntervalRef.current);
       }
     };
-  }, []);
+  }, [authState.isAuthenticated]);
 
   return (
     <ImportContext.Provider

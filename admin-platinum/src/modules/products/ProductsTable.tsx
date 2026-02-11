@@ -9,7 +9,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { MoreVertical, Upload } from "lucide-react";
+import { MoreVertical, Upload, Star } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -46,6 +46,9 @@ import { useS3FileManager } from "@/hooks/useS3FileManager";
 import { useToast } from "@/hooks/use-toast";
 import axiosClient from "@/services/axiosInstance";
 import { convertImageToWebP } from "@/utils/imageConverter";
+import FeatureProductModal from "@/components/products/FeatureProductModal";
+import { Product } from "@/models/product";
+import { Application } from "@/models/application";
 
 interface DataTableProps {
   category?: Category | null;
@@ -68,10 +71,19 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
   const { uploading } = useS3FileManager();
   const { toast } = useToast();
   const client = axiosClient();
+  const [featureModalOpen, setFeatureModalOpen] = useState(false);
+  const [selectedProductForFeature, setSelectedProductForFeature] = useState<Product | null>(null);
+  const [selectedProductApplications, setSelectedProductApplications] = useState<Application[]>([]);
 
   let { attributes } = category || {};
-  const { products, loading, getProducts } = useProducts();
+  const { products, loading, getProducts, getProductById } = useProducts();
   const { categories } = useCategories();
+
+  // Debug: Log when products change and force refresh on mount
+  useEffect(() => {
+    // Force refresh products when component mounts to ensure we have latest featured status
+    getProducts();
+  }, []); // Only run on mount
 
   if (!attributes && categories.length > 0) {
     // attributes = categories[0].attributes;
@@ -134,7 +146,6 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
       setPreviewVariant(null);
       setImageFile({} as File);
     } catch (error: any) {
-      console.error("[ProductsTable] Error deleting image:", error);
       toast({
         title: "Error al eliminar imagen",
         variant: "destructive",
@@ -177,7 +188,6 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
           try {
             fileToUpload = await convertImageToWebP(imageFile);
           } catch (error) {
-            console.error("[ProductsTable] Error al convertir imagen, usando original:", error);
             fileToUpload = imageFile;
           }
         }
@@ -229,7 +239,6 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
           // Also refresh the products list to ensure consistency
           await getProducts();
         } catch (error) {
-          console.error("[ProductsTable] Error fetching updated product:", error);
           // If fetching fails, still refresh the whole list
           await getProducts();
         }
@@ -244,7 +253,6 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
           try {
             fileToUpload = await convertImageToWebP(imageFile);
           } catch (error) {
-            console.error("[ProductsTable] Error al convertir imagen, usando original:", error);
             fileToUpload = imageFile;
           }
         }
@@ -289,7 +297,6 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
             });
           });
         } catch (error) {
-          console.error("[ProductsTable] Error fetching updated variant:", error);
           // If fetching fails, still refresh the whole list
           await getProducts();
         }
@@ -302,9 +309,6 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
       uploadInProgressRef.current = false;
       setIsUploading(false);
     } catch (error: any) {
-      console.error("[ProductsTable] Error uploading/updating image:", error);
-      console.error("[ProductsTable] Error response:", error.response);
-
       let errorMessage = "Error desconocido";
       if (error.response?.status === 404) {
         errorMessage = `Endpoint no encontrado. El ${selectedVariant.id === selectedVariant.idProduct ? 'producto' : 'variant'} con ID ${selectedVariant.id} no existe o el endpoint no está disponible.`;
@@ -428,6 +432,38 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
 
     // Build base columns
     const baseColumns = [
+      {
+        accessorKey: "featured",
+        header: "",
+        cell: ({ row }: { row: any }) => {
+          const productId = (row.original as any)?._originalItem?.id || (row.original as any)?.idProduct || row.original.id;
+
+          // Try to get product from row data first (from _originalItem), then fall back to products array
+          const rowProduct = (row.original as any)?._originalItem;
+          const productFromArray = products?.find((p: any) => p.id === productId);
+          // Prefer rowProduct (from _originalItem) as it's already in the row data
+          const product = rowProduct || productFromArray;
+
+          // Check both camelCase and snake_case for isFeatured
+          const isFeatured = product?.isFeatured || product?.is_featured || false;
+          const productApplications = (product as any)?.applications || [];
+
+          return (
+            <div className="flex items-center justify-center">
+              <Star
+                className={`h-5 w-5 cursor-pointer transition-colors ${isFeatured ? "fill-yellow-400 text-yellow-400" : "text-gray-300 hover:text-yellow-400"
+                  }`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedProductForFeature(product || null);
+                  setSelectedProductApplications(productApplications);
+                  setFeatureModalOpen(true);
+                }}
+              />
+            </div>
+          );
+        },
+      },
       {
         accessorKey: "images",
         header: "",
@@ -626,7 +662,7 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
       ...dynamicColumnsVariant,
       ...actionColumn,
     ];
-  }, [attributes, shouldHideDescription, navigate]);
+  }, [attributes, shouldHideDescription, navigate, products]);
 
   useEffect(() => {
     const filteredProducts = products.filter(
@@ -926,6 +962,25 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
           </Button>
         </div>
       </div>
+      <FeatureProductModal
+        open={featureModalOpen}
+        onOpenChange={setFeatureModalOpen}
+        product={selectedProductForFeature}
+        applications={selectedProductApplications}
+        isCurrentlyFeatured={selectedProductForFeature?.isFeatured || false}
+        currentFeaturedApplicationId={selectedProductForFeature?.featuredApplicationId || null}
+        onSuccess={async () => {
+          await getProducts();
+          // Force a re-render by updating the selected product state
+          if (selectedProductForFeature) {
+            // Refetch the specific product to get updated featured status
+            const updatedProduct = await getProductById(selectedProductForFeature.id);
+            if (updatedProduct) {
+              setSelectedProductForFeature(updatedProduct);
+            }
+          }
+        }}
+      />
     </div>
   );
 };

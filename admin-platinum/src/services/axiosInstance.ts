@@ -11,16 +11,24 @@ const axiosClient = (token: string | null = null): AxiosInstance => {
   });
 
   client.interceptors.request.use(async (config: any) => {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
     config.headers = config.headers || {};
 
     // Set Authorization header
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-    } else if (session?.access_token) {
-      config.headers.Authorization = `Bearer ${session.access_token}`;
+    } else {
+      // Get session synchronously if possible, otherwise await
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          config.headers.Authorization = `Bearer ${session.access_token}`;
+        }
+      } catch (error) {
+        // If session retrieval fails, continue without token
+        // The backend will return 401 if authentication is required
+      }
     }
 
     // Set Content-Type based on the data being sent

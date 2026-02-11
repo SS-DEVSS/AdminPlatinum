@@ -16,6 +16,7 @@ import DynamicComponent from "../DynamicComponent";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
+import { translateAttributeName } from "@/utils/attributeTranslations";
 
 type VariantItemProps = {
   index?: number;
@@ -135,7 +136,7 @@ const VariantItem = ({
                   {attribute.required && (
                     <span className="text-redLabel">*</span>
                   )}
-                  {attribute.name}
+                  {translateAttributeName(attribute.name, false)}
                 </Label>
                 <DynamicComponent
                   type={attribute.type}

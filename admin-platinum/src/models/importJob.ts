@@ -1,6 +1,15 @@
 export type ImportJobType = 'products' | 'references' | 'applications';
 export type ImportJobStatus = 'pending' | 'processing' | 'completed' | 'failed';
 
+// Error can be a string or an object with category, message, row, etc.
+export type ImportJobError = string | {
+  category?: string;
+  message: string;
+  row?: number;
+  field?: string;
+  value?: string;
+};
+
 export interface ImportJob {
   id: string;
   type: ImportJobType;
@@ -14,9 +23,9 @@ export interface ImportJob {
   updated: number;
   skipped: number;
   failed: number;
-  errors: string[];
-  warnings: string[];
-  result: any | null;
+  errors: ImportJobError[];
+  warnings: ImportJobError[];
+  result: Record<string, unknown> | null;
   startedAt: Date | null;
   completedAt: Date | null;
   userId: string | null;
@@ -25,6 +34,12 @@ export interface ImportJob {
   localFilePath: string | null;
   createdAt: Date;
   updatedAt: Date;
+  runtime?: {
+    lastHeartbeatAt: Date | null;
+    secondsSinceHeartbeat: number;
+    isStale: boolean;
+    staleAfterSeconds: number;
+  };
 }
 
 export interface ImportJobsResponse {
