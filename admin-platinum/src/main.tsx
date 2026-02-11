@@ -30,6 +30,8 @@ import Ajustes from "./pages/ajustes";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { ImportStatusBanner } from "./components/ImportStatusBanner";
 import { App } from "./components/App";
+import FileManager from "./pages/files/fileManager";
+import { FilesProvider } from "./context/files-context";
 
 const router = createBrowserRouter([
   {
@@ -171,6 +173,14 @@ const router = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
+  {
+    path: "/dashboard/archivos",
+    element: (
+      <ProtectedRoute>
+        <FileManager />
+      </ProtectedRoute>
+    ),
+  },
     ],
   },
 ]);
@@ -183,10 +193,12 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           <CategoryContextProvider>
             <NewsProvider>
               <ImportProvider>
-                <DeleteModal />
-                <RouterProvider router={router} />
-                <Toaster />
-                <ImportStatusBanner />
+                <FilesProvider>
+                  <DeleteModal />
+                  <RouterProvider router={router} />
+                  <Toaster />
+                  <ImportStatusBanner />
+                </FilesProvider>
               </ImportProvider>
             </NewsProvider>
           </CategoryContextProvider>
