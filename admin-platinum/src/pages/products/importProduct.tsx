@@ -1,9 +1,9 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Layout from "@/components/Layouts/Layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChevronLeft, File, BarChart3 } from "lucide-react";
+import { ChevronLeft, File, BarChart3, Loader2 } from "lucide-react";
 import { useCategoryContext } from "@/context/categories-context";
 import {
   Select,
@@ -18,6 +18,8 @@ import { Label } from "@/components/ui/label";
 import { useDropzone } from "react-dropzone";
 import { useToast } from "@/hooks/use-toast";
 import { useImportContext } from "@/context/import-context";
+import { useImportPreview } from "@/hooks/useImportPreview";
+import ColumnMappingDialog from "@/components/importJobs/ColumnMappingDialog";
 
 type ImportType = "products" | "references" | "applications";
 
@@ -30,12 +32,30 @@ const ImportProduct = () => {
   const [importType, setImportType] = useState<ImportType | "">("");
   const [categoryId, setCategoryId] = useState<string>("");
   const [file, setFile] = useState<File | null>(null);
+  const [showMappingDialog, setShowMappingDialog] = useState(false);
+  const [columnMapping, setColumnMapping] = useState<{ [csvColumn: string]: string | null } | null>(null);
 
-  const onDrop = (acceptedFiles: File[]) => {
+  const { preview, loading: previewLoading, error: previewError, fetchPreview } = useImportPreview();
+
+  const onDrop = async (acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
       const selectedFile = acceptedFiles[0];
       if (selectedFile.type === "text/csv" || selectedFile.name.endsWith(".csv")) {
         setFile(selectedFile);
+
+        // If import type and category are selected, fetch preview
+        if (importType && categoryId) {
+          try {
+            await fetchPreview(selectedFile, importType, categoryId);
+            setShowMappingDialog(true);
+          } catch (error) {
+            toast({
+              title: "Error",
+              description: "No se pudo obtener la vista previa del archivo.",
+              variant: "destructive",
+            });
+          }
+        }
       } else {
         toast({
           title: "Error",
@@ -46,6 +66,19 @@ const ImportProduct = () => {
     }
   };
 
+  // Auto-fetch preview when file, importType, and categoryId are all set (only once)
+  useEffect(() => {
+    if (file && importType && categoryId && !preview && !previewLoading) {
+      fetchPreview(file, importType, categoryId)
+        .then(() => {
+          setShowMappingDialog(true);
+        })
+        .catch(() => {
+          // Error already handled in hook
+        });
+    }
+  }, [file, importType, categoryId]); // Only depend on these, not preview state
+
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
@@ -53,6 +86,22 @@ const ImportProduct = () => {
     },
     maxFiles: 1,
   });
+
+  const handleMappingConfirm = (mapping: { [csvColumn: string]: string | null }) => {
+    setColumnMapping(mapping);
+    setShowMappingDialog(false);
+  };
+
+  // Auto-apply suggested mappings when preview is loaded (only once)
+  useEffect(() => {
+    if (preview && preview.suggestedMappings && Object.keys(preview.suggestedMappings).length > 0 && !columnMapping) {
+      // Auto-apply suggested mappings for user verification
+      // This pre-fills the mapping so users only need to verify/change if needed
+      setColumnMapping(preview.suggestedMappings);
+      // Show dialog briefly for user to see what was auto-mapped (they can close it)
+      setShowMappingDialog(true);
+    }
+  }, [preview, columnMapping]);
 
   const handleSubmit = async () => {
     if (!importType || !categoryId || !file) {
@@ -64,11 +113,23 @@ const ImportProduct = () => {
       return;
     }
 
-    await startImport(file, importType, categoryId);
+    // Auto-use suggested mappings if available and no mapping confirmed yet
+    const mappingToUse = columnMapping || (preview?.suggestedMappings && Object.keys(preview.suggestedMappings).length > 0
+      ? preview.suggestedMappings
+      : null);
+
+    // If no mapping at all (not even suggested), show dialog
+    if (!mappingToUse && preview) {
+      setShowMappingDialog(true);
+      return;
+    }
+
+    await startImport(file, importType, categoryId, mappingToUse || undefined);
 
     setImportType("");
     setCategoryId("");
     setFile(null);
+    setColumnMapping(null);
 
     navigate("/dashboard/importaciones");
   };
@@ -189,20 +250,60 @@ const ImportProduct = () => {
               <Button
                 onClick={() => navigate("/dashboard/productos")}
                 variant="outline"
-                disabled={importState.isImporting}
+                disabled={importState.isImporting || previewLoading}
               >
                 Cancelar
               </Button>
+              {columnMapping && preview && (
+                <Button
+                  onClick={() => setShowMappingDialog(true)}
+                  variant="outline"
+                  disabled={importState.isImporting || previewLoading}
+                >
+                  Editar Mapeo
+                </Button>
+              )}
               <Button
                 onClick={handleSubmit}
-                disabled={!importType || !categoryId || !file || importState.isImporting}
+                disabled={!importType || !categoryId || !file || importState.isImporting || previewLoading}
               >
-                {importState.isImporting ? "Importando..." : "Importar"}
+                {previewLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Analizando...
+                  </>
+                ) : importState.isImporting ? (
+                  "Importando..."
+                ) : columnMapping ? (
+                  "Importar"
+                ) : (
+                  "Continuar"
+                )}
               </Button>
             </div>
           </CardContent>
         </Card>
       </section>
+
+      {preview && (
+        <ColumnMappingDialog
+          open={showMappingDialog}
+          onOpenChange={(open) => {
+            setShowMappingDialog(open);
+            // If dialog is closed without confirming, keep the existing mapping
+            if (!open && !columnMapping) {
+              // User closed without mapping, allow them to reopen
+            }
+          }}
+          headers={preview.headers}
+          attributes={preview.attributes}
+          coreAttributes={preview.coreAttributes}
+          suggestedMappings={preview.suggestedMappings}
+          requiredAttributes={preview.requiredAttributes}
+          onConfirm={handleMappingConfirm}
+          initialMapping={columnMapping || undefined}
+        />
+      )}
     </Layout>
   );
 };

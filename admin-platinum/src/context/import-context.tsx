@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useCallback, ReactNode, useEffect,
 import { useToast } from "@/hooks/use-toast";
 import axiosClient from "@/services/axiosInstance";
 import { ImportJobStatus } from "@/models/importJob";
+import { useAuthContext } from "./auth-context";
 
 type ImportType = "products" | "references" | "applications";
 
@@ -17,7 +18,7 @@ interface ImportState {
 
 interface ImportContextType {
   importState: ImportState;
-  startImport: (file: File, importType: ImportType, categoryId: string) => Promise<void>;
+  startImport: (file: File, importType: ImportType, categoryId: string, columnMapping?: { [csvColumn: string]: string | null }) => Promise<void>;
   clearImport: () => void;
   bannerDismissed: boolean;
   dismissBanner: () => void;
@@ -40,6 +41,7 @@ export const ImportProvider = ({
   children: ReactNode;
 }) => {
   const { toast } = useToast();
+  const { authState } = useAuthContext();
   const client = axiosClient();
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<Date | null>(null);
@@ -194,7 +196,7 @@ export const ImportProvider = ({
   );
 
   const startImport = useCallback(
-    async (file: File, importType: ImportType, categoryId: string) => {
+    async (file: File, importType: ImportType, categoryId: string, columnMapping?: { [csvColumn: string]: string | null }) => {
       // Clear any existing polling
       if (pollingIntervalRef.current) {
         clearInterval(pollingIntervalRef.current);
@@ -220,6 +222,10 @@ export const ImportProvider = ({
         formData.append("file", file);
         formData.append("importType", importType);
         formData.append("categoryId", categoryId);
+        
+        if (columnMapping) {
+          formData.append("columnMapping", JSON.stringify(columnMapping));
+        }
 
         const response = await client.post("/import", formData);
         const { jobId, status } = response.data;
@@ -304,6 +310,11 @@ export const ImportProvider = ({
 
   // On mount, check backend for any active jobs (pending/processing)
   useEffect(() => {
+    // Only check for active jobs if user is authenticated
+    if (!authState.isAuthenticated || authState.loading) {
+      return;
+    }
+
     const checkActiveJobs = async () => {
       try {
         const response = await client.get("/jobs?status=processing&limit=1");
@@ -343,16 +354,30 @@ export const ImportProvider = ({
       checkActiveJobs();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [authState.isAuthenticated, authState.loading]);
 
-  // Cleanup on unmount
+  // Cleanup on unmount or when user logs out
   useEffect(() => {
+    if (!authState.isAuthenticated && pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+      setImportState({
+        isImporting: false,
+        importType: null,
+        progress: null,
+        error: null,
+        jobId: null,
+        jobStatus: null,
+        startedAt: null,
+      });
+    }
+
     return () => {
       if (pollingIntervalRef.current) {
         clearInterval(pollingIntervalRef.current);
       }
     };
-  }, []);
+  }, [authState.isAuthenticated]);
 
   return (
     <ImportContext.Provider

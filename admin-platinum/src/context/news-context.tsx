@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect } from "react";
 import { BlogPost } from "@/models/news";
 import axiosClient from "@/services/axiosInstance";
 import { useToast } from "@/hooks/use-toast";
+import { useAuthContext } from "./auth-context";
 
 interface NewsContextType {
   blogPosts: BlogPost[];
@@ -23,6 +24,7 @@ export const NewsProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const client = axiosClient();
   const { toast } = useToast();
+  const { authState } = useAuthContext();
 
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [blogPost, setBlogPost] = useState<BlogPost | null>(null);
@@ -30,8 +32,15 @@ export const NewsProvider: React.FC<{ children: React.ReactNode }> = ({
   const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
-    getBlogPosts();
-  }, []);
+    // Only fetch if user is authenticated
+    if (authState.isAuthenticated && !authState.loading) {
+      getBlogPosts();
+    } else if (!authState.loading) {
+      // If not authenticated and not loading, clear data
+      setBlogPosts([]);
+      setLoading(false);
+    }
+  }, [authState.isAuthenticated, authState.loading]);
 
   const addBlogPost = async (blogPost: BlogPost) => {
     try {

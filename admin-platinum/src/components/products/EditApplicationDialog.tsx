@@ -22,6 +22,7 @@ import DynamicComponent from "@/components/DynamicComponent";
 import { useMemo, useState, useEffect } from "react";
 import axiosClient from "@/services/axiosInstance";
 import { useToast } from "@/hooks/use-toast";
+import { translateAttributeName } from "@/utils/attributeTranslations";
 
 type EditApplicationDialogProps = {
   open: boolean;
@@ -575,7 +576,7 @@ const EditApplicationDialog = ({
                   <div key={attr.id} className="space-y-2">
                     <Label>
                       {attr.required && <span className="text-red-500 mr-1">*</span>}
-                      {attr.name}
+                      {translateAttributeName(attr.name, false)}
                     </Label>
                     {(() => {
                       const isYearAttribute =

@@ -64,7 +64,6 @@ const DetailsCard = ({ state, setState, product }: DetailsCardProps) => {
       // Only set to null if imageFile is not already null and not a valid File
       setImageFile((currentFile) => {
         if (currentFile && !(currentFile instanceof File && currentFile.name)) {
-          console.log("[DetailsCard] Setting imageFile to null for editing");
           return null; // Ensure imageFile is null so currentImageUrl can be displayed
         }
         return currentFile;
@@ -165,7 +164,6 @@ const DetailsCard = ({ state, setState, product }: DetailsCardProps) => {
         variant: "success",
       });
     } catch (error: any) {
-      console.error("[DetailsCard] Error deleting image:", error);
       toast({
         title: "Error al eliminar imagen",
         variant: "destructive",
@@ -295,11 +293,6 @@ const DetailsCard = ({ state, setState, product }: DetailsCardProps) => {
                 className="p-8 min-h-[200px]"
                 currentImageUrl={(() => {
                   const url = imageUrl && !imageFile ? imageUrl : undefined;
-                  console.log("[DetailsCard] MyDropzone currentImageUrl:", {
-                    imageUrl,
-                    imageFile: imageFile ? (imageFile instanceof File ? `File: ${imageFile.name}` : 'Object') : 'null',
-                    result: url
-                  });
                   return url;
                 })()}
                 onImageClick={() => {

@@ -9,6 +9,7 @@ import {
   useEffect,
   useState,
 } from "react";
+import { useAuthContext } from "./auth-context";
 
 interface CategoryRespone {
   id: string;
@@ -41,6 +42,7 @@ export const CategoryContextProvider = ({
 }) => {
   const client = axiosClient();
   const { toast } = useToast();
+  const { authState } = useAuthContext();
 
   const [selectedCategory, setSelectedCategory] = useState<
     Category["id"] | null
@@ -51,8 +53,15 @@ export const CategoryContextProvider = ({
   const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
-    getCategories();
-  }, []);
+    // Only fetch if user is authenticated
+    if (authState.isAuthenticated && !authState.loading) {
+      getCategories();
+    } else if (!authState.loading) {
+      // If not authenticated and not loading, clear data
+      setCategories([]);
+      setLoading(false);
+    }
+  }, [authState.isAuthenticated, authState.loading]);
 
   const getCategories = async () => {
     try {

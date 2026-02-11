@@ -11,6 +11,7 @@ import { Product } from "@/models/product";
 import DynamicComponent from "@/components/DynamicComponent";
 import { CategoryAtributes } from "@/models/category";
 import { useCategoryContext } from "@/context/categories-context";
+import { translateAttributeName } from "@/utils/attributeTranslations";
 
 type AttributesProps = {
   setCanContinue: React.Dispatch<React.SetStateAction<boolean>>;
@@ -101,7 +102,7 @@ const Attributes = ({
             <div key={attribute.id} className="basis-[48%]">
               <Label className="mb-2 block">
                 {attribute.required && <span className="text-red-500 mr-1">*</span>}
-                {attribute.name}
+                {translateAttributeName(attribute.name, false)}
               </Label>
               <DynamicComponent
                 type={attribute.type}
