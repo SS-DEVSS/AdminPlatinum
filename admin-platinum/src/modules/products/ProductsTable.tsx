@@ -9,7 +9,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { MoreVertical, Upload } from "lucide-react";
+import { MoreVertical, Upload, Star } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -46,6 +46,9 @@ import { useS3FileManager } from "@/hooks/useS3FileManager";
 import { useToast } from "@/hooks/use-toast";
 import axiosClient from "@/services/axiosInstance";
 import { convertImageToWebP } from "@/utils/imageConverter";
+import FeatureProductModal from "@/components/products/FeatureProductModal";
+import { Product } from "@/models/product";
+import { Application } from "@/models/application";
 
 interface DataTableProps {
   category?: Category | null;
@@ -68,6 +71,9 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
   const { uploading } = useS3FileManager();
   const { toast } = useToast();
   const client = axiosClient();
+  const [featureModalOpen, setFeatureModalOpen] = useState(false);
+  const [selectedProductForFeature, setSelectedProductForFeature] = useState<Product | null>(null);
+  const [selectedProductApplications, setSelectedProductApplications] = useState<Application[]>([]);
 
   let { attributes } = category || {};
   const { products, loading, getProducts } = useProducts();
@@ -428,6 +434,33 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
 
     // Build base columns
     const baseColumns = [
+      {
+        accessorKey: "featured",
+        header: "",
+        cell: ({ row }: { row: any }) => {
+          const productId = (row.original as any)?._originalItem?.id || (row.original as any)?.idProduct || row.original.id;
+          const product = products?.find((p: any) => p.id === productId);
+          const isFeatured = product?.isFeatured || false;
+          const featuredApplicationId = product?.featuredApplicationId || null;
+          const productApplications = (product as any)?.applications || [];
+
+          return (
+            <div className="flex items-center justify-center">
+              <Star
+                className={`h-5 w-5 cursor-pointer transition-colors ${
+                  isFeatured ? "fill-yellow-400 text-yellow-400" : "text-gray-300 hover:text-yellow-400"
+                }`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedProductForFeature(product || null);
+                  setSelectedProductApplications(productApplications);
+                  setFeatureModalOpen(true);
+                }}
+              />
+            </div>
+          );
+        },
+      },
       {
         accessorKey: "images",
         header: "",
@@ -926,6 +959,17 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
           </Button>
         </div>
       </div>
+      <FeatureProductModal
+        open={featureModalOpen}
+        onOpenChange={setFeatureModalOpen}
+        product={selectedProductForFeature}
+        applications={selectedProductApplications}
+        isCurrentlyFeatured={selectedProductForFeature?.isFeatured || false}
+        currentFeaturedApplicationId={selectedProductForFeature?.featuredApplicationId || null}
+        onSuccess={() => {
+          getProducts();
+        }}
+      />
     </div>
   );
 };

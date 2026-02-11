@@ -33,6 +33,9 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import axiosClient from "@/services/axiosInstance";
+import FeatureProductModal from "./FeatureProductModal";
+import { Star } from "lucide-react";
+import { Application } from "@/models/application";
 
 type DetailsCardProps = {
   state: detailsType;
@@ -43,6 +46,7 @@ type DetailsCardProps = {
 const DetailsCard = ({ state, setState, product }: DetailsCardProps) => {
   const { brands } = useBrands();
   const { categories } = useCategoryContext();
+  const [featureModalOpen, setFeatureModalOpen] = useState(false);
   const { uploadFile, uploading } = useS3FileManager();
   const { toast } = useToast();
   const client = axiosClient();
@@ -329,8 +333,37 @@ const DetailsCard = ({ state, setState, product }: DetailsCardProps) => {
               <p className="text-sm text-muted-foreground mt-2">Subiendo imagen...</p>
             )}
           </div>
+          {product && (
+            <div className="flex flex-col gap-3">
+              <Button
+                type="button"
+                variant={product.isFeatured ? "default" : "outline"}
+                onClick={() => setFeatureModalOpen(true)}
+                className="w-full"
+              >
+                <Star className={`h-4 w-4 mr-2 ${product.isFeatured ? "fill-yellow-400 text-yellow-400" : ""}`} />
+                {product.isFeatured ? "Editar Producto Destacado" : "Destacar Producto"}
+              </Button>
+              {product.isFeatured && (
+                <p className="text-xs text-muted-foreground">
+                  Este producto está destacado y se muestra en la página principal.
+                </p>
+              )}
+            </div>
+          )}
         </div>
       </CardContent>
+      <FeatureProductModal
+        open={featureModalOpen}
+        onOpenChange={setFeatureModalOpen}
+        product={product || null}
+        applications={(product as any)?.applications || []}
+        isCurrentlyFeatured={product?.isFeatured || false}
+        currentFeaturedApplicationId={product?.featuredApplicationId || null}
+        onSuccess={() => {
+          window.location.reload();
+        }}
+      />
       <Dialog open={previewDialogOpen} onOpenChange={setPreviewDialogOpen}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>

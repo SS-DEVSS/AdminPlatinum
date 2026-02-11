@@ -32,6 +32,7 @@ import { ImportStatusBanner } from "./components/ImportStatusBanner";
 import { App } from "./components/App";
 import FileManager from "./pages/files/fileManager";
 import { FilesProvider } from "./context/files-context";
+import FeaturedProducts from "./pages/products/featuredProducts";
 
 const router = createBrowserRouter([
   {
@@ -178,6 +179,14 @@ const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <FileManager />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/dashboard/productos-destacados",
+    element: (
+      <ProtectedRoute>
+        <FeaturedProducts />
       </ProtectedRoute>
     ),
   },
