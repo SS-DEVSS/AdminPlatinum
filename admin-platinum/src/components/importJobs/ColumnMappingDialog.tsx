@@ -81,10 +81,26 @@ const ColumnMappingDialog = ({
   }, [open, headers, suggestedMappings, initialMapping]);
 
   const handleMappingChange = (csvColumn: string, attributeId: string | null) => {
-    setMapping((prev) => ({
-      ...prev,
-      [csvColumn]: attributeId,
-    }));
+    setMapping((prev) => {
+      const newMapping = { ...prev };
+      
+      // If selecting an attribute that's already mapped to another column, remove that mapping
+      if (attributeId) {
+        // Find the column that currently has this attribute mapped
+        const previousColumn = Object.keys(newMapping).find(
+          (col) => col !== csvColumn && newMapping[col] === attributeId
+        );
+        if (previousColumn) {
+          // Clear the previous mapping
+          newMapping[previousColumn] = null;
+        }
+      }
+      
+      // Set the new mapping for the current column
+      newMapping[csvColumn] = attributeId;
+      
+      return newMapping;
+    });
   };
 
   const handleConfirm = () => {
@@ -171,13 +187,12 @@ const ColumnMappingDialog = ({
                                     <SelectItem
                                       key={coreId}
                                       value={coreId}
-                                      disabled={isMapped && !isCurrent}
                                     >
                                       <div className="flex items-center gap-2">
                                         <span>{translatedName}</span>
                                         {isMapped && !isCurrent && (
                                           <span className="text-xs text-muted-foreground">
-                                            (ya mapeado)
+                                            (se reemplazará el mapeo anterior)
                                           </span>
                                         )}
                                       </div>
@@ -201,7 +216,6 @@ const ColumnMappingDialog = ({
                                 <SelectItem
                                   key={attr.id}
                                   value={attr.id}
-                                  disabled={isMapped && !isCurrent}
                                 >
                                   <div className="flex items-center gap-2">
                                     <span>{translatedName}</span>
@@ -210,7 +224,7 @@ const ColumnMappingDialog = ({
                                     )}
                                     {isMapped && !isCurrent && (
                                       <span className="text-xs text-muted-foreground">
-                                        (ya mapeado)
+                                        (se reemplazará el mapeo anterior)
                                       </span>
                                     )}
                                   </div>

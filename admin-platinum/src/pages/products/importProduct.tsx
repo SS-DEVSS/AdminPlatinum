@@ -35,26 +35,34 @@ const ImportProduct = () => {
   const [showMappingDialog, setShowMappingDialog] = useState(false);
   const [columnMapping, setColumnMapping] = useState<{ [csvColumn: string]: string | null } | null>(null);
 
-  const { preview, loading: previewLoading, error: previewError, fetchPreview } = useImportPreview();
+  const { preview, loading: previewLoading, fetchPreview } = useImportPreview();
 
   const onDrop = async (acceptedFiles: File[]) => {
+    // Don't allow file drop if import type or category is not selected
+    if (!importType || !categoryId) {
+      toast({
+        title: "Error",
+        description: "Por favor, selecciona el tipo de importación y la categoría primero.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (acceptedFiles.length > 0) {
       const selectedFile = acceptedFiles[0];
       if (selectedFile.type === "text/csv" || selectedFile.name.endsWith(".csv")) {
         setFile(selectedFile);
 
-        // If import type and category are selected, fetch preview
-        if (importType && categoryId) {
-          try {
-            await fetchPreview(selectedFile, importType, categoryId);
-            setShowMappingDialog(true);
-          } catch (error) {
-            toast({
-              title: "Error",
-              description: "No se pudo obtener la vista previa del archivo.",
-              variant: "destructive",
-            });
-          }
+        // Fetch preview since import type and category are already selected
+        try {
+          await fetchPreview(selectedFile, importType, categoryId);
+          setShowMappingDialog(true);
+        } catch (error) {
+          toast({
+            title: "Error",
+            description: "No se pudo obtener la vista previa del archivo.",
+            variant: "destructive",
+          });
         }
       } else {
         toast({
@@ -77,7 +85,8 @@ const ImportProduct = () => {
           // Error already handled in hook
         });
     }
-  }, [file, importType, categoryId]); // Only depend on these, not preview state
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [file, importType, categoryId]); // Only depend on these, not preview state to avoid infinite loops
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -85,6 +94,7 @@ const ImportProduct = () => {
       "text/csv": [".csv"],
     },
     maxFiles: 1,
+    disabled: !importType || !categoryId,
   });
 
   const handleMappingConfirm = (mapping: { [csvColumn: string]: string | null }) => {
@@ -214,14 +224,16 @@ const ImportProduct = () => {
               </Label>
               <div
                 {...getRootProps()}
-                className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${isDragActive
-                  ? "bg-[#F5F9FD] border-[#0bbff4]"
-                  : file
-                    ? "bg-green-50 border-green-400"
-                    : "border-[#94A3B8] hover:border-[#0bbff4]"
+                className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${!importType || !categoryId
+                  ? "bg-gray-50 border-gray-300 cursor-not-allowed opacity-50"
+                  : isDragActive
+                    ? "bg-[#F5F9FD] border-[#0bbff4] cursor-pointer"
+                    : file
+                      ? "bg-green-50 border-green-400 cursor-pointer"
+                      : "border-[#94A3B8] hover:border-[#0bbff4] cursor-pointer"
                   }`}
               >
-                <input {...getInputProps()} />
+                <input {...getInputProps()} disabled={!importType || !categoryId} />
                 {file ? (
                   <div className="space-y-2">
                     <File className="h-12 w-12 mx-auto text-green-600" />
@@ -233,14 +245,27 @@ const ImportProduct = () => {
                 ) : (
                   <div className="space-y-2">
                     <File className="h-12 w-12 mx-auto text-muted-foreground" />
-                    <p className="text-muted-foreground">
-                      {isDragActive
-                        ? "Suelta el archivo aquí"
-                        : "Arrastra y suelta el archivo CSV aquí"}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      o haz clic para seleccionar un archivo
-                    </p>
+                    {!importType || !categoryId ? (
+                      <>
+                        <p className="text-muted-foreground">
+                          Selecciona el tipo de importación y la categoría primero
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          El área de carga se habilitará después
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-muted-foreground">
+                          {isDragActive
+                            ? "Suelta el archivo aquí"
+                            : "Arrastra y suelta el archivo CSV aquí"}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          o haz clic para seleccionar un archivo
+                        </p>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
