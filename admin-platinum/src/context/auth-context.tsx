@@ -120,6 +120,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Only block if we explicitly get 401
     }
 
+    try {
+      const currentUserResponse = await client.get("/users/me");
+      const currentUser = currentUserResponse.data;
+      
+      if (currentUser && currentUser.passwordCreated === false) {
+        setAuthState({
+          isAuthenticated: !!data.session,
+          session: data.session,
+          user: data.user,
+          loading: false,
+        });
+        window.location.href = "/create-password";
+        return;
+      }
+    } catch (userError) {
+      console.error("Error fetching current user:", userError);
+    }
+
     setAuthState({
       isAuthenticated: !!data.session,
       session: data.session,

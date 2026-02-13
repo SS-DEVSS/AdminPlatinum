@@ -10,6 +10,7 @@ import NewCategory from "@/pages/categories/newCategory";
 import ForgotPassword from "@/pages/auth/forgotPassword";
 import Login from "@/pages/auth/login";
 import ResetPassword from "@/pages/auth/resetPassword";
+import CreatePassword from "@/pages/auth/createPassword";
 import Marcas from "@/pages/marcas";
 import { BrandProvider } from "./context/brand-context";
 import { AuthProvider } from "./context/auth-context";
@@ -49,6 +50,14 @@ const router = createBrowserRouter([
   {
     path: "/reset-password",
     element: <ResetPassword />,
+  },
+  {
+    path: "/create-password",
+    element: (
+      <ProtectedRoute>
+        <CreatePassword />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/",
