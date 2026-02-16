@@ -34,7 +34,8 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import axiosClient from "@/services/axiosInstance";
 import FeatureProductModal from "./FeatureProductModal";
-import { Star } from "lucide-react";
+import { Star, FolderOpen } from "lucide-react";
+import FilePickerModal from "@/components/files/FilePickerModal";
 
 type DetailsCardProps = {
   state: detailsType;
@@ -53,6 +54,7 @@ const DetailsCard = ({ state, setState, product }: DetailsCardProps) => {
   const [imageUrl, setImageUrl] = useState<string>(state.imgUrl || "");
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string>("");
+  const [filePickerOpen, setFilePickerOpen] = useState(false);
 
   // Update imageUrl when state.imgUrl changes (e.g., when loading product data)
   useEffect(() => {
@@ -175,6 +177,15 @@ const DetailsCard = ({ state, setState, product }: DetailsCardProps) => {
     }
   };
 
+  const handleFileSelect = (fileUrl: string) => {
+    setImageFile(null);
+    setImageUrl(fileUrl);
+    setState((prevForm) => ({
+      ...prevForm,
+      imgUrl: fileUrl,
+    }));
+  };
+
   return (
     <Card className="w-full flex flex-col mt-5">
       <CardHeader>
@@ -285,9 +296,20 @@ const DetailsCard = ({ state, setState, product }: DetailsCardProps) => {
             </div>
           </section>
           <div className="grid gap-3">
-            <Label htmlFor="image">
-              Imagen<span className="text-redLabel">*</span>
-            </Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="image">
+                Imagen<span className="text-redLabel">*</span>
+              </Label>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setFilePickerOpen(true)}
+                type="button"
+              >
+                <FolderOpen className="h-4 w-4 mr-2" />
+                Buscar en archivos
+              </Button>
+            </div>
             <div className="relative">
               <MyDropzone
                 file={imageFile || undefined}
@@ -379,6 +401,12 @@ const DetailsCard = ({ state, setState, product }: DetailsCardProps) => {
           </div>
         </DialogContent>
       </Dialog>
+      <FilePickerModal
+        open={filePickerOpen}
+        onOpenChange={setFilePickerOpen}
+        onSelectFile={handleFileSelect}
+        filterType="image"
+      />
     </Card>
   );
 };

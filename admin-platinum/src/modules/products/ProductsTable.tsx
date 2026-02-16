@@ -9,7 +9,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { MoreVertical, Upload, Star } from "lucide-react";
+import { MoreVertical, Upload, Star, FolderOpen } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -49,6 +49,7 @@ import { convertImageToWebP } from "@/utils/imageConverter";
 import FeatureProductModal from "@/components/products/FeatureProductModal";
 import { Product } from "@/models/product";
 import { Application } from "@/models/application";
+import FilePickerModal from "@/components/files/FilePickerModal";
 
 interface DataTableProps {
   category?: Category | null;
@@ -74,6 +75,7 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
   const [featureModalOpen, setFeatureModalOpen] = useState(false);
   const [selectedProductForFeature, setSelectedProductForFeature] = useState<Product | null>(null);
   const [selectedProductApplications, setSelectedProductApplications] = useState<Application[]>([]);
+  const [filePickerOpen, setFilePickerOpen] = useState(false);
 
   let { attributes } = category || {};
   const { products, loading, getProducts, getProductById } = useProducts();
@@ -153,6 +155,53 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
       });
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleFileSelect = async (fileUrl: string) => {
+    if (!selectedVariant) return;
+
+    setIsUploading(true);
+    try {
+      const isPseudoVariant = selectedVariant.id === selectedVariant.idProduct;
+
+      if (isPseudoVariant) {
+        // For SINGLE products, use PATCH with imageUrl
+        await client.patch(`/products/${selectedVariant.id}`, {
+          imageUrl: fileUrl,
+        });
+
+        toast({
+          title: "Imagen actualizada correctamente",
+          variant: "success",
+        });
+
+        await getProducts();
+      } else {
+        // For variants, use PATCH with imageUrl
+        await client.patch(`/variants/${selectedVariant.id}`, {
+          imageUrl: fileUrl,
+        });
+
+        toast({
+          title: "Imagen actualizada correctamente",
+          variant: "success",
+        });
+
+        await getProducts();
+      }
+
+      setImageDialogOpen(false);
+      setImageFile({} as File);
+      setSelectedVariant(null);
+    } catch (error: any) {
+      toast({
+        title: "Error al actualizar imagen",
+        variant: "destructive",
+        description: error.response?.data?.error || error.message || "Error desconocido",
+      });
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -787,10 +836,24 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
       <Dialog open={imageDialogOpen} onOpenChange={setImageDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Cambiar Imagen del Producto</DialogTitle>
-            <DialogDescription>
-              {selectedVariant && `Sube una nueva imagen para: ${selectedVariant.name}`}
-            </DialogDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <DialogTitle>Cambiar Imagen del Producto</DialogTitle>
+                <DialogDescription>
+                  {selectedVariant && `Sube una nueva imagen para: ${selectedVariant.name}`}
+                </DialogDescription>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setFilePickerOpen(true)}
+                type="button"
+                disabled={uploading || isUploading}
+              >
+                <FolderOpen className="h-4 w-4 mr-2" />
+                Buscar en archivos
+              </Button>
+            </div>
           </DialogHeader>
           <div className="py-4">
             <MyDropzone
@@ -830,6 +893,12 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <FilePickerModal
+        open={filePickerOpen}
+        onOpenChange={setFilePickerOpen}
+        onSelectFile={handleFileSelect}
+        filterType="image"
+      />
       <Dialog open={previewDialogOpen} onOpenChange={setPreviewDialogOpen}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>

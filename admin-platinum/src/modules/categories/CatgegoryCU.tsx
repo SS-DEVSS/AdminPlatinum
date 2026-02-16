@@ -27,6 +27,7 @@ import {
   PlusCircleIcon,
   XCircleIcon,
   Info,
+  FolderOpen,
 } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { useState } from "react";
@@ -40,6 +41,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import Loader from "@/components/Loader";
+import FilePickerModal from "@/components/files/FilePickerModal";
 
 type CategoryCUProps = {
   category?: Category | null;
@@ -69,6 +71,7 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
   const [imageUrl, setImageUrl] = useState<string>(category?.imgUrl || "");
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string>("");
+  const [filePickerOpen, setFilePickerOpen] = useState(false);
   const [form, setForm] = useState<formTypes>({
     name: "",
     description: "",
@@ -183,6 +186,15 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
         description: error.response?.data?.error || error.message || "Error desconocido",
       });
     }
+  };
+
+  const handleFileSelect = (fileUrl: string) => {
+    setImage(null);
+    setImageUrl(fileUrl);
+    setForm((prevForm) => ({
+      ...prevForm,
+      imgUrl: fileUrl,
+    }));
   };
 
   useEffect(() => {
@@ -473,18 +485,29 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
                     />
                   </div>
                   <div className="grid gap-3">
-                    <div className="flex items-center gap-2">
-                      <Label htmlFor="image">Imagen de la Categoría</Label>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>La imagen representativa de la categoría que se mostrará en el catálogo</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Label htmlFor="image">Imagen de la Categoría</Label>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>La imagen representativa de la categoría que se mostrará en el catálogo</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setFilePickerOpen(true)}
+                        type="button"
+                      >
+                        <FolderOpen className="h-4 w-4 mr-2" />
+                        Buscar en archivos
+                      </Button>
                     </div>
                     <div className="relative">
                       <MyDropzone
@@ -637,6 +660,12 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
             </div>
           </DialogContent>
         </Dialog>
+        <FilePickerModal
+          open={filePickerOpen}
+          onOpenChange={setFilePickerOpen}
+          onSelectFile={handleFileSelect}
+          filterType="image"
+        />
       </main>
       <section className="fixed bottom-0 left-0 right-0 bg-background border-t shadow-lg z-50">
         <div className="container mx-auto px-4 py-4 flex justify-end gap-3">

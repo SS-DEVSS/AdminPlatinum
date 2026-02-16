@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { AlertTriangle, PlusCircle, Search } from "lucide-react";
+import { AlertTriangle, PlusCircle, Search, FolderOpen } from "lucide-react";
 import CardSectionLayout from "@/components/Layouts/CardSectionLayout";
 import CardTemplate from "@/components/Layouts/CardTemplate";
 import { useBrandContext } from "@/context/brand-context";
@@ -30,6 +30,7 @@ import NoData from "@/components/NoData";
 import MyDropzone from "@/components/Dropzone";
 import { useS3FileManager } from "@/hooks/useS3FileManager";
 import Loader from "@/components/Loader";
+import FilePickerModal from "@/components/files/FilePickerModal";
 
 const Marcas = () => {
   const { brands, brand, loading, addBrand, updateBrand, getBrands, getBrandById } =
@@ -42,6 +43,7 @@ const Marcas = () => {
   const savingStartTimeRef = useRef<number | null>(null);
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string>("");
+  const [filePickerOpen, setFilePickerOpen] = useState(false);
 
   const [filterBrandSearch, setFilterBrandSearch] = useState("");
   const [form, setForm] = useState({
@@ -121,6 +123,14 @@ const Marcas = () => {
   const handlePreviewImage = (url: string) => {
     setPreviewImageUrl(url);
     setPreviewDialogOpen(true);
+  };
+
+  const handleFileSelect = (fileUrl: string) => {
+    setImage(null);
+    setForm((prevForm) => ({
+      ...prevForm,
+      logoImgUrl: fileUrl,
+    }));
   };
 
   const filterBrands = useMemo(
@@ -287,9 +297,20 @@ const Marcas = () => {
                           onChange={handleForm}
                           required
                         />
-                        <Label htmlFor="logoImgUrl">
-                          Imagen<span className="text-redLabel">*</span>
-                        </Label>
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="logoImgUrl">
+                            Imagen<span className="text-redLabel">*</span>
+                          </Label>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setFilePickerOpen(true)}
+                            type="button"
+                          >
+                            <FolderOpen className="h-4 w-4 mr-2" />
+                            Buscar en archivos
+                          </Button>
+                        </div>
                         <MyDropzone
                           file={image}
                           fileSetter={setImage}
@@ -372,6 +393,12 @@ const Marcas = () => {
           </div>
         </DialogContent>
       </Dialog>
+      <FilePickerModal
+        open={filePickerOpen}
+        onOpenChange={setFilePickerOpen}
+        onSelectFile={handleFileSelect}
+        filterType="image"
+      />
     </>
   );
 };
