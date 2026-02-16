@@ -5,13 +5,13 @@ import {
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
-  getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { MoreVertical, Upload, Star, FolderOpen } from "lucide-react";
+import { MoreVertical, Upload, Star, FolderOpen, ChevronLeft, ChevronRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -79,19 +79,70 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
   const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
 
   let { attributes } = category || {};
-  const { products, loading, getProducts, getProductById } = useProducts();
+  const { getProductById } = useProducts();
   const { categories } = useCategories();
 
-  // Debug: Log when products change and force refresh on mount
-  useEffect(() => {
-    // Force refresh products when component mounts to ensure we have latest featured status
-    getProducts();
-  }, []); // Only run on mount
+  const [products, setProducts] = useState<Item[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [debouncedSearch, setDebouncedSearch] = useState(searchFilter || '');
+  const [goToPageValue, setGoToPageValue] = useState('');
 
   if (!attributes && categories.length > 0) {
-    // attributes = categories[0].attributes;
     attributes = categories[0].attributes;
   }
+
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchFilter || '');
+      setPage(1); // Reset to first page when search changes
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchFilter]);
+
+  // Fetch products by category with pagination and search
+  useEffect(() => {
+    const fetchProducts = async () => {
+      if (!category?.id) {
+        setProducts([]);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const params: Record<string, any> = {
+          page,
+          pageSize,
+        };
+
+        if (debouncedSearch && debouncedSearch.trim()) {
+          params.search = debouncedSearch.trim();
+        }
+
+        const response = await client.get(`/products/category/${category.id}`, { params });
+        const { products: fetchedProducts, total: totalItems, totalPages: pages } = response.data;
+
+        setProducts(fetchedProducts || []);
+        setTotalItems(totalItems || 0);
+        setTotalPages(pages || 1);
+      } catch (error) {
+        console.error('[ProductsTable] Error fetching products:', error);
+        setProducts([]);
+        setTotalItems(0);
+        setTotalPages(1);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, [category?.id, page, pageSize, debouncedSearch]);
 
   const handleImageClick = (variant: Variant) => {
     setSelectedVariant(variant);
@@ -145,7 +196,8 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
         variant: "success",
       });
 
-      await getProducts();
+      // Refresh current page
+      setPage(page);
 
       setPreviewDialogOpen(false);
       setImageDialogOpen(false);
@@ -185,7 +237,8 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
           variant: "success",
         });
 
-        await getProducts();
+        // Refresh current page
+        setPage(page);
       } else {
         // For variants, use PATCH with imageUrl
         await client.patch(`/variants/${selectedVariant.id}`, {
@@ -197,7 +250,8 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
           variant: "success",
         });
 
-        await getProducts();
+        // Refresh current page
+        setPage(page);
       }
 
       // Update the variant's image URL in local state for immediate preview
@@ -321,11 +375,11 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
             });
           });
 
-          // Also refresh the products list to ensure consistency
-          await getProducts();
+          // Refresh current page
+          setPage(page);
         } catch (error) {
-          // If fetching fails, still refresh the whole list
-          await getProducts();
+          // If fetching fails, refresh current page
+          setPage(page);
         }
       } else {
         // For variants, we need to upload the file first, then use PATCH with imageUrl
@@ -382,8 +436,8 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
             });
           });
         } catch (error) {
-          // If fetching fails, still refresh the whole list
-          await getProducts();
+          // If fetching fails, refresh current page
+          setPage(page);
         }
       }
 
@@ -750,14 +804,11 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
   }, [attributes, shouldHideDescription, navigate, products]);
 
   useEffect(() => {
-    const filteredProducts = products.filter(
-      (product: Item) => product.category.id === category?.id
-    );
-
-    const flattenedData = flattenVariants(filteredProducts);
+    // Products are already filtered by category from backend, no need to filter again
+    const flattenedData = flattenVariants(products);
     // También guardar el item original para cada variant para tener acceso a references y applications
     const flattenedWithItem = flattenedData.map((variant) => {
-      const originalItem = filteredProducts.find(item =>
+      const originalItem = products.find(item =>
         item.id === variant.idProduct || (item.variants?.some(v => v.id === variant.id) || (!item.variants || item.variants.length === 0) && item.id === variant.id)
       );
       return {
@@ -766,82 +817,9 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
       };
     });
     setMappedData(flattenedWithItem as Variant[]);
-  }, [products, category]);
+  }, [products]);
 
-  const searchFilteredProducts = useMemo(() => {
-    // Si no hay searchFilter, retornar todos los datos
-    if (!searchFilter || searchFilter.trim() === "") {
-      return mappedData;
-    }
-
-    const searchTerm = searchFilter.toLowerCase().trim();
-
-    return mappedData.filter((variant: Variant) => {
-      const variantAny = variant as any;
-
-      // Buscar en nombre
-      const nameMatch = variant.name?.toLowerCase().includes(searchTerm) || false;
-
-      // Buscar en SKU
-      const skuMatch = (variant.sku || "")?.toLowerCase().includes(searchTerm) || false;
-
-      // Buscar en descripción (puede estar en variant o item)
-      const descriptionMatch = (variantAny.description || "")?.toLowerCase().includes(searchTerm) || false;
-
-      // Buscar en atributos (valores de atributos del producto y variant)
-      const attributeMatch =
-        (variant.attributeValues || []).some((attr: any) => {
-          const value = attr.valueString || attr.valueNumber || attr.valueBoolean || attr.valueDate;
-          return value?.toString().toLowerCase().includes(searchTerm);
-        }) ||
-        (variantAny.productAttributeValues || []).some((attr: any) => {
-          const value = attr.valueString || attr.valueNumber || attr.valueBoolean || attr.valueDate;
-          return value?.toString().toLowerCase().includes(searchTerm);
-        });
-
-      // Buscar en referencias
-      const referencesMatch = (variantAny.references || []).some((ref: any) => {
-        return (
-          (ref.sku || "").toLowerCase().includes(searchTerm) ||
-          (ref.referenceBrand || "").toLowerCase().includes(searchTerm) ||
-          (ref.referenceNumber || "").toLowerCase().includes(searchTerm) ||
-          (ref.typeOfPart || "").toLowerCase().includes(searchTerm) ||
-          (ref.type || "").toLowerCase().includes(searchTerm) ||
-          (ref.description || "").toLowerCase().includes(searchTerm) ||
-          // Buscar en attributeValues de referencias
-          (ref.attributeValues || []).some((attr: any) => {
-            const value = attr.valueString || attr.valueNumber || attr.valueBoolean || attr.valueDate;
-            return value?.toString().toLowerCase().includes(searchTerm);
-          })
-        );
-      });
-
-      // Buscar en aplicaciones
-      const applicationsMatch = (variantAny.applications || []).some((app: any) => {
-        // Las aplicaciones del backend tienen: id, sku, origin, attributeValues
-        // También pueden tener campos legacy: referenceBrand, referenceNumber, typeOfPart, type, description, displayText
-        return (
-          (app.id || "").toLowerCase().includes(searchTerm) ||
-          (app.sku || "").toLowerCase().includes(searchTerm) ||
-          (app.origin || "").toLowerCase().includes(searchTerm) ||
-          // Campos legacy (por si acaso existen)
-          (app.referenceBrand || "").toLowerCase().includes(searchTerm) ||
-          (app.referenceNumber || "").toLowerCase().includes(searchTerm) ||
-          (app.typeOfPart || "").toLowerCase().includes(searchTerm) ||
-          (app.type || "").toLowerCase().includes(searchTerm) ||
-          (app.description || "").toLowerCase().includes(searchTerm) ||
-          (app.displayText || "").toLowerCase().includes(searchTerm) ||
-          // Buscar en attributeValues de aplicaciones (Modelo, Submodelo, Año, etc.)
-          (app.attributeValues || []).some((attr: any) => {
-            const value = attr.valueString || attr.valueNumber || attr.valueBoolean || attr.valueDate;
-            return value?.toString().toLowerCase().includes(searchTerm);
-          })
-        );
-      });
-
-      return nameMatch || skuMatch || descriptionMatch || attributeMatch || referencesMatch || applicationsMatch;
-    });
-  }, [searchFilter, mappedData]);
+  // Search is now handled by backend, no need for frontend filtering
 
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -849,12 +827,13 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
   const [rowSelection, setRowSelection] = useState({});
 
   const table = useReactTable<Variant>({
-    data: searchFilter ? searchFilteredProducts : mappedData,
+    data: mappedData,
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
+    manualPagination: true, // Use backend pagination
+    pageCount: totalPages,
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
@@ -864,6 +843,10 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
       columnFilters,
       columnVisibility,
       rowSelection,
+      pagination: {
+        pageIndex: page - 1,
+        pageSize,
+      },
     },
   });
 
@@ -1052,26 +1035,120 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
           </TableBody>
         </Table>
       </div>
-      <div className="flex items-center justify-end space-x-2 py-4">
-        <div className="space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Anterior
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Siguiente
-          </Button>
+      {totalItems > 0 && (
+        <div className="flex items-center justify-between space-x-4 py-4 flex-wrap gap-4">
+          <div className="text-sm text-muted-foreground">
+            Mostrando {((page - 1) * pageSize) + 1} - {Math.min(page * pageSize, totalItems)} de {totalItems} productos
+          </div>
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage(page - 1)}
+              disabled={page <= 1 || loading}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+
+            {/* Page numbers with ellipsis */}
+            <div className="flex items-center space-x-1">
+              {(() => {
+                const pages: (number | string)[] = [];
+                const maxVisible = 5;
+
+                if (totalPages <= maxVisible) {
+                  // Show all pages if total is small
+                  for (let i = 1; i <= totalPages; i++) {
+                    pages.push(i);
+                  }
+                } else {
+                  // Always show first page
+                  pages.push(1);
+
+                  if (page <= 3) {
+                    // Near the beginning: 1, 2, 3, 4, ..., last
+                    for (let i = 2; i <= 4; i++) {
+                      pages.push(i);
+                    }
+                    pages.push('...');
+                    pages.push(totalPages);
+                  } else if (page >= totalPages - 2) {
+                    // Near the end: 1, ..., last-3, last-2, last-1, last
+                    pages.push('...');
+                    for (let i = totalPages - 3; i <= totalPages; i++) {
+                      pages.push(i);
+                    }
+                  } else {
+                    // In the middle: 1, ..., page-1, page, page+1, ..., last
+                    pages.push('...');
+                    pages.push(page - 1);
+                    pages.push(page);
+                    pages.push(page + 1);
+                    pages.push('...');
+                    pages.push(totalPages);
+                  }
+                }
+
+                return pages.map((p, idx) => {
+                  if (p === '...') {
+                    return (
+                      <span key={`ellipsis-${idx}`} className="px-2 text-muted-foreground">
+                        ...
+                      </span>
+                    );
+                  }
+                  const pageNum = p as number;
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={pageNum === page ? "default" : "outline"}
+                      size="sm"
+                      className="min-w-[2.5rem]"
+                      onClick={() => setPage(pageNum)}
+                      disabled={loading}
+                    >
+                      {pageNum}
+                    </Button>
+                  );
+                });
+              })()}
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage(page + 1)}
+              disabled={page >= totalPages || loading}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+
+            {/* Go to page */}
+            <div className="flex items-center space-x-2 ml-4 pl-4 border-l">
+              <span className="text-sm text-muted-foreground">Ir a:</span>
+              <Input
+                type="number"
+                min={1}
+                max={totalPages}
+                value={goToPageValue}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setGoToPageValue(e.target.value)}
+                onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                  if (e.key === 'Enter') {
+                    const pageNum = parseInt(goToPageValue);
+                    if (pageNum >= 1 && pageNum <= totalPages) {
+                      setPage(pageNum);
+                      setGoToPageValue('');
+                    }
+                  }
+                }}
+                className="w-16 h-8 text-center"
+                placeholder={page.toString()}
+                disabled={loading}
+              />
+            </div>
+          </div>
         </div>
-      </div>
+      )}
       <FeatureProductModal
         open={featureModalOpen}
         onOpenChange={setFeatureModalOpen}
@@ -1080,7 +1157,8 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
         isCurrentlyFeatured={selectedProductForFeature?.isFeatured || false}
         currentFeaturedApplicationId={selectedProductForFeature?.featuredApplicationId || null}
         onSuccess={async () => {
-          await getProducts();
+          // Refresh current page
+          setPage(page);
           // Force a re-render by updating the selected product state
           if (selectedProductForFeature) {
             // Refetch the specific product to get updated featured status
