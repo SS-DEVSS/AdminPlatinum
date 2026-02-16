@@ -76,6 +76,7 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
   const [selectedProductForFeature, setSelectedProductForFeature] = useState<Product | null>(null);
   const [selectedProductApplications, setSelectedProductApplications] = useState<Application[]>([]);
   const [filePickerOpen, setFilePickerOpen] = useState(false);
+  const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
 
   let { attributes } = category || {};
   const { products, loading, getProducts, getProductById } = useProducts();
@@ -95,6 +96,7 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
   const handleImageClick = (variant: Variant) => {
     setSelectedVariant(variant);
     setImageFile({} as File); // Reset file when opening dialog
+    setSelectedImageUrl(null); // Reset selected image URL
     lastUploadedFileRef.current = ""; // Reset last uploaded file
     uploadInProgressRef.current = false; // Reset upload flag
     setIsUploading(false);
@@ -109,6 +111,9 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
 
   // Obtener la URL de la imagen actual del variant seleccionado
   const getCurrentImageUrl = (): string | undefined => {
+    // If we have a selected image URL (from file picker), show that first
+    if (selectedImageUrl) return selectedImageUrl;
+
     if (!selectedVariant) return undefined;
     const images = selectedVariant.images;
     if (images && Array.isArray(images) && images.length > 0) {
@@ -161,7 +166,11 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
   const handleFileSelect = async (fileUrl: string) => {
     if (!selectedVariant) return;
 
+    // Show preview immediately
+    setSelectedImageUrl(fileUrl);
+    setFilePickerOpen(false);
     setIsUploading(true);
+
     try {
       const isPseudoVariant = selectedVariant.id === selectedVariant.idProduct;
 
@@ -191,15 +200,42 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
         await getProducts();
       }
 
-      setImageDialogOpen(false);
-      setImageFile({} as File);
-      setSelectedVariant(null);
+      // Update the variant's image URL in local state for immediate preview
+      setMappedData((prevData) => {
+        return prevData.map((variant) => {
+          if (variant.id === selectedVariant.id) {
+            const existingImages = variant.images || [];
+            const lastOrder = existingImages.length > 0 && existingImages[existingImages.length - 1]?.order !== undefined
+              ? existingImages[existingImages.length - 1].order
+              : -1;
+            const newImage = {
+              id: `temp-${Date.now()}`,
+              url: fileUrl,
+              order: lastOrder + 1,
+            };
+            return {
+              ...variant,
+              images: [...existingImages, newImage],
+            } as Variant;
+          }
+          return variant;
+        });
+      });
+
+      // Close dialog after a short delay to show success
+      setTimeout(() => {
+        setImageDialogOpen(false);
+        setImageFile({} as File);
+        setSelectedVariant(null);
+        setSelectedImageUrl(null);
+      }, 500);
     } catch (error: any) {
       toast({
         title: "Error al actualizar imagen",
         variant: "destructive",
         description: error.response?.data?.error || error.message || "Error desconocido",
       });
+      setSelectedImageUrl(null);
     } finally {
       setIsUploading(false);
     }
@@ -870,7 +906,12 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
               }}
             />
             {(uploading || isUploading) && (
-              <p className="text-sm text-muted-foreground mt-2">Subiendo imagen...</p>
+              <div className="mt-2 flex items-center gap-2">
+                <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                <p className="text-sm text-muted-foreground">
+                  {selectedImageUrl ? "Asociando imagen al producto..." : "Subiendo imagen..."}
+                </p>
+              </div>
             )}
           </div>
           <DialogFooter className="flex flex-row justify-between sm:justify-between">
