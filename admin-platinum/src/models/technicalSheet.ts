@@ -8,6 +8,8 @@ export interface TechnicalSheet {
   imgUrl?: string | null;
   description: string;
   variant?: Variant | null;
+  /** Productos relacionados (desde el backend) */
+  products?: Array<{ id: string; name: string }> | null;
 }
 
 /** **/

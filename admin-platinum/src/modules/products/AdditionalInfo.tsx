@@ -1,24 +1,20 @@
 import DocumentsCard from "@/components/products/DocumentsCard";
-import NotesCard from "@/components/products/NotesCard";
 import { useEffect } from "react";
-import { Note } from "@/models/note";
 import { Document as DocumentType } from "@/models/technicalSheet";
 
 type AdditionalInfoInterface = {
   setCanContinue: React.Dispatch<React.SetStateAction<boolean>>;
   product?: any | null;
-  onNotesChange?: (notes: Note[]) => void;
   onDocumentsChange?: (documents: DocumentType[]) => void;
 };
 
-const AdditionalInfo = ({ setCanContinue, product, onNotesChange, onDocumentsChange }: AdditionalInfoInterface) => {
+const AdditionalInfo = ({ setCanContinue, product, onDocumentsChange }: AdditionalInfoInterface) => {
   useEffect(() => {
     setCanContinue(true);
   }, []);
 
   return (
     <section className="flex flex-col md:flex-row justify-between gap-3 w-full">
-      <NotesCard product={product} onNotesChange={onNotesChange} />
       <DocumentsCard product={product} onDocumentsChange={onDocumentsChange} />
     </section>
   );

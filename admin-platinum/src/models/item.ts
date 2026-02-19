@@ -9,7 +9,6 @@ import { TechnicalSheet } from "./technicalSheet";
 //   stockQuantity: number | null;
 //   attributeValues?: AttributeValue[];
 //   images?: VariantImage[];
-//   notes?: Note[] | null;
 //   techSheets?: TechnicalSheet[] | null;
 //   kitItems?: Variant[] | null;
 //   idProduct?: string;
@@ -23,7 +22,6 @@ export type Variant = {
   stockQuantity: number | null;
   attributeValues?: [];
   images?: Image[];
-  notes?: [] | null;
   techSheets?: TechnicalSheet[] | null;
   kitItems?: Variant[] | null;
   idProduct?: string;

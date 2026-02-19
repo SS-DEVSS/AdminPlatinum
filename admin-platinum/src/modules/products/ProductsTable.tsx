@@ -503,7 +503,6 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
             type: item.type, // Include type from item
             price: 0,
             stockQuantity: 0,
-            notes: [],
             technicalSheets: [],
             images: itemImages, // Use images from item if available
             kitItems: [],

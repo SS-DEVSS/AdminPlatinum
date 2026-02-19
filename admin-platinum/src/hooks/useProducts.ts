@@ -1,10 +1,12 @@
 import { Item } from "@/models/product";
 import axiosClient from "@/services/axiosInstance";
+import { useToast } from "@/hooks/use-toast";
 // import { productsSample } from "@/sampleData/products";
 import { useEffect, useState } from "react";
 
 export const useProducts = () => {
   const client = axiosClient();
+  const { toast } = useToast();
 
   const [products, setProducts] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true); // Start with true to show loader initially
@@ -33,8 +35,17 @@ export const useProducts = () => {
       }
 
       setProducts(allProducts);
-    } catch (error) {
+    } catch (error: any) {
       console.error('[useProducts] Error fetching products:', error);
+      const msg = error?.message || "";
+      const isTimeout = /timeout|ECONNABORTED/i.test(msg);
+      toast({
+        title: isTimeout ? "Tiempo de espera agotado" : "Error al cargar productos",
+        description: isTimeout
+          ? "El servidor no respondió. Comprueba que el backend esté en ejecución (ej. puerto 4000) y VITE_API_BASE_URL."
+          : "No se pudieron cargar los productos.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
