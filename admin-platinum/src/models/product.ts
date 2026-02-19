@@ -13,6 +13,8 @@ export type Item = {
     id: string;
     name: string;
   };
+  idSubcategory?: string | null;
+  subcategory?: { id: string; name: string } | null;
   references: Reference[];
   variants?: Variant[];
   attributeValues: AttributeValue[];
@@ -63,6 +65,8 @@ export type Product = {
   notes: Note[];
   documents: Document[];
   idCategory: Category["id"];
+  idSubcategory?: string | null;
+  subcategory?: { id: string; name: string } | null;
   references: Reference[];
   variants?: ProductVariant[];
   attributes?: CategoryAttributesTypes[];

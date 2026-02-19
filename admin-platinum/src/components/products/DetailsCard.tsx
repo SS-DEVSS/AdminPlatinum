@@ -25,6 +25,8 @@ import {
 } from "@/components/ui/dialog";
 import { useCategoryContext } from "@/context/categories-context";
 import { useBrands } from "@/hooks/useBrands";
+import { useSubcategories } from "@/hooks/useSubcategories";
+import type { SubcategoryTreeNode } from "@/models/subcategory";
 import { detailsType } from "@/hooks/useFormProduct";
 import { Product } from "@/models/product";
 import MyDropzone from "@/components/Dropzone";
@@ -43,9 +45,27 @@ type DetailsCardProps = {
   product?: Product | null;
 };
 
+function flattenSubcategoryTree(
+  nodes: SubcategoryTreeNode[],
+  path: string[] = []
+): { id: string; name: string; label: string }[] {
+  const result: { id: string; name: string; label: string }[] = [];
+  for (const node of nodes) {
+    const currentPath = [...path, node.name];
+    const label = currentPath.join(" › ");
+    result.push({ id: node.id, name: node.name, label });
+    if (node.children?.length) {
+      result.push(...flattenSubcategoryTree(node.children, currentPath));
+    }
+  }
+  return result;
+}
+
 const DetailsCard = ({ state, setState, product }: DetailsCardProps) => {
   const { brands } = useBrands();
   const { categories } = useCategoryContext();
+  const { getTree } = useSubcategories();
+  const [subcategories, setSubcategories] = useState<{ id: string; name: string; label: string }[]>([]);
   const [featureModalOpen, setFeatureModalOpen] = useState(false);
   const { uploadFile, uploading } = useS3FileManager();
   const { toast } = useToast();
@@ -56,27 +76,19 @@ const DetailsCard = ({ state, setState, product }: DetailsCardProps) => {
   const [previewImageUrl, setPreviewImageUrl] = useState<string>("");
   const [filePickerOpen, setFilePickerOpen] = useState(false);
 
-  // Update imageUrl when state.imgUrl changes (e.g., when loading product data)
   useEffect(() => {
-    if (state.imgUrl && !imageFile) {
-      setImageUrl(state.imgUrl);
-    }
+    if (state.imgUrl && !imageFile) setImageUrl(state.imgUrl);
   }, [state.imgUrl, imageFile]);
 
-  // When editing a product with an existing image, set imageFile to null so MyDropzone can display it
   useEffect(() => {
     if (product && state.imgUrl) {
-      // Only set to null if imageFile is not already null and not a valid File
       setImageFile((currentFile) => {
-        if (currentFile && !(currentFile instanceof File && currentFile.name)) {
-          return null; // Ensure imageFile is null so currentImageUrl can be displayed
-        }
+        if (currentFile && !(currentFile instanceof File && currentFile.name)) return null;
         return currentFile;
       });
     }
   }, [product, state.imgUrl, imageUrl, imageFile]);
 
-  // Update brand from category when category changes or when component loads with a category
   useEffect(() => {
     if (state.category) {
       const categoryId = typeof state.category === 'string' ? state.category : state.category.id;
@@ -106,9 +118,20 @@ const DetailsCard = ({ state, setState, product }: DetailsCardProps) => {
     }));
   };
 
+  const categoryId = typeof state.category === "string" ? state.category : state.category?.id;
+
+  useEffect(() => {
+    if (!categoryId) {
+      setSubcategories([]);
+      return;
+    }
+    getTree(categoryId).then((tree) =>
+      setSubcategories(flattenSubcategoryTree(tree))
+    );
+  }, [categoryId, getTree]);
+
   const handleCategoryChange = (value: string) => {
     const selectedCategory = categories.find((cat) => cat.id === value);
-    // Get brand from category - use first brand if available
     const categoryBrandId = selectedCategory?.brands && selectedCategory.brands.length > 0
       ? selectedCategory.brands[0].id || ""
       : "";
@@ -116,7 +139,16 @@ const DetailsCard = ({ state, setState, product }: DetailsCardProps) => {
     setState((prevForm) => ({
       ...prevForm,
       category: selectedCategory ? { id: selectedCategory.id, name: selectedCategory.name } : null,
-      brand: categoryBrandId, // Set brand from category
+      subcategory: null,
+      brand: categoryBrandId,
+    }));
+  };
+
+  const handleSubcategoryChange = (value: string) => {
+    const selected = subcategories.find((s) => s.id === value);
+    setState((prevForm) => ({
+      ...prevForm,
+      subcategory: selected ? { id: selected.id, name: selected.label } : null,
     }));
   };
 
@@ -237,11 +269,9 @@ const DetailsCard = ({ state, setState, product }: DetailsCardProps) => {
               onChange={handleFormChange}
             />
           </div>
-          <section className="flex gap-4">
-            <div className="flex flex-col gap-3 w-full">
-              <Label htmlFor="brand">
-                Marca
-              </Label>
+          <section className="flex flex-wrap gap-4">
+            <div className="flex flex-col gap-3 min-w-[200px] flex-1">
+              <Label htmlFor="brand">Marca</Label>
               <Select value={state.brand || "none"} disabled>
                 <SelectTrigger className="w-full bg-muted cursor-not-allowed">
                   <SelectValue placeholder="Selecciona una marca (opcional)" />
@@ -249,9 +279,7 @@ const DetailsCard = ({ state, setState, product }: DetailsCardProps) => {
                 <SelectContent>
                   <SelectGroup>
                     <SelectLabel>Marcas</SelectLabel>
-                    <SelectItem value="none">
-                      Sin marca
-                    </SelectItem>
+                    <SelectItem value="none">Sin marca</SelectItem>
                     {brands.map((brand) => (
                       <SelectItem key={brand.id} value={brand.id || ""}>
                         {brand.name}
@@ -264,7 +292,7 @@ const DetailsCard = ({ state, setState, product }: DetailsCardProps) => {
                 La marca se asigna automáticamente desde la categoría seleccionada
               </p>
             </div>
-            <div className="flex flex-col gap-3 w-full">
+            <div className="flex flex-col gap-3 min-w-[200px] flex-1">
               <Label htmlFor="category">
                 Categoría<span className="text-redLabel">*</span>
               </Label>
@@ -283,10 +311,7 @@ const DetailsCard = ({ state, setState, product }: DetailsCardProps) => {
                   <SelectGroup>
                     <SelectLabel>Categorías</SelectLabel>
                     {categories.map((category) => (
-                      <SelectItem
-                        key={category.id}
-                        value={category.id || ""}
-                      >
+                      <SelectItem key={category.id} value={category.id || ""}>
                         {category.name}
                       </SelectItem>
                     ))}
@@ -295,6 +320,36 @@ const DetailsCard = ({ state, setState, product }: DetailsCardProps) => {
               </Select>
             </div>
           </section>
+          {categoryId && (
+            <div className="flex flex-col gap-3 w-full max-w-full">
+              <Label htmlFor="subcategory">Subcategoría (opcional)</Label>
+              <Select
+                onValueChange={(v) => handleSubcategoryChange(v === "__none__" ? "" : v)}
+                value={state.subcategory?.id ? String(state.subcategory.id) : "__none__"}
+              >
+                <SelectTrigger
+                  className="w-full min-h-10 text-left"
+                  title={state.subcategory?.name ?? undefined}
+                >
+                  <SelectValue placeholder="Selecciona una subcategoría" />
+                </SelectTrigger>
+                <SelectContent className="max-w-[var(--radix-select-trigger-width)]">
+                  <SelectGroup>
+                    <SelectLabel>Subcategorías</SelectLabel>
+                    <SelectItem value="__none__">Ninguna</SelectItem>
+                    {subcategories.map((sub) => (
+                      <SelectItem key={sub.id} value={sub.id} className="whitespace-normal py-2">
+                        {sub.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Puedes elegir una subcategoría de cualquier nivel. Se muestra la ruta completa (ej. Raíz › Nivel 2 › Nivel 3).
+              </p>
+            </div>
+          )}
           <div className="grid gap-3">
             <div className="flex items-center justify-between">
               <Label htmlFor="image">

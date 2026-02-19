@@ -71,16 +71,24 @@ const NewProduct = () => {
             brandId = fullCategory.brands[0].id || "";
           }
 
+          const subcategoryFromProduct = (product as any).idSubcategory
+            ? {
+                id: (product as any).idSubcategory,
+                name: (product as any).subcategory?.name ?? "",
+              }
+            : null;
+
           setDetailsState({
             id: product.id,
             name: product.name,
             type: product.type,
             description: product.description || "",
-            category: fullCategory, // Use the full category object found
+            category: fullCategory,
+            subcategory: subcategoryFromProduct,
             references: [], // Handled in referencesState
             sku: product.sku || "",
             brand: brandId,
-            imgUrl: firstImage, // Set initial image URL
+            imgUrl: firstImage,
           });
 
           // 2. Populate Attributes
@@ -397,11 +405,11 @@ const NewProduct = () => {
       const currentReferenceIds = referencesState.references.map(ref => ref.id).filter((id): id is string => !!id);
 
       if (isEditMode && id) {
-        // Update product - ProductUpdateRequest format
-        // Always include name and description (they should always have values)
+        const idSubcategory = detailsState.subcategory?.id ?? null;
         const productPayload: any = {
           name: detailsState.name || "",
           description: detailsState.description || null,
+          idSubcategory,
         };
 
         // Compare references with existing product to only send changes
@@ -485,9 +493,10 @@ const NewProduct = () => {
           description: detailsState.description || null,
           type: productType,
           idCategory: categoryId,
-          references: [], // References should be imported separately
+          idSubcategory: detailsState.subcategory?.id ?? null,
+          references: [],
           attributes: Array.isArray(formattedAttributes) ? formattedAttributes : [],
-          variants: variants, // Always include variants array (even if empty for KIT products)
+          variants: variants,
         };
 
         // If there's an image, add it to the payload

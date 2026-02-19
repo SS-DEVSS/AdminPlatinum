@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Tooltip,
@@ -42,6 +41,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import Loader from "@/components/Loader";
 import FilePickerModal from "@/components/files/FilePickerModal";
+import SubcategoryTree from "./SubcategoryTree";
 
 type CategoryCUProps = {
   category?: Category | null;
@@ -81,7 +81,6 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [savingStartTime, setSavingStartTime] = useState<number | null>(null);
-
 
   useEffect(() => {
     if (selectedBrand) {
@@ -425,8 +424,8 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
           </div>
         </header>
         <section>
-          <section className="mt-4 flex flex-col md:flex-row justify-between gap-3 w-full">
-            <Card x-chunk="dashboard-07-chunk-0" className="w-1/2">
+          <section className="mt-4 flex flex-col md:flex-row gap-3 w-full">
+            <Card x-chunk="dashboard-07-chunk-0" className="w-full md:w-1/2">
               <CardHeader>
                 <CardTitle>Detalles</CardTitle>
                 <CardDescription>
@@ -551,29 +550,30 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
                 </div>
               </CardContent>
             </Card>
-            <section className="w-1/2 flex flex-col justify-between gap-4">
-              <Card x-chunk="dashboard-07-chunk-0" className="flex-grow">
+            <div className="w-full md:w-1/2 flex flex-col gap-4 min-w-0 md:max-h-[calc(100vh-7rem)] md:overflow-y-auto">
+              <Card x-chunk="dashboard-07-chunk-0" className="self-start w-full">
                 <CardHeader>
                   <div className="flex items-center gap-2">
                     <CardTitle>Asociar a Marcas</CardTitle>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Las marcas asociadas a esta categoría. Los productos de estas marcas podrán usar esta categoría como template</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                  <CardDescription>
-                    Selecciones una marca si desea asociarla a la categoría.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <CardTitle className="text-base">Marcas Asociadas:</CardTitle>
-                  <section className="flex mt-4 gap-3 flex-wrap">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Las marcas asociadas a esta categoría. Los productos de estas marcas podrán usar esta categoría como template.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <CardDescription>
+                  Seleccione las marcas a asociar con esta categoría.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4 max-h-[320px] overflow-y-auto">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-2">Marcas asociadas</p>
+                  <section className="flex gap-2 flex-wrap">
                     {[...selectedBrandIds].map((id) => {
                       const brand = brands.find((brand) => brand.id === id);
                       return brand ? (
@@ -590,44 +590,42 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
                       ) : null;
                     })}
                   </section>
-                </CardContent>
+                </div>
                 {(() => {
-                  // Filter to only show brands that are NOT selected
                   const unselectedBrands = brands.filter((brand) => !selectedBrandIds.has(brand.id!));
-
-                  // Only render the section if there are unselected brands
-                  if (unselectedBrands.length === 0) {
-                    return null;
-                  }
-
+                  if (unselectedBrands.length === 0) return null;
                   return (
-                    <>
-                      <Separator />
-                      <CardContent>
-                        <CardTitle className="text-base my-5">
-                          Marcas por explorar:
-                        </CardTitle>
-                        <section className="flex gap-3 flex-wrap">
-                          {unselectedBrands.map((brand) => (
-                            <Badge
-                              key={brand.id}
-                              variant="secondary"
-                              className="text-sm font-medium px-4 py-2 flex items-center gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer"
-                            >
-                              <span className="capitalize">{brand.name.toLowerCase()}</span>
-                              <PlusCircleIcon
-                                onClick={() => toggleBrandSelection(brand.id!)}
-                                className="h-3.5 w-3.5 hover:scale-110 transition-transform"
-                              />
-                            </Badge>
-                          ))}
-                        </section>
-                      </CardContent>
-                    </>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground mb-2">Agregar marca</p>
+                      <section className="flex gap-2 flex-wrap">
+                        {unselectedBrands.map((brand) => (
+                          <Badge
+                            key={brand.id}
+                            variant="secondary"
+                            className="text-sm font-medium px-4 py-2 flex items-center gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer"
+                          >
+                            <span className="capitalize">{brand.name.toLowerCase()}</span>
+                            <PlusCircleIcon
+                              onClick={() => toggleBrandSelection(brand.id!)}
+                              className="h-3.5 w-3.5 hover:scale-110 transition-transform"
+                            />
+                          </Badge>
+                        ))}
+                      </section>
+                    </div>
                   );
                 })()}
-              </Card>
-            </section>
+              </CardContent>
+            </Card>
+              {category?.id && (
+                <div className="w-full min-w-0">
+                  <SubcategoryTree
+                    categoryId={category.id}
+                    categoryName={category.name ?? ""}
+                  />
+                </div>
+              )}
+            </div>
           </section>
         </section>
         <section className="mt-4 flex flex-col gap-3 w-full pb-24">
