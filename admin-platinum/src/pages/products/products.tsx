@@ -40,7 +40,7 @@ function flattenSubcategoryTree(nodes: SubcategoryTreeNode[], path: string[] = [
 
 const Products = () => {
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const { categories = [] } = useCategories();
   const { getTree } = useSubcategories();
   const [searchFilter, setSearchFilter] = useState(() => {
