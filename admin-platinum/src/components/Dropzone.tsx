@@ -8,9 +8,10 @@ interface MyDropzoneProps {
   className?: string;
   currentImageUrl?: string; // URL de la imagen actual (si existe)
   onImageClick?: () => void; // Callback para cuando se hace click en la imagen actual
+  emptyTextStyle?: "default" | "reference"; // reference = dos líneas, segunda en azul subrayado
 }
 
-const MyDropzone = ({ file, fileSetter, type, className, currentImageUrl, onImageClick }: MyDropzoneProps) => {
+const MyDropzone = ({ file, fileSetter, type, className, currentImageUrl, onImageClick, emptyTextStyle = "default" }: MyDropzoneProps) => {
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
@@ -74,64 +75,48 @@ const MyDropzone = ({ file, fileSetter, type, className, currentImageUrl, onImag
     return path.includes("https") ? path.split("/uploads/")[1] : path;
   };
 
-  // Si hay una imagen actual y no se ha seleccionado un nuevo archivo, mostrar layout dividido
-  const showSplitLayout = currentImageUrl && !file && !previewUrl && type === "image";
+  // Si hay una imagen actual y no se ha seleccionado un nuevo archivo, mostrar vista previa en el mismo recuadro
+  const showCurrentImagePreview = currentImageUrl && !file && !previewUrl && type === "image";
   const showPreview = previewUrl && type === "image";
-  const showText = !showSplitLayout && !showPreview;
+  const showText = !showCurrentImagePreview && !showPreview;
 
-  // Si hay layout dividido, renderizar estructura diferente
-  if (showSplitLayout) {
-    return (
-      <div className={`${className} flex flex-col gap-4`}>
-        {/* Instrucciones arriba */}
-        <p className="text-sm text-[#94A3B8] text-center">
-          Haz clic en la imagen para previsualizarla o arrastra/haz clic en la zona de la derecha para subir una nueva imagen
+  const emptyStateContent =
+    emptyTextStyle === "reference" ? (
+      <div className="text-center">
+        <p className="text-muted-foreground leading-8">
+          Arrastra una imagen aquí o
         </p>
+        <p className="text-blue-600 underline cursor-pointer mt-0.5">
+          haz clic para seleccionar
+        </p>
+      </div>
+    ) : (
+      <p className={`${isDragActive ? "text-[#4E5154]" : "text-[#94A3B8]"} text-center leading-8`}>
+        Arrastra una imagen aquí o <br />
+        <span className="underline hover:cursor-pointer">haz clic para seleccionar</span>
+      </p>
+    );
 
-        {/* Contenedor con imagen a la izquierda y dropzone a la derecha */}
-        <div className="flex gap-4">
-          {/* Imagen actual a la izquierda */}
-          <div className="flex-1 flex justify-center items-center min-h-[300px] border border-gray-200 rounded-lg bg-white p-4">
-            <img
-              src={currentImageUrl}
-              alt="Imagen actual"
-              className="max-w-full max-h-full w-full h-full object-contain rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (onImageClick) {
-                  onImageClick();
-                }
-              }}
-            />
-          </div>
-
-          {/* Dropzone a la derecha */}
-          <div
-            {...getRootProps()}
-            className={`flex-1 border border-dashed rounded-lg p-8 min-h-[300px] flex flex-col items-center justify-center ${isDragActive
-                ? "bg-[#F5F9FD] border-[#0bbff4]"
-                : "bg-gray-50"
-              }`}
-          >
-            <input {...getInputProps()} />
-            {isDragActive ? (
-              <p className="text-[#4E5154] text-center">
-                Suelta la imagen aquí...
-              </p>
-            ) : (
-              <div className="text-center">
-                <p className="text-[#94A3B8] leading-8">
-                  Arrastra una imagen aquí o <br />
-                  <span className="underline hover:cursor-pointer">
-                    haz clic para seleccionar
-                  </span>
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {error && <p className="text-center text-red-500">{error}</p>}
+  // Vista previa cuando ya hay imagen guardada: mismo recuadro con la imagen
+  if (showCurrentImagePreview) {
+    return (
+      <div
+        {...getRootProps()}
+        className={`${className} flex flex-col items-center justify-center min-h-[200px] cursor-pointer ${isDragActive ? "bg-[#F5F9FD] border-[#0bbff4]" : ""}`}
+      >
+        <input {...getInputProps()} />
+        <img
+          src={currentImageUrl}
+          className="max-w-full max-h-[280px] object-contain rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+          onClick={(e) => {
+            e.stopPropagation();
+            onImageClick?.();
+          }}
+        />
+        <p className="text-sm text-muted-foreground mt-2 text-center">
+          Arrastra otra imagen o haz clic para cambiar
+        </p>
+        {error && <p className="text-center text-red-500 mt-2">{error}</p>}
       </div>
     );
   }
@@ -174,17 +159,7 @@ const MyDropzone = ({ file, fileSetter, type, className, currentImageUrl, onImag
               </p>
             </div>
           )}
-          {showText && (
-            <p
-              className={`${isDragActive ? "text-[#4E5154]" : "text-[#94A3B8]"
-                } text-center leading-8`}
-            >
-              Arrastra una imagen aquí o <br />{" "}
-              <span className="underline hover:cursor-pointer">
-                haz clic para seleccionar
-              </span>
-            </p>
-          )}
+          {showText && emptyStateContent}
         </>
       )}
 
