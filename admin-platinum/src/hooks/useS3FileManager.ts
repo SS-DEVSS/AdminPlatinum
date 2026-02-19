@@ -18,6 +18,11 @@ export const useS3FileManager = () => {
     // Prevent multiple simultaneous uploads
     if (uploading) {
       console.warn("[useS3FileManager] Upload already in progress");
+      toast({
+        title: "Subida en curso",
+        description: "Espera a que termine la subida anterior.",
+        variant: "default",
+      });
       return;
     }
 
@@ -53,9 +58,17 @@ export const useS3FileManager = () => {
     } catch (e: any) {
       const errorMessage = e.message || "Error uploading file";
       setError(errorMessage);
-      console.error("[useS3FileManager] Upload error:", errorMessage);
       setUploading(false);
-      throw e; // Re-throw to allow caller to handle
+      console.error("[useS3FileManager] Upload error:", errorMessage);
+      const isTimeout = /timeout|ECONNABORTED/i.test(errorMessage);
+      toast({
+        title: isTimeout ? "Tiempo de espera agotado" : "Error al subir",
+        description: isTimeout
+          ? "El servidor no respondió a tiempo. Comprueba que el backend esté en ejecución (ej. puerto 4000) y que la URL en VITE_API_BASE_URL sea correcta."
+          : errorMessage,
+        variant: "destructive",
+      });
+      throw e;
     } finally {
       setUploading(false);
     }

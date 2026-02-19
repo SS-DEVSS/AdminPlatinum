@@ -5,6 +5,9 @@ import tailwindcss from "tailwindcss";
 
 export default defineConfig({
   plugins: [react()],
+  optimizeDeps: {
+    force: true, // Fuerza re-empaquetado al iniciar (evita ver versión vieja del Layout/sidebar)
+  },
   css: {
     postcss: {
       plugins: [tailwindcss()],

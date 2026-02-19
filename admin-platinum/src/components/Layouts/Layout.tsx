@@ -35,9 +35,10 @@ const menuItems: MenuItem[] = [
   { href: "/dashboard/categorias", icon: LayoutGrid, text: "Categorías" },
   { href: "/dashboard/productos", icon: Package, text: "Productos" },
   { href: "/dashboard/productos-destacados", icon: Star, text: "Productos Destacados" },
+  // { href: "/dashboard/boletines", icon: Newspaper, text: "Boletines" },
+  // { href: "/dashboard/blogs", icon: BookOpen, text: "Blogs" },
   { href: "/dashboard/importaciones", icon: Import, text: "Importaciones" },
   { href: "/dashboard/archivos", icon: Folder, text: "Administrador de Archivos" },
-  // { href: "/boletines", icon: Newspaper, text: "Boletínes" },
   // { href: "/noticias", icon: Megaphone, text: "Noticias" },
   // { href: "/banners", icon: Dock, text: "Banners" },
   // { href: "/ajustes", icon: Settings, text: "Ajustes" },
@@ -76,20 +77,20 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
       }
     >
       {!menuLarge ? (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="inline-flex">
               <Icon className="h-4 w-4" />
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{text}</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{text}</p>
+          </TooltipContent>
+        </Tooltip>
       ) : (
         <>
           <Icon className="h-4 w-4" />
-          {menuLarge && <p>{text}</p>}
+          <p>{text}</p>
         </>
       )}
     </NavLink>
@@ -137,7 +138,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
               className={`${!menuLarge ? "items-center flex flex-col" : "px-2 lg:px-4"
                 } text-sm font-medium flex flex-col gap-5 h-full`}
             >
-              <TooltipProvider>
+              <TooltipProvider delayDuration={0}>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <div
@@ -156,20 +157,18 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                     <p>{menuLarge ? "Colapsar menú lateral" : "Expandir menú lateral"}</p>
                   </TooltipContent>
                 </Tooltip>
-              </TooltipProvider>
-              <section className="h-full">
-                {menuItems.map((item) => (
-                  <LinkComponent
-                    key={item.href}
-                    href={item.href}
-                    icon={item.icon}
-                    text={item.text}
-                  />
-                ))}
-              </section>
-              <div className="my-auto py-4">
-                {!menuLarge && (
-                  <TooltipProvider>
+                <section className="flex-1 min-h-0 overflow-y-auto py-1">
+                  {menuItems.map((item) => (
+                    <LinkComponent
+                      key={item.href}
+                      href={item.href}
+                      icon={item.icon}
+                      text={item.text}
+                    />
+                  ))}
+                </section>
+                <div className="my-auto py-4 shrink-0">
+                  {!menuLarge && (
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <div
@@ -183,9 +182,9 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                         <p>Cerrar Sesión</p>
                       </TooltipContent>
                     </Tooltip>
-                  </TooltipProvider>
-                )}
-              </div>
+                  )}
+                </div>
+              </TooltipProvider>
             </nav>
           </div>
           {!menuLarge ? (
