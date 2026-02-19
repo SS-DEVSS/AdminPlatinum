@@ -8,6 +8,15 @@ importers:
 
   .:
     dependencies:
+      '@lexical/code':
+        specifier: ^0.40.0
+        version: 0.40.0
+      '@lexical/link':
+        specifier: ^0.40.0
+        version: 0.40.0
+      '@lexical/list':
+        specifier: ^0.40.0
+        version: 0.40.0
       '@lexical/markdown':
         specifier: ^0.40.0
         version: 0.40.0
@@ -15,6 +24,9 @@ importers:
         specifier: ^0.40.0
         version: 0.40.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(yjs@13.6.29)
       '@lexical/rich-text':
+        specifier: ^0.40.0
+        version: 0.40.0
+      '@lexical/selection':
         specifier: ^0.40.0
         version: 0.40.0
       '@radix-ui/react-accordion':

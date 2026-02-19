@@ -10,9 +10,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@lexical/code": "^0.40.0",
+    "@lexical/link": "^0.40.0",
+    "@lexical/list": "^0.40.0",
     "@lexical/markdown": "^0.40.0",
     "@lexical/react": "^0.40.0",
     "@lexical/rich-text": "^0.40.0",
+    "@lexical/selection": "^0.40.0",
     "@radix-ui/react-accordion": "^1.2.2",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-checkbox": "^1.1.3",
