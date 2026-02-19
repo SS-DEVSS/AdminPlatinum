@@ -16,6 +16,7 @@ import { Button } from "../ui/button";
 import EditApplicationDialog from "./EditApplicationDialog";
 import { CategoryAtributes } from "@/models/category";
 import { useCategoryContext } from "@/context/categories-context";
+import axiosClient from "@/services/axiosInstance";
 import {
   Table,
   TableBody,
@@ -264,7 +265,7 @@ const ApplicationsCard = ({ state, setState, product }: ApplicationsCardProps) =
     // Refresh applications from backend if product ID is available
     if (product?.id) {
       try {
-        const client = (await import("@/services/axiosInstance")).default();
+        const client = axiosClient();
         const response = await client.get(`/applications/product/${product.id}`);
         if (response.data?.applications) {
           // Format applications before setting state

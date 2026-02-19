@@ -1,5 +1,6 @@
 import { ReactNode, useState, useContext, createContext, useEffect } from "react";
 import { supabase } from "../services/supabase";
+import axiosClient from "../services/axiosInstance";
 import { Session, User, AuthChangeEvent } from "@supabase/supabase-js";
 
 interface AuthContextTypes {
@@ -70,8 +71,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     // Validate that user exists in Users table
     // The authMiddleware will return 401 if user doesn't exist in Users table
-    const axios = (await import("../services/axiosInstance")).default;
-    const client = axios();
+    const client = axiosClient();
 
     try {
       // Use /users endpoint which requires authMiddleware
