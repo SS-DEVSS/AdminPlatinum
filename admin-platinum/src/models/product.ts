@@ -1,6 +1,5 @@
 import { Category, CategoryAttributesTypes } from "./category";
 import { Image } from "./image";
-import { Note } from "./note";
 import { Reference } from "./reference";
 import { TechnicalSheet } from "./technicalSheet";
 
@@ -30,7 +29,6 @@ export type Variant = {
   sku: string;
   price: number;
   stockQuantity: number;
-  notes: Note[];
   technicalSheets: TechnicalSheet[];
   images: Image[];
   kitItems: Variant[];
@@ -62,7 +60,6 @@ export type Product = {
   id: string;
   sku: string;
   description: string;
-  notes: Note[];
   documents: Document[];
   idCategory: Category["id"];
   idSubcategory?: string | null;

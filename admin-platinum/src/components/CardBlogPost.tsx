@@ -19,9 +19,11 @@ type CardTemplateProps = {
   blogPost?: BlogPost;
   getItems?: () => void;
   deleteItem?: (id: BlogPost["id"]) => void;
+  /** Ruta a la que ir al editar (ej. /dashboard/blogs/editar). Si no se pasa, usa /dashboard/noticias/editar */
+  editPath?: string;
 };
 
-const CardBlogPost = ({ blogPost, deleteItem }: CardTemplateProps) => {
+const CardBlogPost = ({ blogPost, deleteItem, editPath = "/dashboard/noticias/editar" }: CardTemplateProps) => {
   const { openModal } = useDeleteModal();
   const { getBlogPostById } = newsContext();
   const { deleteFile } = useS3FileManager();
@@ -58,26 +60,26 @@ const CardBlogPost = ({ blogPost, deleteItem }: CardTemplateProps) => {
                 <DropdownMenuSeparator />
 
                 <DropdownMenuGroup>
-                  <Link to="/dashboard/noticias/editar">
+                  <Link to={`${editPath}/${blogPost?.id}`}>
                     <DropdownMenuItem
                       onClick={() => handleEditBlogPost(blogPost?.id!)}
                     >
                       <Pencil className="mr-2 h-4 w-4" />
-                      <span>Editar Noticia</span>
+                      <span>Editar</span>
                     </DropdownMenuItem>
                   </Link>
                   <DropdownMenuItem
                     onClick={() =>
                       openModal({
-                        title: "Noticia",
+                        title: "Blog",
                         description:
-                          "Estas seguro que deseas eliminar esta noticia?",
+                          "¿Estás seguro de que deseas eliminar este blog?",
                         handleDelete: handleDeleteBlogPost,
                       })
                     }
                   >
                     <Trash className="mr-2 h-4 w-4" />
-                    <span>Eliminar Noticia</span>
+                    <span>Eliminar</span>
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
               </DropdownMenuContent>

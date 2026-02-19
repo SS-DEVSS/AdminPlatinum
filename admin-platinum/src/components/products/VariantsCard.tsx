@@ -50,7 +50,7 @@ const VariantsCard = ({ product }: VariantsCardProps) => {
       <CardHeader>
         <CardTitle>Variantes</CardTitle>
         <CardDescription>
-          Agrega cualquier tipo de notas relevantes para los visitantes.
+          Agrega y gestiona las variantes del producto.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-1 py-0">

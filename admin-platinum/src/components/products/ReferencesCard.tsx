@@ -16,6 +16,7 @@ import { Button } from "../ui/button";
 import EditReferenceDialog from "./EditReferenceDialog";
 import { CategoryAtributes } from "@/models/category";
 import { useCategoryContext } from "@/context/categories-context";
+import axiosClient from "@/services/axiosInstance";
 
 type ReferencesCardProps = {
   state: {
@@ -120,7 +121,7 @@ const ReferencesCard = ({ state, setState, product }: ReferencesCardProps) => {
     // Refresh references from backend if product ID is available
     if (product?.id) {
       try {
-        const client = (await import("@/services/axiosInstance")).default();
+        const client = axiosClient();
         const response = await client.get(`/references/product/${product.id}`);
         if (response.data?.references) {
           setState({ references: response.data.references });

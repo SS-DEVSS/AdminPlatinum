@@ -46,8 +46,8 @@ export const useTs = () => {
   const getTechnicalSheets = async (): Promise<TechnicalSheet[] | null> => {
     try {
       setLoading(true);
-      const data = await client.get("/ts?page=1&pageSize=10");
-      setTechnicalSheets(data.data.technicalSheets);
+      const data = await client.get("/ts?page=1&pageSize=100");
+      setTechnicalSheets(data.data.technicalSheets || []);
       return data.data.technicalSheets;
     } catch (error) {
       console.error("Error fetching technical sheets:", error);
@@ -83,7 +83,7 @@ export const useTs = () => {
         variant: "success",
       });
     } catch (error: any) {
-      setErrorMsg(error.response.data.error);
+      setErrorMsg(error.response?.data?.error);
       toast({
         title: "Error al eliminar boletín",
         variant: "destructive",
@@ -92,6 +92,48 @@ export const useTs = () => {
     } finally {
       setLoading(false);
       setErrorMsg("");
+    }
+  };
+
+  const addProductsToTechSheet = async (
+    id: TechnicalSheet["id"],
+    productIds: string[]
+  ) => {
+    if (!id || productIds.length === 0) return;
+    try {
+      setLoading(true);
+      await client.post(`/ts/${id}/products`, { productIds }, { headers: { "Content-Type": "application/json" } });
+      await getTechnicalSheets();
+      toast({ title: "Productos agregados al boletín.", variant: "success" });
+    } catch (error: any) {
+      toast({
+        title: "Error al agregar productos",
+        variant: "destructive",
+        description: error.response?.data?.error || error.message,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const removeProductsFromTechSheet = async (
+    id: TechnicalSheet["id"],
+    productIds: string[]
+  ) => {
+    if (!id || productIds.length === 0) return;
+    try {
+      setLoading(true);
+      await client.delete(`/ts/${id}/products`, { data: { productIds } });
+      await getTechnicalSheets();
+      toast({ title: "Productos quitados del boletín.", variant: "success" });
+    } catch (error: any) {
+      toast({
+        title: "Error al quitar productos",
+        variant: "destructive",
+        description: error.response?.data?.error || error.message,
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -129,7 +171,8 @@ export const useTs = () => {
     addTechnicalSheet,
     getTechnicalSheets,
     getTsById,
-    // updateTechnicalSheet,
     deleteTechnicalSheet,
+    addProductsToTechSheet,
+    removeProductsFromTechSheet,
   };
 };

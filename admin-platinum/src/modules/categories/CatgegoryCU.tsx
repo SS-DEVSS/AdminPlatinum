@@ -81,6 +81,7 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [savingStartTime, setSavingStartTime] = useState<number | null>(null);
+  const [brandSearchQuery, setBrandSearchQuery] = useState("");
 
   useEffect(() => {
     if (selectedBrand) {
@@ -216,19 +217,16 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
   };
 
   const toggleBrandSelection = (brandId: string) => {
-    setForm({
-      ...form,
-      brands: [...form.brands, brandId],
-    });
-    setSelectedBrandIds((prev) => {
-      const updatedSet = new Set(prev);
-      if (updatedSet.has(brandId)) {
-        updatedSet.delete(brandId);
-      } else {
-        updatedSet.add(brandId);
-      }
-      return updatedSet;
-    });
+    const isSelected = selectedBrandIds.has(brandId);
+    const newSet = new Set(selectedBrandIds);
+    if (isSelected) {
+      newSet.delete(brandId);
+      setForm((f) => ({ ...f, brands: f.brands.filter((id) => id !== brandId) }));
+    } else {
+      newSet.add(brandId);
+      setForm((f) => ({ ...f, brands: [...f.brands, brandId] }));
+    }
+    setSelectedBrandIds(newSet);
   };
 
   const validateForm = useMemo(
@@ -410,7 +408,7 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
       {isSubmitting && (
         <Loader fullScreen message="Guardando cambios..." />
       )}
-      <main>
+      <main className="max-w-4xl mx-auto px-4 md:px-6">
         <header className="flex justify-between">
           <div className="flex items-center gap-4">
             <Link to="/dashboard/categorias">
@@ -424,8 +422,8 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
           </div>
         </header>
         <section>
-          <section className="mt-4 flex flex-col md:flex-row gap-3 w-full">
-            <Card x-chunk="dashboard-07-chunk-0" className="w-full md:w-1/2">
+          <section className="mt-4 flex flex-col gap-3 w-full">
+            <Card x-chunk="dashboard-07-chunk-0" className="w-full">
               <CardHeader>
                 <CardTitle>Detalles</CardTitle>
                 <CardDescription>
@@ -484,20 +482,68 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
                     />
                   </div>
                   <div className="grid gap-3">
+                    <div className="flex items-center gap-2">
+                      <Label>Marcas asociadas</Label>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Las marcas asociadas a esta categoría. Los productos de estas marcas podrán usar esta categoría como template.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                    <div className="flex flex-wrap gap-2 items-center border rounded-md p-3 min-h-12 bg-muted/30">
+                      {[...selectedBrandIds].map((id) => {
+                        const brand = brands.find((b) => b.id === id);
+                        return brand ? (
+                          <Badge
+                            key={brand.id}
+                            className="text-sm font-medium px-4 py-2 flex items-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer"
+                          >
+                            <span className="capitalize">{brand.name.toLowerCase()}</span>
+                            <XCircleIcon
+                              onClick={() => toggleBrandSelection(brand.id!)}
+                              className="h-3.5 w-3.5 hover:scale-110 transition-transform"
+                            />
+                          </Badge>
+                        ) : null;
+                      })}
+                      <Input
+                        placeholder="Buscar y agregar marca..."
+                        value={brandSearchQuery}
+                        onChange={(e) => setBrandSearchQuery(e.target.value)}
+                        className="flex-1 min-w-[180px] border-0 bg-transparent shadow-none focus-visible:ring-0"
+                      />
+                    </div>
+                    <p className="text-sm text-muted-foreground">Selecciona las marcas a asociar con esta categoría.</p>
+                    {(() => {
+                      const unselectedBrands = brands.filter(
+                        (b) => !selectedBrandIds.has(b.id!) && b.name?.toLowerCase().includes(brandSearchQuery.trim().toLowerCase())
+                      );
+                      if (unselectedBrands.length === 0) return null;
+                      return (
+                        <section className="flex gap-2 flex-wrap">
+                          {unselectedBrands.map((brand) => (
+                            <Badge
+                              key={brand.id}
+                              variant="secondary"
+                              className="text-sm font-medium px-4 py-2 flex items-center gap-2 cursor-pointer hover:bg-secondary/80"
+                              onClick={() => toggleBrandSelection(brand.id!)}
+                            >
+                              <span className="capitalize">{brand.name.toLowerCase()}</span>
+                              <PlusCircleIcon className="h-3.5 w-3.5" />
+                            </Badge>
+                          ))}
+                        </section>
+                      );
+                    })()}
+                  </div>
+                  <div className="grid gap-3">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Label htmlFor="image">Imagen de la Categoría</Label>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>La imagen representativa de la categoría que se mostrará en el catálogo</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
+                      <Label htmlFor="image">Imagen*</Label>
                       <Button
                         variant="outline"
                         size="sm"
@@ -513,13 +559,14 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
                         file={image}
                         fileSetter={setImage}
                         type="image"
-                        className="p-8 min-h-[200px]"
+                        className="p-8 min-h-[200px] border-2 border-dashed border-gray-200 rounded-lg bg-white"
                         currentImageUrl={imageUrl && !image ? imageUrl : undefined}
                         onImageClick={() => {
                           if (imageUrl && !image) {
                             handlePreviewImage(imageUrl);
                           }
                         }}
+                        emptyTextStyle={"reference"}
                       />
                       {imageUrl && !image && category?.id && (
                         <div className="mt-3 flex justify-center gap-2">
@@ -538,7 +585,7 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
                             disabled={uploading}
                             type="button"
                           >
-                            Eliminar Imagen
+                            Eliminar imagen
                           </Button>
                         </div>
                       )}
@@ -550,82 +597,14 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
                 </div>
               </CardContent>
             </Card>
-            <div className="w-full md:w-1/2 flex flex-col gap-4 min-w-0 md:max-h-[calc(100vh-7rem)] md:overflow-y-auto">
-              <Card x-chunk="dashboard-07-chunk-0" className="self-start w-full">
-                <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <CardTitle>Asociar a Marcas</CardTitle>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Las marcas asociadas a esta categoría. Los productos de estas marcas podrán usar esta categoría como template.</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-                <CardDescription>
-                  Seleccione las marcas a asociar con esta categoría.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4 max-h-[320px] overflow-y-auto">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground mb-2">Marcas asociadas</p>
-                  <section className="flex gap-2 flex-wrap">
-                    {[...selectedBrandIds].map((id) => {
-                      const brand = brands.find((brand) => brand.id === id);
-                      return brand ? (
-                        <Badge
-                          className="text-sm font-medium px-4 py-2 flex items-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90 transition-colors duration-200 shadow-sm"
-                          key={brand.id}
-                        >
-                          <span className="capitalize">{brand.name.toLowerCase()}</span>
-                          <XCircleIcon
-                            onClick={() => toggleBrandSelection(brand.id!)}
-                            className="h-3.5 w-3.5 hover:scale-110 transition-transform cursor-pointer"
-                          />
-                        </Badge>
-                      ) : null;
-                    })}
-                  </section>
-                </div>
-                {(() => {
-                  const unselectedBrands = brands.filter((brand) => !selectedBrandIds.has(brand.id!));
-                  if (unselectedBrands.length === 0) return null;
-                  return (
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground mb-2">Agregar marca</p>
-                      <section className="flex gap-2 flex-wrap">
-                        {unselectedBrands.map((brand) => (
-                          <Badge
-                            key={brand.id}
-                            variant="secondary"
-                            className="text-sm font-medium px-4 py-2 flex items-center gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer"
-                          >
-                            <span className="capitalize">{brand.name.toLowerCase()}</span>
-                            <PlusCircleIcon
-                              onClick={() => toggleBrandSelection(brand.id!)}
-                              className="h-3.5 w-3.5 hover:scale-110 transition-transform"
-                            />
-                          </Badge>
-                        ))}
-                      </section>
-                    </div>
-                  );
-                })()}
-              </CardContent>
-            </Card>
-              {category?.id && (
-                <div className="w-full min-w-0">
-                  <SubcategoryTree
-                    categoryId={category.id}
-                    categoryName={category.name ?? ""}
-                  />
-                </div>
-              )}
-            </div>
+            {category?.id && (
+              <div className="w-full min-w-0">
+                <SubcategoryTree
+                  categoryId={category.id}
+                  categoryName={category.name ?? ""}
+                />
+              </div>
+            )}
           </section>
         </section>
         <section className="mt-4 flex flex-col gap-3 w-full pb-24">
@@ -666,7 +645,7 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
         />
       </main>
       <section className="fixed bottom-0 left-0 right-0 bg-background border-t shadow-lg z-50">
-        <div className="container mx-auto px-4 py-4 flex justify-end gap-3">
+        <div className="max-w-4xl mx-auto px-4 md:px-6 py-4 flex justify-end gap-3">
           <Link to="/dashboard/categorias">
             <Button variant={"outline"}>Cancelar</Button>
           </Link>

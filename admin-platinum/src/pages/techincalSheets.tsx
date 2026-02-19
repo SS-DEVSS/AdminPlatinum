@@ -26,61 +26,12 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useS3FileManager } from "@/hooks/useS3FileManager";
 import { useTs } from "@/hooks/useTs";
-import { Variant } from "@/models/item";
+import { useProducts } from "@/hooks/useProducts";
+import { useToast } from "@/hooks/use-toast";
+import { Item } from "@/models/product";
 import { TechnicalSheet } from "@/models/technicalSheet";
-import { AlertTriangle, PlusCircle, Search } from "lucide-react";
+import { AlertTriangle, FileText, PlusCircle, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-
-const dummy: Variant[] = [
-  {
-    id: "b7161ff2-6da6-412c-9f0b-cd315bb84a49",
-    idProduct: "f608614e-f5ef-42ec-949d-fd9013e4711b",
-    name: "ENGINE001",
-    sku: "ENG001",
-    price: 123,
-    stockQuantity: 5,
-
-    images: [
-      {
-        id: "bc567f41-a788-48c2-a11e-55599e5f7eb0",
-        url: "https://ss-platinum-driveline-api.s3.amazonaws.com/uploads/images/f1ef5864-44a6-4b91-8937-faf719a4a109.jpg",
-        order: 1,
-      },
-    ],
-  },
-  {
-    id: "b7161ff2-6da6-412c-9f0b-cd315bb84a48",
-    idProduct: "f608614e-f5ef-42ec-949d-fd9013e4711b",
-    name: "ENGINE001",
-    sku: "ENG001",
-    price: 123,
-    stockQuantity: 5,
-
-    images: [
-      {
-        id: "bc567f41-a788-48c2-a11e-55599e5f7eb0",
-        url: "https://ss-platinum-driveline-api.s3.amazonaws.com/uploads/images/f1ef5864-44a6-4b91-8937-faf719a4a109.jpg",
-        order: 1,
-      },
-    ],
-  },
-  {
-    id: "b7161ff2-6da6-412c-9f0b-cd315bb84a47",
-    idProduct: "f608614e-f5ef-42ec-949d-fd9013e4711b",
-    name: "ENGINE001",
-    sku: "ENG001",
-    price: 123,
-    stockQuantity: 5,
-
-    images: [
-      {
-        id: "bc567f41-a788-48c2-a11e-55599e5f7eb0",
-        url: "https://ss-platinum-driveline-api.s3.amazonaws.com/uploads/images/f1ef5864-44a6-4b91-8937-faf719a4a109.jpg",
-        order: 1,
-      },
-    ],
-  },
-];
 
 export interface TSFormType {
   title: string;
@@ -88,50 +39,51 @@ export interface TSFormType {
   url?: string;
   imgUrl?: string | null;
   description: string;
-  variant?: Variant | null;
+  productIds: string[];
 }
 
-const TsFormInitialState = {
+const TsFormInitialState: TSFormType = {
   title: "",
   path: "",
   url: "",
   imgUrl: null,
   description: "",
-  variant: null,
+  productIds: [],
 };
 
 const TechincalSheets = () => {
   const {
     loading,
-    technicalSheet,
     technicalSheets,
     addTechnicalSheet,
-    getTsById,
     deleteTechnicalSheet,
+    addProductsToTechSheet,
+    removeProductsFromTechSheet,
   } = useTs();
+  const { products, getProducts } = useProducts();
   const { uploadFile } = useS3FileManager();
+  const { toast } = useToast();
 
   const [searchFilter, setSearchFilter] = useState("");
-  const [variantFilter, setVariantFilter] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [editingTsId, setEditingTsId] = useState<string | undefined>(undefined);
   const [tsForm, setTsForm] = useState<TSFormType>(TsFormInitialState);
   const [file, setFile] = useState<File | null>(null);
   const [image, setImage] = useState<File | null>(null);
 
-  const toggleModal = async () => {
+  useEffect(() => {
+    getProducts();
+  }, [getProducts]);
+
+  const toggleModal = () => {
     setIsOpen(!isOpen);
-    if (!isEditMode) {
-      await setTsForm({ ...TsFormInitialState, path: "" });
+    if (!isOpen && !isEditMode) {
+      setTsForm({ ...TsFormInitialState, path: "" });
+      setFile(null);
+      setImage(null);
     }
   };
-
-  //   Crear
-
-  useEffect(() => {
-    setFile({} as File);
-    setImage({} as File);
-  }, [isEditMode]);
 
   useEffect(() => {
     if (file?.name && tsForm.path !== file.name) {
@@ -143,105 +95,148 @@ const TechincalSheets = () => {
     () =>
       tsForm.title.trim() !== "" &&
       tsForm.description.trim() !== "" &&
-      tsForm!.path!.trim() !== "",
-    [tsForm]
+      (file != null && (file as File).name != null && (file as File).name !== ""),
+    [tsForm, file]
   );
 
   const handleFileUpload = async (
-    file: File | null
+    f: File | null
   ): Promise<string | null> => {
-    if (!file || file.name === undefined) {
-      return null;
-    }
+    if (!f || !f.name) return null;
     return new Promise((resolve, reject) => {
-      uploadFile(file, (key) => resolve(key)).catch((error) => reject(error));
+      uploadFile(f, (key) => resolve(key)).catch(reject);
     });
   };
 
   const handleSubmit = async () => {
+    if (!isEditMode) {
+      if (!validateForm) {
+        toast({
+          title: "Completa los campos obligatorios",
+          description: "Título, descripción y documento (PDF) son requeridos.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (!file || !(file instanceof File) || !file.name) {
+        toast({
+          title: "Sube el documento",
+          description: "Selecciona un archivo PDF para el boletín.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
     try {
       if (!isEditMode) {
-        const [fileKey, imageKey] = await Promise.all([
-          handleFileUpload(file),
-          handleFileUpload(image),
-        ]);
-
+        const fileKey = await handleFileUpload(file);
+        if (!fileKey || fileKey.trim() === "") {
+          toast({
+            title: "Error al subir el documento",
+            description: "No se pudo subir el archivo. Intenta de nuevo.",
+            variant: "destructive",
+          });
+          return;
+        }
         const payload = {
-          ...tsForm,
-          path: fileKey || undefined,
-          imgUrl: imageKey || undefined,
+          title: tsForm.title.trim(),
+          path: fileKey,
+          description: (tsForm.description ?? "").trim(),
+          productIds: tsForm.productIds.length > 0 ? tsForm.productIds : undefined,
         };
-        await addTechnicalSheet(payload);
+        await addTechnicalSheet(payload as any);
+        setTsForm(TsFormInitialState);
+        setFile(null);
+        setImage(null);
+        setIsEditMode(false);
+        setIsOpen(false);
+      } else if (isEditMode && editingTsId) {
+        const current = technicalSheets.find((t) => t.id === editingTsId);
+        const currentIds = new Set((current?.products || []).map((p) => p.id));
+        const newIds = new Set(tsForm.productIds);
+        const toAdd = tsForm.productIds.filter((id) => !currentIds.has(id));
+        const toRemove = (current?.products || []).map((p) => p.id).filter((id) => !newIds.has(id));
+        if (toAdd.length > 0) await addProductsToTechSheet(editingTsId, toAdd);
+        if (toRemove.length > 0) await removeProductsFromTechSheet(editingTsId, toRemove);
+        if (toAdd.length > 0 || toRemove.length > 0) {
+          toast({ title: "Boletín actualizado.", variant: "success" });
+        }
+        setTsForm(TsFormInitialState);
+        setEditingTsId(undefined);
+        setIsEditMode(false);
+        setIsOpen(false);
       }
     } catch (error) {
       console.error("Error during file upload or submit:", error);
-    } finally {
-      setTsForm(TsFormInitialState);
-      setFile({} as File);
-      setImage({} as File);
-      setIsEditMode(false);
-      toggleModal();
+      toast({
+        title: "Error al crear el boletín",
+        description: "Revisa los datos e intenta de nuevo.",
+        variant: "destructive",
+      });
     }
   };
 
-  const handleForm = (e: any) => {
+  const handleForm = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setTsForm({
-      ...tsForm,
-      [name]: value,
-    });
+    setTsForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  useEffect(() => {
-    if (isEditMode && technicalSheet) {
-      setFile({ name: technicalSheet.url || "" } as File);
-      setIsEditMode(true);
-      setIsOpen(true);
-    }
-  }, [technicalSheet]);
+  const toggleProduct = (productId: string) => {
+    setTsForm((prev) =>
+      prev.productIds.includes(productId)
+        ? { ...prev, productIds: prev.productIds.filter((id) => id !== productId) }
+        : { ...prev, productIds: [...prev.productIds, productId] }
+    );
+  };
 
-  //   Read
+  // Al abrir edición desde la card se usa directamente los datos del ts (setTsForm + setIsOpen en TsCard)
 
-  const handleSearchFilter = (e: any) => {
-    const { value } = e.target;
-    setSearchFilter(value);
+  const handleSearchFilter = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchFilter(e.target.value);
   };
 
   const filteredTs = useMemo(
     () =>
       technicalSheets.filter((ts: TechnicalSheet) =>
-        ts.title.toLowerCase().includes(variantFilter.toLocaleLowerCase())
+        ts.title.toLowerCase().includes(searchFilter.toLowerCase())
       ),
     [searchFilter, technicalSheets]
   );
 
+  const listToShow = searchFilter.length > 0 ? filteredTs : technicalSheets;
+
   return (
     <Layout>
       <Card className="border-0 shadow-none flex flex-col">
-        <CardHeader className="flex flex-row p-0 m-0">
+        <CardHeader className="flex flex-row flex-wrap items-start gap-4 p-0 m-0">
           <div className="flex flex-col gap-3">
-            <CardTitle>Boletínes</CardTitle>
-            <CardDescription>Maneja tus boletínes</CardDescription>
+            <CardTitle>Boletines</CardTitle>
+            <CardDescription>
+              Gestiona los boletines técnicos y asígnalos a productos.
+            </CardDescription>
           </div>
-          <div className="ml-auto flex gap-3">
-            <div className="relative ml-auto flex-1 md:grow-0">
+          <div className="ml-auto flex flex-wrap gap-3 items-center">
+            <div className="relative flex-1 min-w-[200px] max-w-[336px]">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 type="search"
-                placeholder="Buscar Boletín..."
+                placeholder="Buscar boletín..."
                 onChange={handleSearchFilter}
                 value={searchFilter}
-                className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[336px]"
+                className="w-full rounded-lg bg-background pl-8"
               />
             </div>
             <Dialog
               open={isOpen}
-              onOpenChange={(open: boolean) => {
+              onOpenChange={(open) => {
                 if (!open) {
                   setTsForm(TsFormInitialState);
                   setIsEditMode(false);
-                  setIsOpen(false);
+                  setEditingTsId(undefined);
+                  setFile(null);
+                  setImage(null);
                 }
+                setIsOpen(open);
               }}
             >
               <DialogTrigger asChild>
@@ -252,146 +247,134 @@ const TechincalSheets = () => {
                 >
                   <PlusCircle className="h-3.5 w-3.5 mr-2" />
                   <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                    Agregar Boletín
+                    Crear boletín
                   </span>
                 </Button>
               </DialogTrigger>
-              <DialogContent className="w-[2000px]">
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle className="mb-2">
-                    {isEditMode ? "Editar Boletín" : "Agregar Boletín"}
+                  <DialogTitle>
+                    {isEditMode ? "Editar boletín" : "Nuevo boletín"}
                   </DialogTitle>
                   <DialogDescription>
-                    {isEditMode ? "Editar Boletín" : "Agregar Boletín"}
+                    Sube el documento y asigna los productos relacionados.
                   </DialogDescription>
                 </DialogHeader>
-                <section className="w-full flex gap-4">
-                  <div className="w-full">
-                    <Label htmlFor="title" className="block mb-2">
-                      <span className="text-redLabel">*</span> Título
-                    </Label>
-                    <Input
-                      id="title"
-                      name="title"
-                      type="text"
-                      placeholder="ej. Platinum"
-                      value={tsForm.title}
-                      onChange={handleForm}
-                      maxLength={255}
-                      required
-                    />
+
+                {/* 1. Documento */}
+                <section className="space-y-4">
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <FileText className="h-4 w-4" />
+                    Documento
                   </div>
-                  <div className="w-full">
-                    <Label htmlFor="description" className="block mb-2">
-                      <span className="text-redLabel">*</span> Descripción
-                    </Label>
-                    <Input
-                      id="description"
-                      name="description"
-                      type="text"
-                      placeholder="ej. Platinum"
-                      value={tsForm.description}
-                      onChange={handleForm}
-                      maxLength={526}
-                      required
-                    />
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="title">
+                        <span className="text-red-500">*</span> Título
+                      </Label>
+                      <Input
+                        id="title"
+                        name="title"
+                        placeholder="Ej. Ficha técnica motor XYZ"
+                        value={tsForm.title}
+                        onChange={handleForm}
+                        maxLength={255}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="description">
+                        <span className="text-red-500">*</span> Descripción
+                      </Label>
+                      <Input
+                        id="description"
+                        name="description"
+                        placeholder="Breve descripción del boletín"
+                        value={tsForm.description}
+                        onChange={handleForm}
+                        maxLength={526}
+                      />
+                    </div>
                   </div>
-                </section>
-                <section className="flex gap-4">
-                  <div>
-                    <Label htmlFor="path" className="block mb-2">
-                      <span className="text-redLabel">*</span> Documento
+                  <div className="space-y-2">
+                    <Label>
+                      <span className="text-red-500">*</span> Archivo (PDF o documento)
                     </Label>
                     <MyDropzone
-                      className={"p-8"}
+                      className="p-8"
                       file={file}
                       fileSetter={setFile}
-                      type={"document"}
+                      type="document"
                     />
                   </div>
-                  <div>
-                    <Label htmlFor="path" className="block mb-2">
-                      <span className="text-redLabel"></span> Imágen de Portada
-                    </Label>
+                  <div className="space-y-2">
+                    <Label>Imagen de portada (opcional)</Label>
                     <MyDropzone
-                      className={"p-8"}
+                      className="p-8"
                       file={image}
                       fileSetter={setImage}
                     />
                   </div>
                 </section>
-                <Label htmlFor="logoImgUrl">Variante</Label>
-                <Input
-                  id="description"
-                  name="description"
-                  type="text"
-                  placeholder="ej. Platinum"
-                  value={variantFilter}
-                  onChange={(e) => setVariantFilter(e.target.value)}
-                  maxLength={526}
-                  required
-                />
 
-                {dummy.map((variantDisplay: Variant) => (
-                  <Card
-                    key={variantDisplay.id}
-                    className="flex flex-row items-center"
-                  >
-                    <CardHeader>
-                      <Checkbox
-                        id="variant"
-                        onCheckedChange={(e) => {
-                          if (e === true) {
-                            setTsForm({
-                              ...tsForm,
-                              variant: variantDisplay,
-                            });
-                          } else {
-                            setTsForm({
-                              ...tsForm,
-                              variant: null,
-                            });
-                          }
-                        }}
-                        checked={
-                          tsForm.variant === variantDisplay ? true : false
-                        }
-                        className="border-slate-400"
-                      />
-                    </CardHeader>
-                    <Separator
-                      orientation="vertical"
-                      className="w-0.5 bg-slate-100"
-                    />
-                    <CardContent className="p-3">
-                      <img
-                        className="w-16 aspect-square rounded-sm"
-                        src={variantDisplay.images![0].url}
-                      />
-                    </CardContent>
-                    <CardContent className="mt-2">
-                      <p className="text-slate-400 text-sm font-light">
-                        <span className="select-none">#</span>
-                        {variantDisplay.id}
+                <Separator />
+
+                {/* 2. Productos relacionados */}
+                <section className="space-y-4">
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    Productos relacionados
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Selecciona los productos a los que aplica este boletín.
+                  </p>
+                  <div className="max-h-48 overflow-y-auto border rounded-lg p-3 space-y-2">
+                    {products.length === 0 ? (
+                      <p className="text-sm text-muted-foreground py-4 text-center">
+                        No hay productos cargados.
                       </p>
-                      <p className="mt-2">{variantDisplay.name}</p>
-                    </CardContent>
-                  </Card>
-                ))}
+                    ) : (
+                      products.map((product: Item) => (
+                        <label
+                          key={product.id}
+                          className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50 cursor-pointer"
+                        >
+                          <Checkbox
+                            checked={tsForm.productIds.includes(product.id)}
+                            onCheckedChange={() => toggleProduct(product.id)}
+                          />
+                          <span className="text-sm font-medium">{product.name}</span>
+                          {product.variants?.[0]?.sku != null && (
+                            <span className="text-xs text-muted-foreground">
+                              SKU: {product.variants[0].sku}
+                            </span>
+                          )}
+                        </label>
+                      ))
+                    )}
+                  </div>
+                </section>
+
                 <DialogFooter>
                   <Button
-                    disabled={!validateForm}
-                    onClick={handleSubmit}
-                    type="submit"
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsOpen(false)}
                   >
-                    {isEditMode ? "Actualizar Marca" : "Agregar Marca"}
+                    Cancelar
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={handleSubmit}
+                    disabled={loading}
+                  >
+                    {loading ? "Guardando..." : isEditMode ? "Actualizar boletín" : "Crear boletín"}
                   </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
           </div>
         </CardHeader>
-        <CardContent className="flex flex-col flex-grow p-0">
+
+        <CardContent className="flex flex-col flex-grow p-0 mt-4">
           {loading ? (
             <div className="flex justify-center items-center py-12">
               <div className="flex flex-col items-center gap-2">
@@ -399,30 +382,29 @@ const TechincalSheets = () => {
                 <p className="text-sm text-muted-foreground">Cargando...</p>
               </div>
             </div>
-          ) : technicalSheets.length === 0 || filteredTs.length === 0 ? (
+          ) : listToShow.length === 0 ? (
             <div className="mt-4">
               <NoData>
                 <AlertTriangle className="text-[#4E5154]" />
-                <p className="text-[#4E5154]">No se ha creado ningún boletín</p>
+                <p className="text-[#4E5154]">No hay boletines creados</p>
                 <p className="text-[#94A3B8] font-semibold text-sm">
-                  Agrega uno en la parte posterior
+                  Usa el botón &quot;Crear boletín&quot; para agregar uno
                 </p>
               </NoData>
             </div>
           ) : (
             <CardSectionLayout>
-              {(searchFilter.length > 0 ? filteredTs : technicalSheets).map(
-                (ts: TechnicalSheet) => (
-                  <TsCard
-                    key={ts.id}
-                    ts={ts}
-                    getTsById={getTsById}
-                    deleteTechnicalSheet={deleteTechnicalSheet}
-                    setIsEditMode={setIsEditMode}
-                    setTsForm={setTsForm}
-                  />
-                )
-              )}
+              {listToShow.map((ts: TechnicalSheet) => (
+                <TsCard
+                  key={ts.id}
+                  ts={ts}
+                  deleteTechnicalSheet={deleteTechnicalSheet}
+                  setIsEditMode={setIsEditMode}
+                  setTsForm={setTsForm}
+                  setIsOpen={setIsOpen}
+                  setEditingTsId={setEditingTsId}
+                />
+              ))}
             </CardSectionLayout>
           )}
         </CardContent>

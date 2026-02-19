@@ -34,10 +34,28 @@ import { App } from "./components/App";
 import FileManager from "./pages/files/fileManager";
 import { FilesProvider } from "./context/files-context";
 import FeaturedProducts from "./pages/products/featuredProducts";
+import NotFound from "./pages/NotFound";
+import BlogsDashboard from "./pages/blogs/BlogsDashboard";
+import NewBlog from "./pages/blogs/NewBlog";
+import EditBlog from "./pages/blogs/EditBlog";
+
+function RouterErrorFallback() {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center gap-4 p-6 bg-background">
+      <p className="text-lg text-muted-foreground text-center">
+        Algo salió mal. Por favor, intenta de nuevo.
+      </p>
+      <a href="/dashboard/productos" className="text-primary underline">
+        Volver al inicio
+      </a>
+    </div>
+  );
+}
 
 const router = createBrowserRouter([
   {
     element: <App />,
+    errorElement: <RouterErrorFallback />,
     children: [
   {
     path: "/login",
@@ -144,6 +162,30 @@ const router = createBrowserRouter([
     ),
   },
   {
+    path: "/dashboard/blogs",
+    element: (
+      <ProtectedRoute>
+        <BlogsDashboard />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/dashboard/blogs/nueva",
+    element: (
+      <ProtectedRoute>
+        <NewBlog />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/dashboard/blogs/editar/:id",
+    element: (
+      <ProtectedRoute>
+        <EditBlog />
+      </ProtectedRoute>
+    ),
+  },
+  {
     path: "/dashboard/noticias",
     element: (
       <ProtectedRoute>
@@ -198,6 +240,10 @@ const router = createBrowserRouter([
         <FeaturedProducts />
       </ProtectedRoute>
     ),
+  },
+  {
+    path: "*",
+    element: <NotFound />,
   },
     ],
   },

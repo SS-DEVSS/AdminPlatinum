@@ -67,9 +67,10 @@ export const NewsProvider: React.FC<{ children: React.ReactNode }> = ({
     try {
       setLoading(true);
       const data = await client.get("/blog/posts");
-      setBlogPosts(data.data.blogPosts);
+      setBlogPosts(data.data?.blogPosts ?? []);
     } catch (error) {
       console.error("Error fetching blogPosts:", error);
+      setBlogPosts([]);
     } finally {
       setLoading(false);
     }
