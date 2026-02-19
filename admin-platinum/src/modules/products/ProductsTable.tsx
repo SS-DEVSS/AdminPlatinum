@@ -54,9 +54,10 @@ import FilePickerModal from "@/components/files/FilePickerModal";
 interface DataTableProps {
   category?: Category | null;
   searchFilter?: string;
+  subcategoryId?: string | null;
 }
 
-const DataTable = ({ category, searchFilter }: DataTableProps) => {
+const DataTable = ({ category, searchFilter, subcategoryId }: DataTableProps) => {
   const navigate = useNavigate();
   const [mappedData, setMappedData] = useState<Variant[]>([]);
   const [imageDialogOpen, setImageDialogOpen] = useState(false);
@@ -124,6 +125,9 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
         if (debouncedSearch && debouncedSearch.trim()) {
           params.search = debouncedSearch.trim();
         }
+        if (subcategoryId && subcategoryId.trim()) {
+          params.idSubcategory = subcategoryId.trim();
+        }
 
         const response = await client.get(`/products/category/${category.id}`, { params });
         const { products: fetchedProducts, total: totalItems, totalPages: pages } = response.data;
@@ -142,7 +146,7 @@ const DataTable = ({ category, searchFilter }: DataTableProps) => {
     };
 
     fetchProducts();
-  }, [category?.id, page, pageSize, debouncedSearch]);
+  }, [category?.id, page, pageSize, debouncedSearch, subcategoryId]);
 
   const handleImageClick = (variant: Variant) => {
     setSelectedVariant(variant);
