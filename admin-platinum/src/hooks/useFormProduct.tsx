@@ -6,11 +6,12 @@ import { useState, useMemo } from "react";
 export interface detailsType {
   id?: string | null;
   name: string;
-  sku: string; // Added SKU
-  brand: string; // Added Brand ID
+  sku: string;
+  brand: string;
   type: "SINGLE" | "KIT" | null;
   description: string;
   category: Pick<Category, "id" | "name"> | null;
+  subcategory: { id: string; name: string } | null;
   references: string[];
   imgUrl?: string;
 }
@@ -22,6 +23,7 @@ export const stateSkeleton = {
   type: null,
   description: "",
   category: null,
+  subcategory: null,
   references: [],
   imgUrl: "",
 };

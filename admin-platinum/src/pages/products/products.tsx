@@ -20,30 +20,40 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Category } from "@/models/category";
 import { useCategories } from "@/hooks/useCategories";
+import { useSubcategories } from "@/hooks/useSubcategories";
+import type { SubcategoryTreeNode } from "@/models/subcategory";
 import DataTable from "@/modules/products/ProductsTable";
+
+function flattenSubcategoryTree(nodes: SubcategoryTreeNode[], path: string[] = []): { id: string; name: string; label: string }[] {
+  const result: { id: string; name: string; label: string }[] = [];
+  for (const node of nodes) {
+    const currentPath = [...path, node.name];
+    result.push({ id: node.id, name: node.name, label: currentPath.join(" › ") });
+    if (node.children?.length) result.push(...flattenSubcategoryTree(node.children, currentPath));
+  }
+  return result;
+}
 
 const Products = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { categories = [] } = useCategories();
-  // Cargar searchFilter desde localStorage al inicializar
+  const { getTree } = useSubcategories();
   const [searchFilter, setSearchFilter] = useState(() => {
     const saved = localStorage.getItem('products-search-filter');
     return saved || "";
   });
-  // Cargar categoría desde localStorage al inicializar
-  const [category, setCategory] = useState<Category | null>(() => {
-    // const savedCategoryId = localStorage.getItem('products-selected-category');
-    return null; // Se inicializará en el useEffect cuando tengamos las categorías
-  });
+  const [category, setCategory] = useState<Category | null>(null);
+  const [subcategoryId, setSubcategoryId] = useState<string | null>(null);
+  const [subcategoryOptions, setSubcategoryOptions] = useState<{ id: string; name: string; label: string }[]>([]);
 
   const handleSearchFilter = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchFilter(value);
-    // Guardar en localStorage
     if (value) {
       localStorage.setItem('products-search-filter', value);
     } else {
@@ -52,35 +62,43 @@ const Products = () => {
   };
 
   const handleCategoryChange = (value: string) => {
-    const selectedCategory = categories.find(
-      (cat) => cat.id === value
-    );
-    const categoryToSet = selectedCategory || null;
-    setCategory(categoryToSet);
-    // Guardar en localStorage
-    if (categoryToSet?.id) {
-      localStorage.setItem('products-selected-category', categoryToSet.id);
+    const selectedCategory = categories.find((cat) => cat.id === value) || null;
+    setCategory(selectedCategory);
+    setSubcategoryId(null);
+    if (selectedCategory?.id) {
+      localStorage.setItem('products-selected-category', selectedCategory.id);
     } else {
       localStorage.removeItem('products-selected-category');
     }
   };
 
   useEffect(() => {
-    if (categories.length > 0) {
-      // Intentar restaurar categoría guardada
-      const savedCategoryId = localStorage.getItem('products-selected-category');
-      if (savedCategoryId && !category) {
-        const savedCategory = categories.find((cat) => cat.id === savedCategoryId);
-        if (savedCategory) {
-          setCategory(savedCategory);
-          return;
-        }
+    if (!category?.id) {
+      setSubcategoryOptions([]);
+      return;
+    }
+    getTree(category.id).then((tree) => setSubcategoryOptions(flattenSubcategoryTree(tree)));
+  }, [category?.id, getTree]);
+
+  useEffect(() => {
+    if (categories.length === 0) return;
+    const fromUrl = searchParams.get('categoryId');
+    const subFromUrl = searchParams.get('subcategoryId');
+    if (fromUrl) {
+      const cat = categories.find((c) => c.id === fromUrl);
+      if (cat) {
+        setCategory(cat);
+        setSubcategoryId(subFromUrl || null);
       }
-      // Si no hay categoría guardada o no se encontró, usar la primera
-      if (!category) {
-        setCategory(categories[0]);
-        localStorage.setItem('products-selected-category', categories[0].id || '');
-      }
+      return;
+    }
+    const savedCategoryId = localStorage.getItem('products-selected-category');
+    const savedCategory = savedCategoryId ? categories.find((cat) => cat.id === savedCategoryId) : null;
+    if (savedCategory) {
+      setCategory(savedCategory);
+    } else {
+      setCategory(categories[0]);
+      localStorage.setItem('products-selected-category', categories[0].id || '');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [categories]);
@@ -104,7 +122,7 @@ const Products = () => {
                   />
                 </div>
                 <Select
-                  value={category?.id}
+                  value={category?.id ?? ""}
                   onValueChange={handleCategoryChange}
                 >
                   <SelectTrigger className="w-[280px]">
@@ -113,14 +131,35 @@ const Products = () => {
                   <SelectContent>
                     <SelectGroup>
                       <SelectLabel>Categorías</SelectLabel>
-                      {categories.map((category) => (
-                        <SelectItem key={category.id} value={category.id || ""}>
-                          {category.name}
+                      {categories.map((cat) => (
+                        <SelectItem key={cat.id} value={cat.id || ""}>
+                          {cat.name}
                         </SelectItem>
                       ))}
                     </SelectGroup>
                   </SelectContent>
                 </Select>
+                {category?.id && subcategoryOptions.length > 0 && (
+                  <Select
+                    value={subcategoryId ?? "__all__"}
+                    onValueChange={(v) => setSubcategoryId(v === "__all__" ? null : v)}
+                  >
+                    <SelectTrigger className="w-[280px]">
+                      <SelectValue placeholder="Todas las subcategorías" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectLabel>Subcategoría</SelectLabel>
+                        <SelectItem value="__all__">Todas</SelectItem>
+                        {subcategoryOptions.map((sub) => (
+                          <SelectItem key={sub.id} value={sub.id}>
+                            {sub.label}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
             </div>
             <div className="ml-auto flex items-center gap-3">
@@ -149,7 +188,7 @@ const Products = () => {
             </div>
           </CardHeader>
           <div>
-            <DataTable category={category} searchFilter={searchFilter} />
+            <DataTable category={category} searchFilter={searchFilter} subcategoryId={subcategoryId} />
           </div>
         </Card>
       </div>
