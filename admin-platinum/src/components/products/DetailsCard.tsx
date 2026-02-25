@@ -16,6 +16,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
@@ -31,12 +38,12 @@ import { detailsType } from "@/hooks/useFormProduct";
 import { Product } from "@/models/product";
 import MyDropzone from "@/components/Dropzone";
 import { useS3FileManager } from "@/hooks/useS3FileManager";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useDeferredValue } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import axiosClient from "@/services/axiosInstance";
 import FeatureProductModal from "./FeatureProductModal";
-import { Star, FolderOpen } from "lucide-react";
+import { Star, FolderOpen, ChevronDown, ChevronRight, Search } from "lucide-react";
 import FilePickerModal from "@/components/files/FilePickerModal";
 
 type DetailsCardProps = {
@@ -61,11 +68,22 @@ function flattenSubcategoryTree(
   return result;
 }
 
+const matchSearch = (query: string, name: string) =>
+  !query.trim() || name.toLowerCase().includes(query.trim().toLowerCase());
+
 const DetailsCard = ({ state, setState, product }: DetailsCardProps) => {
   const { brands } = useBrands();
   const { categories } = useCategoryContext();
   const { getTree } = useSubcategories();
-  const [subcategories, setSubcategories] = useState<{ id: string; name: string; label: string }[]>([]);
+  const [subcategoryTree, setSubcategoryTree] = useState<SubcategoryTreeNode[]>([]);
+  const subcategoriesFlat = useMemo(
+    () => flattenSubcategoryTree(subcategoryTree),
+    [subcategoryTree]
+  );
+  const [subcategoryMenuOpen, setSubcategoryMenuOpen] = useState(false);
+  const [subcategoryMenuSearch, setSubcategoryMenuSearch] = useState("");
+  const subcategoryMenuSearchDeferred = useDeferredValue(subcategoryMenuSearch);
+  const [subcategoryDrillStack, setSubcategoryDrillStack] = useState<SubcategoryTreeNode[]>([]);
   const [featureModalOpen, setFeatureModalOpen] = useState(false);
   const { uploadFile, uploading } = useS3FileManager();
   const { toast } = useToast();
@@ -122,12 +140,10 @@ const DetailsCard = ({ state, setState, product }: DetailsCardProps) => {
 
   useEffect(() => {
     if (!categoryId) {
-      setSubcategories([]);
+      setSubcategoryTree([]);
       return;
     }
-    getTree(categoryId).then((tree) =>
-      setSubcategories(flattenSubcategoryTree(tree))
-    );
+    getTree(categoryId).then((tree) => setSubcategoryTree(tree));
   }, [categoryId, getTree]);
 
   const handleCategoryChange = (value: string) => {
@@ -144,13 +160,38 @@ const DetailsCard = ({ state, setState, product }: DetailsCardProps) => {
     }));
   };
 
-  const handleSubcategoryChange = (value: string) => {
-    const selected = subcategories.find((s) => s.id === value);
+  const selectSubcategory = (id: string | null, label: string | null) => {
     setState((prevForm) => ({
       ...prevForm,
-      subcategory: selected ? { id: selected.id, name: selected.label } : null,
+      subcategory:
+        id && label ? { id, name: label } : null,
     }));
+    setSubcategoryMenuOpen(false);
+    setSubcategoryDrillStack([]);
+    setSubcategoryMenuSearch("");
   };
+
+  const subcategorySearchQuery = subcategoryMenuSearchDeferred.trim().toLowerCase();
+  const subcategorySearchHits =
+    subcategorySearchQuery.length > 0
+      ? subcategoriesFlat.filter((s) =>
+          s.label.toLowerCase().includes(subcategorySearchQuery)
+        )
+      : [];
+  const showSubcategorySearch = subcategorySearchQuery.length > 0;
+
+  const handleSubcategoryMenuOpenChange = (open: boolean) => {
+    setSubcategoryMenuOpen(open);
+    if (!open) {
+      setSubcategoryDrillStack([]);
+      setSubcategoryMenuSearch("");
+    }
+  };
+
+  const goBackSubcategory = () =>
+    setSubcategoryDrillStack((prev) => prev.slice(0, -1));
+  const drillIntoSubcategory = (node: SubcategoryTreeNode) =>
+    setSubcategoryDrillStack((prev) => [...prev, node]);
 
   // Upload image immediately when selected (same behavior for create and edit)
   useEffect(() => {
@@ -323,30 +364,222 @@ const DetailsCard = ({ state, setState, product }: DetailsCardProps) => {
           {categoryId && (
             <div className="flex flex-col gap-3 w-full max-w-full">
               <Label htmlFor="subcategory">Subcategoría (opcional)</Label>
-              <Select
-                onValueChange={(v) => handleSubcategoryChange(v === "__none__" ? "" : v)}
-                value={state.subcategory?.id ? String(state.subcategory.id) : "__none__"}
+              <DropdownMenu
+                open={subcategoryMenuOpen}
+                onOpenChange={handleSubcategoryMenuOpenChange}
+                modal={false}
               >
-                <SelectTrigger
-                  className="w-full min-h-10 text-left"
-                  title={state.subcategory?.name ?? undefined}
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full min-h-10 justify-between font-normal text-left"
+                  >
+                    <span className="truncate">
+                      {state.subcategory?.id
+                        ? (state.subcategory.name ||
+                            subcategoriesFlat.find(
+                              (s) => s.id === state.subcategory!.id
+                            )?.label ||
+                            "Selecciona una subcategoría")
+                        : "Selecciona una subcategoría"}
+                    </span>
+                    <ChevronDown className="ml-2 h-4 w-4 opacity-50 shrink-0" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  className="w-[var(--radix-dropdown-menu-trigger-width)] min-w-[200px] p-0"
+                  align="start"
+                  side="bottom"
+                  avoidCollisions={false}
+                  onCloseAutoFocus={(e) => e.preventDefault()}
+                  modal={false}
                 >
-                  <SelectValue placeholder="Selecciona una subcategoría" />
-                </SelectTrigger>
-                <SelectContent className="max-w-[var(--radix-select-trigger-width)]">
-                  <SelectGroup>
-                    <SelectLabel>Subcategorías</SelectLabel>
-                    <SelectItem value="__none__">Ninguna</SelectItem>
-                    {subcategories.map((sub) => (
-                      <SelectItem key={sub.id} value={sub.id} className="whitespace-normal py-2">
-                        {sub.label}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+                  <div
+                    className="p-2 border-b"
+                    onPointerDown={(e) => e.stopPropagation()}
+                  >
+                    <div className="relative">
+                      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        type="search"
+                        placeholder="Buscar subcategoría..."
+                        value={subcategoryMenuSearch}
+                        onChange={(e) =>
+                          setSubcategoryMenuSearch(e.target.value)
+                        }
+                        onKeyDown={(e) => e.stopPropagation()}
+                        onKeyUp={(e) => e.stopPropagation()}
+                        className="h-9 pl-8"
+                      />
+                    </div>
+                  </div>
+                  {subcategoryDrillStack.length > 0 && !showSubcategorySearch && (
+                    <div className="px-3 py-2 bg-primary/10 border-b border-primary/20">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Estás en</p>
+                      <p className="text-sm font-semibold truncate" title={[state.category?.name ?? "", ...subcategoryDrillStack.map((n) => n.name)].filter(Boolean).join(" › ")}>
+                        {[state.category?.name ?? "", ...subcategoryDrillStack.map((n) => n.name)].filter(Boolean).join(" › ")}
+                      </p>
+                    </div>
+                  )}
+                  <div className="max-h-[280px] overflow-y-auto py-1">
+                    {showSubcategorySearch ? (
+                      <>
+                        <DropdownMenuItem
+                          onClick={() => selectSubcategory(null, null)}
+                        >
+                          Ninguna
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        {subcategorySearchHits.length === 0 ? (
+                          <div className="px-2 py-4 text-sm text-muted-foreground text-center">
+                            No hay coincidencias
+                          </div>
+                        ) : (
+                          subcategorySearchHits.map((sub) => (
+                            <DropdownMenuItem
+                              key={sub.id}
+                              onClick={() =>
+                                selectSubcategory(sub.id, sub.label)
+                              }
+                              className="whitespace-normal py-2"
+                            >
+                              {sub.label}
+                            </DropdownMenuItem>
+                          ))
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <DropdownMenuItem
+                          onClick={() => selectSubcategory(null, null)}
+                        >
+                          Ninguna
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        {subcategoryDrillStack.length > 0 && (
+                          <>
+                            <DropdownMenuItem
+                              onSelect={(e) => e.preventDefault()}
+                              onClick={goBackSubcategory}
+                              className="text-muted-foreground"
+                            >
+                              ← Volver
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                          </>
+                        )}
+                        {(() => {
+                          const nodes =
+                            subcategoryDrillStack.length === 0
+                              ? subcategoryTree
+                              : subcategoryDrillStack[
+                                  subcategoryDrillStack.length - 1
+                                ]?.children ?? [];
+                          const parentNode =
+                            subcategoryDrillStack.length > 0
+                              ? subcategoryDrillStack[
+                                  subcategoryDrillStack.length - 1
+                                ]
+                              : null;
+                          if (parentNode) {
+                            const parentLabel = subcategoriesFlat.find(
+                              (s) => s.id === parentNode.id
+                            )?.label ?? parentNode.name;
+                            return (
+                              <>
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    selectSubcategory(
+                                      parentNode.id,
+                                      parentLabel
+                                    )
+                                  }
+                                >
+                                  {parentNode.name}
+                                </DropdownMenuItem>
+                                {nodes.length > 0 && (
+                                  <DropdownMenuSeparator />
+                                )}
+                                {nodes
+                                  .filter((n: SubcategoryTreeNode) =>
+                                    matchSearch(subcategoryMenuSearchDeferred, n.name)
+                                  )
+                                  .map((node: SubcategoryTreeNode) => {
+                                    const hasChildren =
+                                      node.children &&
+                                      node.children.length > 0;
+                                    return (
+                                      <DropdownMenuItem
+                                        key={node.id}
+                                        onSelect={(e) => {
+                                          if (hasChildren) e.preventDefault();
+                                        }}
+                                        onClick={() =>
+                                          hasChildren
+                                            ? drillIntoSubcategory(node)
+                                            : selectSubcategory(
+                                                node.id,
+                                                subcategoriesFlat.find(
+                                                  (s) => s.id === node.id
+                                                )?.label ?? node.name
+                                              )
+                                        }
+                                        className="flex items-center justify-between py-2"
+                                      >
+                                        <span className="whitespace-normal">
+                                          {node.name}
+                                        </span>
+                                        {hasChildren && (
+                                          <ChevronRight className="h-4 w-4 shrink-0" />
+                                        )}
+                                      </DropdownMenuItem>
+                                    );
+                                  })}
+                              </>
+                            );
+                          }
+                          return nodes
+                            .filter((n: SubcategoryTreeNode) =>
+                              matchSearch(subcategoryMenuSearchDeferred, n.name)
+                            )
+                            .map((node: SubcategoryTreeNode) => {
+                              const hasChildren =
+                                node.children && node.children.length > 0;
+                              return (
+                                <DropdownMenuItem
+                                  key={node.id}
+                                  onSelect={(e) => {
+                                    if (hasChildren) e.preventDefault();
+                                  }}
+                                  onClick={() =>
+                                    hasChildren
+                                      ? drillIntoSubcategory(node)
+                                      : selectSubcategory(
+                                          node.id,
+                                          subcategoriesFlat.find(
+                                            (s) => s.id === node.id
+                                          )?.label ?? node.name
+                                        )
+                                  }
+                                  className="flex items-center justify-between py-2"
+                                >
+                                  <span className="whitespace-normal">
+                                    {node.name}
+                                  </span>
+                                  {hasChildren && (
+                                    <ChevronRight className="h-4 w-4 shrink-0" />
+                                  )}
+                                </DropdownMenuItem>
+                              );
+                            });
+                        })()}
+                      </>
+                    )}
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <p className="text-xs text-muted-foreground">
-                Puedes elegir una subcategoría de cualquier nivel. Se muestra la ruta completa (ej. Raíz › Nivel 2 › Nivel 3).
+                Puedes elegir una subcategoría de cualquier nivel o buscar por nombre. Cada opción muestra su jerarquía (ej. Raíz › Nivel 2 › Nivel 3).
               </p>
             </div>
           )}
