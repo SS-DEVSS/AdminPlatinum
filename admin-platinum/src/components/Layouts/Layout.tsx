@@ -11,6 +11,7 @@ import {
   Import,
   Folder,
   Star,
+  ExternalLink,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "../ui/button";
@@ -43,6 +44,8 @@ const menuItems: MenuItem[] = [
   // { href: "/banners", icon: Dock, text: "Banners" },
   // { href: "/ajustes", icon: Settings, text: "Ajustes" },
 ];
+
+const CATALOG_URL = "https://platinum-web-six.vercel.app";
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const [menuLarge, setMenuLarge] = useState<boolean>(false);
@@ -117,6 +120,20 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     </NavLink>
   );
 
+  const catalogLinkClass =
+    "flex items-center gap-3 rounded-lg px-3 py-3 my-2 text-muted-foreground transition-all hover:text-primary hover:bg-accent";
+  const catalogLinkContent = (compact: boolean) => (
+    <a
+      href={CATALOG_URL}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={compact ? `${catalogLinkClass} inline-flex` : `${catalogLinkClass} mr-0`}
+    >
+      <ExternalLink className="h-4 w-4 shrink-0" />
+      {!compact && <span>Ver catálogo</span>}
+    </a>
+  );
+
   return (
     <div className="flex-col md:flex md:flex-row h-screen w-full">
       <div
@@ -166,6 +183,20 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                       text={item.text}
                     />
                   ))}
+                  <div className={!menuLarge ? "flex flex-col items-center" : ""}>
+                    {!menuLarge ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          {catalogLinkContent(true)}
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Ver catálogo</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    ) : (
+                      catalogLinkContent(false)
+                    )}
+                  </div>
                 </section>
                 <div className="my-auto py-4 shrink-0">
                   {!menuLarge && (
@@ -230,6 +261,15 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                   text={item.text}
                 />
               ))}
+              <a
+                href={CATALOG_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 rounded-lg px-3 py-4 text-muted-foreground transition-all hover:text-primary"
+              >
+                <ExternalLink className="h-4 w-4" />
+                Ver catálogo
+              </a>
             </nav>
             <div className="mt-auto">
               <div
