@@ -8,6 +8,7 @@ function normalizeTreeNode(raw: any): SubcategoryTreeNode {
   const id = raw?.id ?? "";
   const name = raw?.name ?? "";
   const description = raw?.description ?? null;
+  const imgUrl = raw?.imgUrl ?? raw?.img_url ?? null;
   const categoryId = raw?.categoryId ?? raw?.category_id ?? null;
   const parentId = raw?.parentId ?? raw?.parent_id ?? null;
   const productCount = raw?.productCount ?? raw?.product_count ?? 0;
@@ -20,6 +21,7 @@ function normalizeTreeNode(raw: any): SubcategoryTreeNode {
     id,
     name,
     description,
+    imgUrl,
     categoryId,
     parentId,
     productCount,
@@ -31,6 +33,7 @@ function normalizeTreeNode(raw: any): SubcategoryTreeNode {
 export type CreateSubcategoryPayload = {
   name: string;
   description?: string | null;
+  imgUrl?: string | null;
   categoryId?: string | null;
   parentId?: string | null;
 };
@@ -38,6 +41,7 @@ export type CreateSubcategoryPayload = {
 export type UpdateSubcategoryPayload = {
   name?: string;
   description?: string | null;
+  imgUrl?: string | null;
 };
 
 export const useSubcategories = () => {
