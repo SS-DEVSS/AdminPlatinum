@@ -3,6 +3,7 @@ export type Subcategory = {
   id: string;
   name: string;
   description: string | null;
+  imgUrl: string | null;
   categoryId: string | null;
   parentId: string | null;
   children?: Subcategory[];
