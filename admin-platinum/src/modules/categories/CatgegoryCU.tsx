@@ -348,16 +348,15 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
           imgUrl: imageUrl || category.imgUrl, // Usar imageUrl si está disponible, sino la original
         };
 
-        // Solo incluir brands si hay cambios
         if (brandsToAdd.length > 0 || brandsToDelete.length > 0) {
-          updatePayload.brands = {};
+          const brandsUpdate: { add?: string[]; remove?: string[] } = {};
           if (brandsToAdd.length > 0) {
-            updatePayload.brands.add = brandsToAdd;
+            brandsUpdate.add = brandsToAdd;
           }
           if (brandsToDelete.length > 0) {
-            // El backend espera 'remove' aunque el validador acepta 'delete'
-            updatePayload.brands.remove = brandsToDelete;
+            brandsUpdate.remove = brandsToDelete;
           }
+          updatePayload.brands = brandsUpdate;
         }
 
         if (
