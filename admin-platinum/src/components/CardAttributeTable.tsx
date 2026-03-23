@@ -52,14 +52,24 @@ interface CardAttributeTableProps {
   handleDeleteClick: (name: string) => void;
 }
 
+const sortByOrder = (items: CategoryAtributes[]) =>
+  [...items].sort(
+    (a, b) => (a.order ?? 0) - (b.order ?? 0)
+  );
+
+const rowKey = (attribute: CategoryAtributes, index: number) =>
+  attribute.id ?? `${attribute.scope}-${attribute.order}-${index}-${attribute.name}`;
+
 const CardAttributeTable = ({
   attributes,
   handleEditClick,
   handleDeleteClick,
 }: CardAttributeTableProps) => {
+  const sortedAttributes = sortByOrder(attributes);
+
   return (
     <>
-      {attributes.length ? (
+      {sortedAttributes.length ? (
         <Table>
           <TableHeader>
             <TableRow>
@@ -71,13 +81,16 @@ const CardAttributeTable = ({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {attributes.map((attribute: CategoryAtributes, index: number) => (
-              <TableRow key={attribute.name}>
+            {sortedAttributes.map((attribute: CategoryAtributes, index: number) => (
+              <TableRow key={rowKey(attribute, index)}>
                 <TableCell className="text-center text-muted-foreground">
                   {index + 1}
                 </TableCell>
                 <TableCell className="font-semibold">
-                  {translateAttributeName(attribute.name, false)}
+                  {translateAttributeName(
+                    attribute.display_name || attribute.name,
+                    false
+                  )}
                 </TableCell>
                 <TableCell>
                   {getTypeDisplayName(attribute.type)}

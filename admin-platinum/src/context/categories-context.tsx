@@ -22,7 +22,9 @@ interface ContextCategoryTypes {
   categories: Category[];
   category: Category | null;
   loading: boolean;
-  getCategoryById: (id: CategoryRespone["id"]) => void;
+  getCategoryById: (
+    id: CategoryRespone["id"]
+  ) => Promise<Category | undefined>;
   getCategories: () => void;
   addCategory: (
     category: Omit<Category, "id">
@@ -82,15 +84,31 @@ export const CategoryContextProvider = ({
 
   const getCategoryById = async (id: CategoryRespone["id"]) => {
     try {
-      setLoading(true);
       const { data } = await client.get(
         `/categories/${id}?attributes=true&products=true`
       );
       setCategory(data);
       return data;
-    } catch (error) {
-    } finally {
-      setLoading(false);
+    } catch (error: unknown) {
+      setCategory(null);
+      const message =
+        error &&
+        typeof error === "object" &&
+        "response" in error &&
+        error.response &&
+        typeof error.response === "object" &&
+        "data" in error.response &&
+        error.response.data &&
+        typeof error.response.data === "object" &&
+        "error" in error.response.data
+          ? String((error.response.data as { error?: string }).error)
+          : "No se pudo cargar la categoría";
+      toast({
+        title: "Error al cargar categoría",
+        variant: "destructive",
+        description: message,
+      });
+      return undefined;
     }
   };
 

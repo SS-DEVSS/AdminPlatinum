@@ -51,3 +51,27 @@ export type CategoryAtributes = {
   id_category?: string;
   visibleInCatalog?: boolean;
 };
+
+export type CategoryAttributeApi = CategoryAtributes & {
+  csvName?: string | null;
+  displayName?: string | null;
+  visible_in_catalog?: boolean;
+};
+
+export function normalizeCategoryAttributeFromApi(
+  attr: CategoryAttributeApi
+): CategoryAtributes {
+  return {
+    id: attr.id,
+    name: attr.name,
+    csv_name: attr.csv_name ?? attr.csvName ?? undefined,
+    display_name: attr.display_name ?? attr.displayName ?? undefined,
+    required: attr.required,
+    type: attr.type,
+    order: attr.order,
+    scope: attr.scope,
+    id_category: attr.id_category,
+    visibleInCatalog:
+      attr.visibleInCatalog ?? attr.visible_in_catalog ?? true,
+  };
+}

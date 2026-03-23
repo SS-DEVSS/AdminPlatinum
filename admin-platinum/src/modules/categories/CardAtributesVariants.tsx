@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/select";
 
 import {
+  CategoryAttributeApi,
   CategoryAtributes,
   CategoryAttributesTypes,
   typesArray,
@@ -280,10 +281,12 @@ const CardAtributesVariants = ({
             ? CategoryAttributesTypes.DATE
             : CategoryAttributesTypes.STRING);
 
+    const a = attribute as CategoryAttributeApi;
+
     setAttributeForm({
-      name: attribute.display_name || attribute.name,
-      csv_name: attribute.csv_name || (attribute as CategoryAtributes).csv_name || "",
-      display_name: attribute.display_name || attribute.name,
+      name: a.name,
+      csv_name: a.csv_name ?? a.csvName ?? "",
+      display_name: a.display_name ?? a.displayName ?? a.name,
       type: validType,
       required: attribute.required ?? false,
       order: attribute.order ?? 0,
@@ -337,19 +340,22 @@ const CardAtributesVariants = ({
       order = attributes.applicationAttributes.length;
     }
 
-    // Usar display_name como name principal, y csv_name como obligatorio
     const finalDisplayName = attributeForm.display_name || attributeForm.name;
     const finalCsvName = attributeForm.csv_name?.trim() || "";
 
     const payload: CategoryAtributes = {
       ...attributeForm,
-      name: finalDisplayName, // El name será el display_name
-      csv_name: finalCsvName, // CSV name obligatorio
-      display_name: finalDisplayName, // Mantener display_name también
+      name:
+        dialogMode === "add"
+          ? finalDisplayName
+          : (currentAttribute?.name ?? finalDisplayName),
+      csv_name: finalCsvName,
+      display_name: finalDisplayName,
       required: attributeForm.required ?? false,
       type: attributeForm.type as CategoryAttributesTypes,
       scope: (dialogMode === "add" ? type : (attributeForm.scope ?? currentAttribute?.scope ?? type)) as "PRODUCT" | "VARIANT" | "APPLICATION",
       order: dialogMode === "add" ? order : (attributeForm.order ?? currentAttribute?.order ?? 0),
+      ...(dialogMode === "edit" && currentAttribute?.id ? { id: currentAttribute.id } : {}),
     };
 
     if (dialogMode === "add") {
@@ -652,11 +658,18 @@ const CardAtributesVariants = ({
               value={attributeForm.display_name || ""}
               onChange={(e) => {
                 const value = e.target.value;
-                setAttributeForm({
-                  ...attributeForm,
-                  display_name: value,
-                  name: value, // Mantener sincronizado con name por compatibilidad
-                });
+                if (dialogMode === "edit") {
+                  setAttributeForm({
+                    ...attributeForm,
+                    display_name: value,
+                  });
+                } else {
+                  setAttributeForm({
+                    ...attributeForm,
+                    display_name: value,
+                    name: value,
+                  });
+                }
               }}
               required
             />

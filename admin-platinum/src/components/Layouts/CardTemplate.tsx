@@ -28,14 +28,12 @@ type CardTemplateProps = {
   date?: Date;
   getItems?: () => void;
   getBrandById?: (id: Brand["id"]) => void;
-  getCategoryById?: any;
 };
 
 const CardTemplate = ({
   brand,
   category,
   getBrandById,
-  getCategoryById,
 }: CardTemplateProps) => {
   const { setSelectedBrand, openModal: openModalBrand } = useBrandContext();
   const location = useLocation();
@@ -61,10 +59,6 @@ const CardTemplate = ({
         action: "",
       });
     }
-  };
-
-  const handleEditCategory = async (id: Category["id"]) => {
-    await getCategoryById(id);
   };
 
   const getImageUrl = () => {
@@ -162,14 +156,10 @@ const CardTemplate = ({
               <DropdownMenuContent className="w-40">
                 <DropdownMenuLabel>Acciones</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                {pathname === "/dashboard/categorias" && (
+                {pathname === "/dashboard/categorias" && category?.id && (
                   <DropdownMenuGroup>
-                    <Link to="/dashboard/categorias/editar">
-                      <DropdownMenuItem
-                        onClick={() => handleEditCategory(category?.id)}
-                      >
-                        Editar Categoría
-                      </DropdownMenuItem>
+                    <Link to={`/dashboard/categorias/editar/${category.id}`}>
+                      <DropdownMenuItem>Editar Categoría</DropdownMenuItem>
                     </Link>
                   </DropdownMenuGroup>
                 )}

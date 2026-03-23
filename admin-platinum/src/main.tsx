@@ -147,6 +147,10 @@ const router = createBrowserRouter([
   },
   {
     path: "/dashboard/categorias/editar",
+    element: <Navigate to="/dashboard/categorias" replace />,
+  },
+  {
+    path: "/dashboard/categorias/editar/:id",
     element: (
       <ProtectedRoute>
         <EditCategory />
