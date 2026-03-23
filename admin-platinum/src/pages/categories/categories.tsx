@@ -31,8 +31,7 @@ import { useCategoryContext } from "@/context/categories-context";
 
 const Categorias = () => {
   const { selectedBrand, setSelectedBrand } = useBrandContext();
-  const { categories, loading, getCategories, getCategoryById } =
-    useCategoryContext();
+  const { categories, loading, getCategories } = useCategoryContext();
   const { brands } = useBrands();
   const location = useLocation();
 
@@ -145,7 +144,6 @@ const Categorias = () => {
                   category={categoria}
                   key={categoria.id}
                   getItems={getCategories}
-                  getCategoryById={getCategoryById}
                 />
               ))}
             </CardSectionLayout>

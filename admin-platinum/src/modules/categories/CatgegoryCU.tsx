@@ -20,7 +20,12 @@ import {
 import { useBrandContext } from "@/context/brand-context";
 import { useBrands } from "@/hooks/useBrands";
 import { useS3FileManager } from "@/hooks/useS3FileManager";
-import { Category, CategoryAtributes } from "@/models/category";
+import {
+  Category,
+  CategoryAttributeApi,
+  CategoryAtributes,
+  normalizeCategoryAttributeFromApi,
+} from "@/models/category";
 import {
   ChevronLeft,
   PlusCircleIcon,
@@ -103,17 +108,22 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
       let attributesArray: CategoryAtributes[] = [];
       if (category.attributes) {
         if (Array.isArray(category.attributes)) {
-          // Ya es un array
-          attributesArray = category.attributes;
-        } else if (typeof category.attributes === 'object') {
-          // Es un objeto con product, variant, application, etc.
-          const attrsObj = category.attributes as any;
+          attributesArray = category.attributes.map(
+            normalizeCategoryAttributeFromApi
+          );
+        } else if (typeof category.attributes === "object") {
+          const attrsObj = category.attributes as {
+            product?: CategoryAttributeApi[];
+            variant?: CategoryAttributeApi[];
+            reference?: CategoryAttributeApi[];
+            application?: CategoryAttributeApi[];
+          };
           attributesArray = [
             ...(attrsObj.product || []),
             ...(attrsObj.variant || []),
             ...(attrsObj.reference || []),
             ...(attrsObj.application || []),
-          ];
+          ].map((a) => normalizeCategoryAttributeFromApi(a));
         }
       }
 
@@ -290,36 +300,79 @@ const CategoryCU = ({ category, addCategory, updateCategory }: CategoryCUProps) 
             type: attr.type,
             required: attr.required,
             order: attr.order,
-            scope: attr.scope.toLowerCase(), // "PRODUCT" -> "product"
+            scope: attr.scope.toLowerCase(),
           }));
         const attributesToDelete = originalAttributeIds.filter(id => !currentAttributeIds.includes(id));
 
-        const updatePayload: any = {
+        const attributesToUpdate = form.attributes
+          .filter((attr): attr is CategoryAtributes & { id: string } =>
+            !!attr.id && originalAttributeIds.includes(attr.id)
+          )
+          .map((attr) => {
+            const rawOrig = originalAttributesArray.find((a) => a.id === attr.id);
+            if (!rawOrig) return null;
+            const orig = normalizeCategoryAttributeFromApi(rawOrig as CategoryAttributeApi);
+            const formDisplay = (attr.display_name || "").trim();
+            const origDisplay = (orig.display_name || orig.name || "").trim();
+            const formCsv = (attr.csv_name || "").trim();
+            const origCsv = (orig.csv_name || "").trim();
+            const typeMatch =
+              String(attr.type).toLowerCase() === String(orig.type).toLowerCase();
+            if (
+              formDisplay === origDisplay &&
+              formCsv === origCsv &&
+              attr.required === orig.required &&
+              typeMatch &&
+              attr.order === orig.order &&
+              attr.scope === orig.scope
+            ) {
+              return null;
+            }
+            return {
+              id: attr.id,
+              csvName: attr.csv_name || orig.csv_name,
+              displayName: attr.display_name || orig.display_name,
+              type: attr.type,
+              required: attr.required,
+              order: attr.order,
+              scope: attr.scope.toLowerCase(),
+            };
+          })
+          .filter(
+            (x): x is NonNullable<typeof x> => x !== null
+          );
+
+        const updatePayload: Record<string, unknown> = {
           name: form.name,
           description: form.description,
           imgUrl: imageUrl || category.imgUrl, // Usar imageUrl si está disponible, sino la original
         };
 
-        // Solo incluir brands si hay cambios
         if (brandsToAdd.length > 0 || brandsToDelete.length > 0) {
-          updatePayload.brands = {};
+          const brandsUpdate: { add?: string[]; remove?: string[] } = {};
           if (brandsToAdd.length > 0) {
-            updatePayload.brands.add = brandsToAdd;
+            brandsUpdate.add = brandsToAdd;
           }
           if (brandsToDelete.length > 0) {
-            // El backend espera 'remove' aunque el validador acepta 'delete'
-            updatePayload.brands.remove = brandsToDelete;
+            brandsUpdate.remove = brandsToDelete;
           }
+          updatePayload.brands = brandsUpdate;
         }
 
-        // Solo incluir attributes si hay cambios
-        if (attributesToAdd.length > 0 || attributesToDelete.length > 0) {
+        if (
+          attributesToAdd.length > 0 ||
+          attributesToDelete.length > 0 ||
+          attributesToUpdate.length > 0
+        ) {
           updatePayload.attributes = {};
           if (attributesToAdd.length > 0) {
-            updatePayload.attributes.add = attributesToAdd;
+            (updatePayload.attributes as { add: unknown[] }).add = attributesToAdd;
+          }
+          if (attributesToUpdate.length > 0) {
+            (updatePayload.attributes as { update: unknown[] }).update = attributesToUpdate;
           }
           if (attributesToDelete.length > 0) {
-            updatePayload.attributes.delete = attributesToDelete;
+            (updatePayload.attributes as { delete: string[] }).delete = attributesToDelete;
           }
         }
 
