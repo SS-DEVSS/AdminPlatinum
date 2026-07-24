@@ -84,7 +84,9 @@ export const useProducts = () => {
   const updateProduct = async (id: string, productData: unknown) => {
     try {
       setLoading(true);
-      const { data } = await client.patch(`/products/${id}`, productData);
+      const { data } = await client.patch(`/products/${id}`, productData, {
+        timeout: 120_000,
+      });
       return data;
     } catch (error) {
       console.error("Error updating product:", error);

@@ -18,6 +18,7 @@ import { Application } from "@/models/application";
 import { persistNewReferences } from "@/services/referenceService";
 import axiosClient from "@/services/axiosInstance";
 import { syncProductApplicationDeletions } from "@/utils/syncProductApplicationDeletions";
+import { syncProductReferenceDeletions } from "@/utils/syncProductReferenceDeletions";
 
 function normalizeAttributeValue(value: unknown): unknown {
   if (value === undefined || value === null || value === "") return null;
@@ -660,22 +661,16 @@ const NewProduct = () => {
           visibleInCatalog: detailsState.visibleInCatalog,
         };
 
+        let referencesToRemoveIds: string[] = [];
+
         if (existingProduct && existingProduct.references) {
           const existingReferenceIds = existingProduct.references
             .map((ref: { id?: string }) => ref.id)
             .filter((refId: string | undefined): refId is string => !!refId);
 
-          const referencesToRemoveIds = existingReferenceIds.filter(
+          referencesToRemoveIds = existingReferenceIds.filter(
             (refId: string) => !currentReferenceIds.includes(refId),
           );
-          const referencesToRemove = existingProduct.references
-            .filter((ref: { id?: string }) => referencesToRemoveIds.includes(ref.id))
-            .map((ref: { referenceNumber?: string }) => ref.referenceNumber)
-            .filter((num: string | undefined): num is string => !!num);
-
-          if (referencesToRemove.length > 0) {
-            productPayload.removeReferences = referencesToRemove;
-          }
         }
 
         // Include attributes if there are any
@@ -694,6 +689,13 @@ const NewProduct = () => {
           } else {
             productPayload.imgUrl = detailsState.imgUrl;
           }
+        }
+
+        if (referencesToRemoveIds.length > 0) {
+          await syncProductReferenceDeletions({
+            client: axiosClient(),
+            referenceIdsToDelete: referencesToRemoveIds,
+          });
         }
 
         await updateProduct(id, productPayload);
