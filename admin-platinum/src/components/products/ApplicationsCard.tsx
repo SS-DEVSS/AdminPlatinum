@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/card";
 import { Product } from "@/models/product";
 import { Application } from "@/models/application";
-import { PlusCircle, Pencil, ChevronDown, ChevronUp, Trash2, MoreVertical, Info } from "lucide-react";
+import { PlusCircle, Pencil, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Trash2, MoreVertical, Info } from "lucide-react";
 import ConfirmActionDialog from "@/components/ConfirmActionDialog";
 import * as React from "react";
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
@@ -47,6 +47,8 @@ import {
 
 const APPLICATIONS_NOTE =
   'Cada aplicación muestra información del vehículo (Modelo, Submodelo, Año, etc.) seguida de un identificador único entre paréntesis. Este identificador corresponde a los últimos 8 caracteres del ID de la aplicación en la base de datos, lo que permite diferenciar cada aplicación y facilitar su búsqueda o referencia si es necesario. Si aparece "BASE" o "Aplicación", significa que esa aplicación no tiene información adicional de vehículo, pero el identificador único permite diferenciarla de las demás.';
+
+const APPLICATIONS_PAGE_SIZE = 30;
 
 function getApplicationIds(applications: Application[]): string[] {
   return applications
@@ -157,6 +159,7 @@ const ApplicationsCard = ({
   const [deleteTarget, setDeleteTarget] = useState<ApplicationDeleteTarget | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
 
   const allApplicationIds = useMemo(
     () => getApplicationIds(state.applications),
@@ -665,6 +668,28 @@ const ApplicationsCard = ({
     });
   }, [state.applications]);
 
+  const totalGroupedCount = groupedApplications.length;
+  const totalPages = Math.max(1, Math.ceil(totalGroupedCount / APPLICATIONS_PAGE_SIZE));
+
+  const paginatedGroups = useMemo(() => {
+    const startIndex = currentPage * APPLICATIONS_PAGE_SIZE;
+    return groupedApplications.slice(startIndex, startIndex + APPLICATIONS_PAGE_SIZE);
+  }, [groupedApplications, currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(0);
+    setExpandedRows(new Set());
+  }, [state.applications]);
+
+  useEffect(() => {
+    if (currentPage > totalPages - 1) {
+      setCurrentPage(Math.max(0, totalPages - 1));
+    }
+  }, [currentPage, totalPages]);
+
+  const startItem = totalGroupedCount === 0 ? 0 : currentPage * APPLICATIONS_PAGE_SIZE + 1;
+  const endItem = Math.min((currentPage + 1) * APPLICATIONS_PAGE_SIZE, totalGroupedCount);
+
   return (
     <Card className="w-full flex flex-col">
       <CardHeader>
@@ -768,10 +793,11 @@ const ApplicationsCard = ({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {groupedApplications.map((group, index) => {
-                      const isExpanded = expandedRows.has(index);
+                    {paginatedGroups.map((group, pageIndex) => {
+                      const groupIndex = currentPage * APPLICATIONS_PAGE_SIZE + pageIndex;
+                      const isExpanded = expandedRows.has(groupIndex);
                       return (
-                        <React.Fragment key={index}>
+                        <React.Fragment key={groupIndex}>
                           <TableRow>
                             <TableCell className="w-10 px-2">
                               <Checkbox
@@ -784,7 +810,7 @@ const ApplicationsCard = ({
                               <div className="flex items-center gap-2">
                                 {group.applications.length > 1 && (
                                   <button
-                                    onClick={() => toggleRowExpand(index)}
+                                    onClick={() => toggleRowExpand(groupIndex)}
                                     className="p-1 hover:bg-gray-100 rounded"
                                     title={isExpanded ? "Colapsar" : "Expandir para ver aplicaciones"}
                                   >
@@ -899,6 +925,66 @@ const ApplicationsCard = ({
               </div>
             );
           })()
+        )}
+        {totalGroupedCount > 0 && (
+          <div className="mt-4 flex w-full flex-col gap-3 rounded-lg border bg-muted/30 px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted-foreground">
+              Mostrando{" "}
+              <span className="font-semibold text-foreground">{startItem}</span> -{" "}
+              <span className="font-semibold text-foreground">{endItem}</span> de{" "}
+              <span className="font-semibold text-foreground">{totalGroupedCount}</span> resultados
+            </p>
+            {totalPages > 1 && (
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  type="button"
+                  className="h-9 px-2"
+                  onClick={() => setCurrentPage(0)}
+                  disabled={currentPage === 0}
+                >
+                  {"<<"}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  type="button"
+                  className="h-9 px-2"
+                  onClick={() => setCurrentPage((page) => Math.max(0, page - 1))}
+                  disabled={currentPage === 0}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="px-1 text-sm text-muted-foreground">
+                  Página{" "}
+                  <span className="font-semibold text-foreground">
+                    {currentPage + 1} de {totalPages}
+                  </span>
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  type="button"
+                  className="h-9 px-2"
+                  onClick={() => setCurrentPage((page) => Math.min(totalPages - 1, page + 1))}
+                  disabled={currentPage >= totalPages - 1}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  type="button"
+                  className="h-9 px-2"
+                  onClick={() => setCurrentPage(totalPages - 1)}
+                  disabled={currentPage >= totalPages - 1}
+                >
+                  {">>"}
+                </Button>
+              </div>
+            )}
+          </div>
         )}
       </CardContent>
 
