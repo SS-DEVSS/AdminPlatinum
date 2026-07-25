@@ -70,11 +70,17 @@ function buildFormSnapshot(
   });
 }
 
+type ProductAttributeValueRef = {
+  id: string;
+  idAttribute: string;
+};
+
 type InitialFormData = {
   details: detailsType;
   attributes: Record<string, unknown>;
   references: Reference[];
   applications: Application[];
+  productAttributeValues: ProductAttributeValueRef[];
 };
 
 function cloneInitialFormData(data: InitialFormData): InitialFormData {
@@ -87,6 +93,7 @@ function cloneInitialFormData(data: InitialFormData): InitialFormData {
     attributes: { ...data.attributes },
     references: data.references.map((reference) => ({ ...reference })),
     applications: data.applications.map((application) => ({ ...application })),
+    productAttributeValues: data.productAttributeValues.map((value) => ({ ...value })),
   };
 }
 
@@ -111,7 +118,11 @@ const NewProduct = () => {
     attributes: {},
     references: [],
     applications: [],
+    productAttributeValues: [],
   });
+  const pendingDeletedReferenceIdsRef = useRef<Set<string>>(new Set());
+  const pendingDeletedApplicationIdsRef = useRef<Set<string>>(new Set());
+  const [relationsRevision, setRelationsRevision] = useState(0);
   const [formResetKey, setFormResetKey] = useState(0);
   const loadedProductIdRef = useRef<string | null>(null);
 
@@ -119,6 +130,26 @@ const NewProduct = () => {
     setCurrentProduct((prev: { applications?: Application[] } | null) =>
       prev ? { ...prev, applications } : prev,
     );
+  }, []);
+
+  const handleApplicationsDeleted = useCallback((applicationIds: string[]) => {
+    applicationIds.forEach((applicationId) => {
+      pendingDeletedApplicationIdsRef.current.add(applicationId);
+    });
+    setRelationsRevision((value) => value + 1);
+  }, []);
+
+  const handleApplicationsMutated = useCallback(() => {
+    setRelationsRevision((value) => value + 1);
+  }, []);
+
+  const handleReferenceDeleted = useCallback((referenceId: string) => {
+    pendingDeletedReferenceIdsRef.current.add(referenceId);
+    setRelationsRevision((value) => value + 1);
+  }, []);
+
+  const handleReferencesMutated = useCallback(() => {
+    setRelationsRevision((value) => value + 1);
   }, []);
 
   const {
@@ -141,16 +172,10 @@ const NewProduct = () => {
   useEffect(() => {
     const loadProductData = async () => {
       if (isEditMode && id) {
-        const isInitialProductLoad = loadedProductIdRef.current !== id;
         setIsLoadingProduct(true);
-        const product = await getProductById(id);
+        const product = await getProductById(id, { view: "edit" });
         if (product) {
-          setCurrentProduct((prev: { applications?: Application[] } | null) => {
-            if (isInitialProductLoad || !prev?.applications?.length) {
-              return product;
-            }
-            return { ...product, applications: prev.applications };
-          });
+          setCurrentProduct(product);
           // 1. Populate Details
           // Find the category object from context based on product.category.id
           const categoryId = product.category?.id || product.category;
@@ -259,11 +284,22 @@ const NewProduct = () => {
           }
           setAttributesState(attrs);
 
-          // 3. Populate References
-          const loadedReferences = product.references ?? [];
-          if (loadedReferences.length > 0) {
-            setReferencesState({ references: loadedReferences });
+          const productAttributeValues: ProductAttributeValueRef[] = (product.attributeValues ?? [])
+            .map((av: { id?: string; idAttribute?: string; id_attribute?: string }) => ({
+              id: av.id ?? "",
+              idAttribute: av.idAttribute ?? av.id_attribute ?? "",
+            }))
+            .filter((av: ProductAttributeValueRef) => av.id && av.idAttribute);
+
+          // 3. Populate References from dedicated endpoint
+          let loadedReferences: Reference[] = [];
+          try {
+            const refsResponse = await axiosClient().get(`/references/product/${id}`);
+            loadedReferences = refsResponse.data?.references ?? [];
+          } catch {
+            loadedReferences = [];
           }
+          setReferencesState({ references: loadedReferences });
 
           setInitialSnapshot(
             buildFormSnapshot(loadedDetails, attrs, loadedReferences, []),
@@ -273,189 +309,10 @@ const NewProduct = () => {
             attributes: attrs,
             references: loadedReferences,
             applications: [],
+            productAttributeValues,
           });
 
-          // 4. Populate Applications (only on initial load for this product)
-          if (isInitialProductLoad) {
-          // Convert backend applications to frontend format
-          // Backend applications have: id, sku, origin, attributeValues
-          // Frontend expects: id, referenceBrand, referenceNumber, type, description
-          if (product.applications && Array.isArray(product.applications)) {
-            const formattedApplications = product.applications.map(
-              (app: any) => {
-                // Extract key attributes from attributeValues
-                // Applications typically have: Modelo, Submodelo, Año, Litros_Motor, etc.
-                const getAttributeValue = (attrName: string) => {
-                  const attr = app.attributeValues?.find(
-                    (av: any) =>
-                      av.attribute?.name === attrName ||
-                      av.attribute?.name?.toLowerCase() ===
-                        attrName.toLowerCase(),
-                  );
-                  if (!attr) return null;
-
-                  const isYearAttribute =
-                    attrName.toLowerCase().includes("año") ||
-                    attrName.toLowerCase().includes("anio") ||
-                    attrName.toLowerCase().includes("year");
-
-                  // For year attributes, prioritize valueNumber (as it's stored now)
-                  if (isYearAttribute) {
-                    if (
-                      attr.valueNumber !== null &&
-                      attr.valueNumber !== undefined
-                    ) {
-                      return attr.valueNumber;
-                    }
-                    // Fallback to valueDate if valueNumber not available
-                    if (attr.valueDate) {
-                      const date = new Date(attr.valueDate);
-                      if (!isNaN(date.getTime())) {
-                        return date.getFullYear();
-                      }
-                    }
-                    // Last resort: valueString
-                    if (attr.valueString) {
-                      const str = String(attr.valueString);
-                      const yearMatch = str.match(/^(\d{4})/);
-                      if (yearMatch) {
-                        return parseInt(yearMatch[1], 10);
-                      }
-                      return str;
-                    }
-                    return null;
-                  }
-
-                  // For non-year attributes, use standard priority
-                  return (
-                    attr.valueString ||
-                    attr.valueNumber ||
-                    attr.valueBoolean ||
-                    null
-                  );
-                };
-
-                // Try common attribute names
-                const modelo = getAttributeValue("Modelo");
-                const submodelo = getAttributeValue("Submodelo");
-                const año = getAttributeValue("Año");
-                const litrosMotor = getAttributeValue("Litros_Motor");
-                const ccMotor = getAttributeValue("CC_Motor");
-                const cidMotor = getAttributeValue("CID_Motor");
-                const cilindrosMotor = getAttributeValue("Cilindros_Motor");
-                const bloqueMotor = getAttributeValue("Bloque_Motor");
-                const motor = getAttributeValue("Motor");
-                const tipoMotor = getAttributeValue("Tipo_Motor");
-                const transmision =
-                  getAttributeValue("Transmisión") ||
-                  getAttributeValue("Transmision");
-
-                // Build display text from available attributes (prioritize most distinctive ones)
-                const parts: string[] = [];
-
-                // Modelo is usually the most distinctive
-                if (modelo) parts.push(String(modelo));
-
-                // Submodelo adds more specificity
-                if (submodelo) parts.push(String(submodelo));
-
-                // Año is important for differentiation - ensure it's always just the year number
-                if (año) {
-                  let añoStr = String(año);
-                  // If it looks like a timestamp or ISO date, extract just the year
-                  if (
-                    añoStr.includes("T") ||
-                    (añoStr.includes("-") && añoStr.length > 4)
-                  ) {
-                    const yearMatch = añoStr.match(/^(\d{4})/);
-                    if (yearMatch) {
-                      añoStr = yearMatch[1];
-                    }
-                  }
-                  // Also handle if it's a number - just convert to string
-                  if (typeof año === "number") {
-                    añoStr = año.toString();
-                  }
-                  parts.push(añoStr);
-                }
-
-                // Motor information
-                if (motor) {
-                  parts.push(String(motor));
-                } else if (tipoMotor) {
-                  parts.push(String(tipoMotor));
-                } else if (litrosMotor) {
-                  parts.push(`${litrosMotor}L`);
-                } else if (ccMotor) {
-                  parts.push(`${ccMotor}CC`);
-                } else if (cidMotor) {
-                  parts.push(`${cidMotor}CID`);
-                }
-
-                // Additional motor details if available
-                if (cilindrosMotor && !motor) {
-                  parts.push(`${cilindrosMotor}cil`);
-                }
-
-                if (bloqueMotor) {
-                  parts.push(bloqueMotor);
-                }
-
-                if (transmision) {
-                  parts.push(transmision);
-                }
-
-                // If we have no distinctive attributes, don't add anything
-                // We'll just use the ID to differentiate
-
-                // Always append a short version of the ID to make each application unique
-                // Use last 8 characters of the ID (more readable than first 8)
-                const shortId = app.id
-                  .substring(app.id.length - 8)
-                  .toUpperCase();
-
-                // Build display text: combine attributes with ID
-                // NEVER use app.sku as it's the same for all applications
-                let displayText = "";
-                if (parts.length > 0) {
-                  displayText = `${parts.join(" - ")} (${shortId})`;
-                } else {
-                  // If no attributes, just show the ID
-                  displayText = `Aplicación (${shortId})`;
-                }
-
-                // Return Application format with displayText for UI display
-                const formatted: any = {
-                  id: app.id,
-                  sku: app.sku || "",
-                  origin: app.origin || null,
-                  attributeValues: app.attributeValues || [],
-                  // Store formatted display text for UI
-                  displayText: displayText,
-                };
-
-                return formatted;
-              },
-            );
-
-            setApplicationsState({ applications: formattedApplications });
-            initialFormDataRef.current = cloneInitialFormData({
-              ...initialFormDataRef.current,
-              applications: formattedApplications,
-            });
-            setInitialSnapshot(
-              buildFormSnapshot(
-                initialFormDataRef.current.details,
-                initialFormDataRef.current.attributes,
-                initialFormDataRef.current.references,
-                formattedApplications,
-              ),
-            );
-          } else {
-            setApplicationsState({ applications: [] });
-          }
           loadedProductIdRef.current = id;
-          }
         }
         setIsLoadingProduct(false);
       }
@@ -468,6 +325,7 @@ const NewProduct = () => {
 
   const hasUnsavedChanges = useMemo(() => {
     if (initialSnapshot === null) return false;
+    if (relationsRevision > 0) return true;
     return (
       buildFormSnapshot(
         detailsState,
@@ -476,7 +334,14 @@ const NewProduct = () => {
         applicationsState.applications,
       ) !== initialSnapshot
     );
-  }, [initialSnapshot, detailsState, attributesState, referencesState, applicationsState.applications]);
+  }, [
+    initialSnapshot,
+    detailsState,
+    attributesState,
+    referencesState,
+    applicationsState.applications,
+    relationsRevision,
+  ]);
 
   const handleDiscard = () => {
     const initial = cloneInitialFormData(initialFormDataRef.current);
@@ -484,6 +349,9 @@ const NewProduct = () => {
     setAttributesState(initial.attributes);
     setReferencesState({ references: initial.references });
     setApplicationsState({ applications: initial.applications });
+    pendingDeletedReferenceIdsRef.current.clear();
+    pendingDeletedApplicationIdsRef.current.clear();
+    setRelationsRevision(0);
     setFormResetKey((key) => key + 1);
   };
 
@@ -548,44 +416,34 @@ const NewProduct = () => {
         return;
       }
 
-      // Get existing product data if editing
-      let existingProduct: any = null;
-      if (isEditMode && id) {
-        existingProduct = await getProductById(id);
-      }
-
       // Format attributes
-      const formattedAttributes: any[] = [];
+      const formattedAttributes: Array<Record<string, unknown>> = [];
       if (category.attributes) {
         const productAttributes = Array.isArray(category.attributes)
-          ? category.attributes.filter((a: any) => a.scope === "PRODUCT")
-          : (category.attributes as any)?.product || [];
+          ? category.attributes.filter((a: { scope?: string }) => a.scope === "PRODUCT")
+          : (category.attributes as { product?: Array<{ id: string; name: string; type?: string }> }).product || [];
 
-        productAttributes.forEach((attr: any) => {
+        productAttributes.forEach((attr) => {
           const value = attributesState[attr.name];
           if (value !== undefined && value !== null && value !== "") {
-            // Find the attribute value ID if editing
             let idAttributeValue: string | undefined;
-            if (isEditMode && existingProduct?.attributeValues) {
-              const existingAttrValue = existingProduct.attributeValues.find(
-                (av: any) => av.idAttribute === attr.id,
+            if (isEditMode) {
+              const existingAttrValue = initialFormDataRef.current.productAttributeValues.find(
+                (av) => av.idAttribute === attr.id,
               );
               if (existingAttrValue) {
                 idAttributeValue = existingAttrValue.id;
               }
             }
 
-            // In edit mode, only include attributes that already exist (have idAttributeValue)
-            // New attributes would need to be created separately, which is not supported by the update endpoint
             if (isEditMode && !idAttributeValue) {
-              return; // Skip this attribute
+              return;
             }
 
-            const attributeValue: any = {
+            const attributeValue: Record<string, unknown> = {
               idAttribute: attr.id,
             };
 
-            // Set the value based on attribute type
             if (
               attr.type === "STRING" ||
               attr.type === "TEXT" ||
@@ -627,10 +485,9 @@ const NewProduct = () => {
               attributeValue.valueBoolean = null;
             }
 
-            // In edit mode, idAttributeValue is required
             if (isEditMode) {
               if (!idAttributeValue) {
-                return; // Skip this attribute
+                return;
               }
               attributeValue.idAttributeValue = idAttributeValue;
             }
@@ -646,10 +503,6 @@ const NewProduct = () => {
       );
 
       // Format references - new refs are persisted via POST /references (full metadata)
-      const currentReferenceIds = referencesState.references
-        .map((ref) => ref.id)
-        .filter((id): id is string => !!id);
-
       if (isEditMode && id) {
         await persistNewReferences(id, referencesState.references);
 
@@ -661,17 +514,8 @@ const NewProduct = () => {
           visibleInCatalog: detailsState.visibleInCatalog,
         };
 
-        let referencesToRemoveIds: string[] = [];
-
-        if (existingProduct && existingProduct.references) {
-          const existingReferenceIds = existingProduct.references
-            .map((ref: { id?: string }) => ref.id)
-            .filter((refId: string | undefined): refId is string => !!refId);
-
-          referencesToRemoveIds = existingReferenceIds.filter(
-            (refId: string) => !currentReferenceIds.includes(refId),
-          );
-        }
+        const referencesToRemoveIds = Array.from(pendingDeletedReferenceIdsRef.current);
+        const applicationIdsToDelete = Array.from(pendingDeletedApplicationIdsRef.current);
 
         // Include attributes if there are any
         if (formattedAttributes.length > 0) {
@@ -681,9 +525,6 @@ const NewProduct = () => {
         // If there's a new image, add it to the payload
         // The backend expects imageUrl or imgUrl
         if (detailsState.imgUrl && detailsState.imgUrl.trim() !== "") {
-          // Check if it's a full URL or just a path
-          // If it's a full URL (starts with http), use it as imageUrl
-          // Otherwise, it's already a path and we can use it as imgUrl
           if (detailsState.imgUrl.startsWith("http")) {
             productPayload.imageUrl = detailsState.imgUrl;
           } else {
@@ -698,28 +539,19 @@ const NewProduct = () => {
           });
         }
 
-        await updateProduct(id, productPayload);
-
-        const existingApplicationIds = (existingProduct?.applications ?? [])
-          .map((application: { id?: string }) => application.id)
-          .filter((applicationId: string | undefined): applicationId is string =>
-            Boolean(applicationId),
-          );
-        const currentApplicationIds = applicationsState.applications
-          .map((application) => application.id)
-          .filter((applicationId): applicationId is string => Boolean(applicationId));
-        const applicationIdsToDelete = existingApplicationIds.filter(
-          (applicationId: string) => !currentApplicationIds.includes(applicationId),
-        );
-
         if (applicationIdsToDelete.length > 0) {
           await syncProductApplicationDeletions({
             client: axiosClient(),
             productId: id,
             applicationIdsToDelete,
-            remainingApplicationCount: currentApplicationIds.length,
           });
         }
+
+        await updateProduct(id, productPayload);
+
+        pendingDeletedReferenceIdsRef.current.clear();
+        pendingDeletedApplicationIdsRef.current.clear();
+        setRelationsRevision(0);
 
         toast({
           title: "Producto actualizado",
@@ -875,6 +707,10 @@ const NewProduct = () => {
             setAttributesState={setAttributesState}
             setCanContinue={setCanContinue}
             onApplicationsChange={handleApplicationsChange}
+            onApplicationsDeleted={handleApplicationsDeleted}
+            onApplicationsMutated={handleApplicationsMutated}
+            onReferenceDeleted={handleReferenceDeleted}
+            onReferencesMutated={handleReferencesMutated}
           />
           {isEditMode && (
             <>

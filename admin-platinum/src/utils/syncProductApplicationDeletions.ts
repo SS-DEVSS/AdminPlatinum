@@ -8,23 +8,23 @@ type SyncProductApplicationDeletionsParams = {
   client: AxiosInstance;
   productId: string;
   applicationIdsToDelete: string[];
-  remainingApplicationCount: number;
+  deleteAllForProduct?: boolean;
 };
 
 export async function syncProductApplicationDeletions({
   client,
   productId,
   applicationIdsToDelete,
-  remainingApplicationCount,
+  deleteAllForProduct = false,
 }: SyncProductApplicationDeletionsParams): Promise<void> {
-  if (applicationIdsToDelete.length === 0) return;
-
-  if (remainingApplicationCount === 0) {
+  if (deleteAllForProduct) {
     await client.delete(`/applications/product/${productId}`, {
       timeout: DELETE_ALL_TIMEOUT_MS,
     });
     return;
   }
+
+  if (applicationIdsToDelete.length === 0) return;
 
   if (applicationIdsToDelete.length === 1) {
     await client.delete(`/applications/${applicationIdsToDelete[0]}`, {

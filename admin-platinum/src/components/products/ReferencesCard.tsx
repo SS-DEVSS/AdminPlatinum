@@ -33,9 +33,18 @@ type ReferencesCardProps = {
   setState: React.Dispatch<React.SetStateAction<{ references: Reference[] }>>;
   product?: Product | null;
   layout?: "default" | "sidebar";
+  onReferenceDeleted?: (referenceId: string) => void;
+  onReferencesMutated?: () => void;
 };
 
-const ReferencesCard = ({ state, setState, product, layout = "default" }: ReferencesCardProps) => {
+const ReferencesCard = ({
+  state,
+  setState,
+  product,
+  layout = "default",
+  onReferenceDeleted,
+  onReferencesMutated,
+}: ReferencesCardProps) => {
   const isSidebar = layout === "sidebar";
   const { categories } = useCategoryContext();
   const [showInput, setShowInput] = useState(false);
@@ -69,26 +78,26 @@ const ReferencesCard = ({ state, setState, product, layout = "default" }: Refere
 
   // Load references from product when editing (only once per product)
   useEffect(() => {
-    // Only load references if:
-    // 1. Product exists and has references
-    // 2. We haven't loaded references for this product yet (different product ID)
-    // 3. State is currently empty (to avoid overwriting user changes)
-    if (product && product.id && product.references && product.id !== loadedProductId && state.references.length === 0) {
-      setState({
-        references: product.references,
-      });
-      setLoadedProductId(product.id);
-    }
-    // Reset the loaded ID if product changes to a different one
-    if (product && product.id && product.id !== loadedProductId && !product.references) {
-      // Product changed but no references, reset to allow loading when references become available
+    if (!product?.id) {
       setLoadedProductId(null);
+      return;
     }
-    // If product is null/undefined, reset the loaded ID
-    if (!product || !product.id) {
-      setLoadedProductId(null);
-    }
-  }, [product?.id]); // Only depend on product.id to avoid re-running when product object changes
+
+    if (product.id === loadedProductId) return;
+
+    const loadReferences = async () => {
+      try {
+        const response = await axiosClient().get(`/references/product/${product.id}`);
+        setState({ references: response.data?.references ?? [] });
+      } catch {
+        setState({ references: product.references ?? [] });
+      } finally {
+        setLoadedProductId(product.id);
+      }
+    };
+
+    void loadReferences();
+  }, [product?.id, loadedProductId, product?.references, setState]);
 
   const handleAddClick = () => {
     setShowInput((prevShowInput) => !prevShowInput);
@@ -119,6 +128,10 @@ const ReferencesCard = ({ state, setState, product, layout = "default" }: Refere
   };
 
   const handleRemoveReference = (reference: Reference) => {
+    if (reference.id && !reference.isNew) {
+      onReferenceDeleted?.(reference.id);
+    }
+    onReferencesMutated?.();
     setState((prevForm) => ({
       ...prevForm,
       references: prevForm.references.filter((ref) => ref.id !== reference.id),

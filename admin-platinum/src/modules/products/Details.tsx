@@ -31,6 +31,10 @@ type DetailsInterface = {
   setAttributesState?: React.Dispatch<React.SetStateAction<any>>;
   setCanContinue?: React.Dispatch<React.SetStateAction<boolean>>;
   onApplicationsChange?: (applications: Application[]) => void;
+  onApplicationsDeleted?: (applicationIds: string[]) => void;
+  onApplicationsMutated?: () => void;
+  onReferenceDeleted?: (referenceId: string) => void;
+  onReferencesMutated?: () => void;
 };
 
 const Details = ({
@@ -45,6 +49,10 @@ const Details = ({
   setAttributesState,
   setCanContinue,
   onApplicationsChange,
+  onApplicationsDeleted,
+  onApplicationsMutated,
+  onReferenceDeleted,
+  onReferencesMutated,
 }: DetailsInterface) => {
   const isEditMode = !!product;
 
@@ -80,6 +88,8 @@ const Details = ({
             setState={setApplicationsState}
             product={product}
             onApplicationsChange={onApplicationsChange}
+            onApplicationsDeleted={onApplicationsDeleted}
+            onApplicationsMutated={onApplicationsMutated}
           />
         ) : (
           <Card>
@@ -116,6 +126,8 @@ const Details = ({
               state={referencesState}
               setState={setReferencesState}
               product={product}
+              onReferenceDeleted={onReferenceDeleted}
+              onReferencesMutated={onReferencesMutated}
             />
             <ProductTechnicalSheetsCard productId={product?.id} />
           </>
