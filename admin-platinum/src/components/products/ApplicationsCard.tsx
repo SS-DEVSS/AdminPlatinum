@@ -10,7 +10,7 @@ import { Application } from "@/models/application";
 import { PlusCircle, Pencil, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Trash2, MoreVertical, Info } from "lucide-react";
 import ConfirmActionDialog from "@/components/ConfirmActionDialog";
 import * as React from "react";
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import NoData from "../NoData";
 import { Button } from "../ui/button";
 import { Checkbox } from "../ui/checkbox";
@@ -76,6 +76,8 @@ type ApplicationsCardProps = {
   setState: React.Dispatch<React.SetStateAction<{ applications: Application[] }>>;
   product?: Product | null;
   onApplicationsChange?: (applications: Application[]) => void;
+  onApplicationsDeleted?: (applicationIds: string[]) => void;
+  onApplicationsMutated?: () => void;
 };
 
 type GroupedApplication = {
@@ -145,13 +147,16 @@ type ApplicationDeleteTarget = {
 };
 
 const ApplicationsCard = ({
-  state,
   setState,
   product,
   onApplicationsChange,
+  onApplicationsDeleted,
+  onApplicationsMutated,
 }: ApplicationsCardProps) => {
   const { categories } = useCategoryContext();
-  const hydratedProductIdRef = useRef<string | null>(null);
+  const [pageApplications, setPageApplications] = useState<Application[]>([]);
+  const [totalApplications, setTotalApplications] = useState(0);
+  const [isLoadingPage, setIsLoadingPage] = useState(false);
   const [editingApplication, setEditingApplication] = useState<Application | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   // Always use table view - list view removed
@@ -162,8 +167,8 @@ const ApplicationsCard = ({
   const [currentPage, setCurrentPage] = useState(0);
 
   const allApplicationIds = useMemo(
-    () => getApplicationIds(state.applications),
-    [state.applications]
+    () => getApplicationIds(pageApplications),
+    [pageApplications]
   );
 
   const toggleSelectAll = () => {
@@ -211,13 +216,19 @@ const ApplicationsCard = ({
       const idsToRemove = new Set(getApplicationIds(applications));
       if (idsToRemove.size === 0) return;
 
-      setState((prev) => {
-        const nextApplications = prev.applications.filter(
+      onApplicationsDeleted?.(Array.from(idsToRemove));
+
+      setPageApplications((prev) => {
+        const nextApplications = prev.filter(
           (application) => !application.id || !idsToRemove.has(application.id),
         );
+        setState({ applications: nextApplications });
         onApplicationsChange?.(nextApplications);
-        return { applications: nextApplications };
+        return nextApplications;
       });
+
+      setTotalApplications((prev) => Math.max(0, prev - idsToRemove.size));
+      onApplicationsMutated?.();
 
       setSelectedIds((prev) => {
         const next = new Set(prev);
@@ -225,7 +236,7 @@ const ApplicationsCard = ({
         return next;
       });
     },
-    [setState, onApplicationsChange],
+    [setState, onApplicationsChange, onApplicationsDeleted, onApplicationsMutated],
   );
 
   // Get category attributes (only application attributes)
@@ -401,19 +412,36 @@ const ApplicationsCard = ({
     });
   }, []);
 
-  const refreshApplicationsFromBackend = useCallback(async () => {
+  const refreshApplicationsFromBackend = useCallback(async (page = currentPage + 1) => {
     if (!product?.id) return;
 
+    setIsLoadingPage(true);
     try {
-      const response = await axiosClient().get(`/applications/product/${product.id}`);
+      const response = await axiosClient().get(`/applications/product/${product.id}`, {
+        params: { page, pageSize: APPLICATIONS_PAGE_SIZE },
+      });
       const backendApplications = response.data?.applications ?? [];
       const formattedApplications = formatApplications(backendApplications);
+      setPageApplications(formattedApplications);
+      setTotalApplications(response.data?.total ?? formattedApplications.length);
       setState({ applications: formattedApplications });
       onApplicationsChange?.(formattedApplications);
     } catch {
-      // Keep current list if refresh fails
+      // Keep current page if refresh fails
+    } finally {
+      setIsLoadingPage(false);
     }
-  }, [product?.id, formatApplications, setState, onApplicationsChange]);
+  }, [product?.id, currentPage, formatApplications, setState, onApplicationsChange]);
+
+  useEffect(() => {
+    if (!product?.id) {
+      setPageApplications([]);
+      setTotalApplications(0);
+      return;
+    }
+
+    void refreshApplicationsFromBackend(currentPage + 1);
+  }, [product?.id, currentPage, refreshApplicationsFromBackend]);
 
   const handleDeleteApplications = (applications: Application[]) => {
     if (applications.length === 0) return;
@@ -460,31 +488,16 @@ const ApplicationsCard = ({
     const applicationIds = Array.from(selectedIds);
     if (applicationIds.length === 0) return;
 
-    const applicationsToRemove = state.applications.filter(
-      (application) => application.id && applicationIds.includes(application.id),
+    const applicationsToRemove = applicationIds.map(
+      (applicationId) => ({ id: applicationId } as Application),
     );
     removeApplicationsLocally(applicationsToRemove);
     clearSelection();
     setBulkDeleteOpen(false);
   };
 
-  // Hydrate once per product from parent payload; avoid overwriting after local deletes/edits
-  useEffect(() => {
-    if (!product?.id) return;
-    if (hydratedProductIdRef.current === product.id) return;
-
-    hydratedProductIdRef.current = product.id;
-    const productApplications = (product as { applications?: unknown[] }).applications ?? [];
-
-    if (productApplications.length > 0) {
-      setState({ applications: formatApplications(productApplications) });
-    } else {
-      setState({ applications: [] });
-    }
-  }, [product?.id, formatApplications, setState]);
-
   const handleEditSuccess = async () => {
-    await refreshApplicationsFromBackend();
+    await refreshApplicationsFromBackend(currentPage + 1);
   };
 
   // Helper function to extract attribute value from application
@@ -635,14 +648,14 @@ const ApplicationsCard = ({
 
   // Group applications by similarity (all attributes except Año), then split by consecutive years
   const groupedApplications = useMemo((): GroupedApplication[] => {
-    if (state.applications.length === 0) {
+    if (pageApplications.length === 0) {
       return [];
     }
 
     // Group applications by their grouping key
     const groups = new Map<string, Application[]>();
 
-    state.applications.forEach((app: Application) => {
+    pageApplications.forEach((app: Application) => {
       const key = getGroupingKey(app);
       if (!groups.has(key)) {
         groups.set(key, []);
@@ -666,20 +679,12 @@ const ApplicationsCard = ({
       if (minA !== minB) return minA - minB;
       return (a.añoMax ?? 0) - (b.añoMax ?? 0);
     });
-  }, [state.applications]);
+  }, [pageApplications]);
 
-  const totalGroupedCount = groupedApplications.length;
+  const totalGroupedCount = totalApplications;
   const totalPages = Math.max(1, Math.ceil(totalGroupedCount / APPLICATIONS_PAGE_SIZE));
 
-  const paginatedGroups = useMemo(() => {
-    const startIndex = currentPage * APPLICATIONS_PAGE_SIZE;
-    return groupedApplications.slice(startIndex, startIndex + APPLICATIONS_PAGE_SIZE);
-  }, [groupedApplications, currentPage]);
-
-  useEffect(() => {
-    setCurrentPage(0);
-    setExpandedRows(new Set());
-  }, [state.applications]);
+  const paginatedGroups = groupedApplications;
 
   useEffect(() => {
     if (currentPage > totalPages - 1) {
@@ -749,17 +754,20 @@ const ApplicationsCard = ({
             </Button>
           </div>
         )}
-        {state.applications.length === 0 ? (
+        {totalApplications === 0 && !isLoadingPage ? (
           <NoData>
             <p className="text-[#94A3B8] font-medium">
               No hay aplicaciones asociadas
             </p>
           </NoData>
         ) : (
-          // Table view with grouped applications
+          // Table view with grouped applications (server paginated)
           (() => {
             return (
               <div className="w-full overflow-x-auto rounded-md border">
+                {isLoadingPage && (
+                  <p className="px-4 py-3 text-sm text-muted-foreground">Cargando aplicaciones...</p>
+                )}
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/50 hover:bg-muted/50">

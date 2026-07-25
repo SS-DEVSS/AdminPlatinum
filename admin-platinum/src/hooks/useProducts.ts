@@ -45,9 +45,16 @@ export const useProducts = () => {
     return request;
   }, [client, toast]);
 
-  const getProductById = useCallback(async (id: string) => {
+  const getProductById = useCallback(async (id: string, options?: { view?: "edit" | "full" }) => {
     try {
-      const { data } = await client.get(`/products/${id}`);
+      const params =
+        options?.view === "edit"
+          ? { view: "edit" }
+          : undefined;
+      const { data } = await client.get(`/products/${id}`, {
+        params,
+        timeout: 120_000,
+      });
       return data;
     } catch (error) {
       console.error("[useProducts] Error fetching product by id:", error);
@@ -84,7 +91,9 @@ export const useProducts = () => {
   const updateProduct = async (id: string, productData: unknown) => {
     try {
       setLoading(true);
-      const { data } = await client.patch(`/products/${id}`, productData);
+      const { data } = await client.patch(`/products/${id}`, productData, {
+        timeout: 120_000,
+      });
       return data;
     } catch (error) {
       console.error("Error updating product:", error);
