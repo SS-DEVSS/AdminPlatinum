@@ -147,7 +147,6 @@ type ApplicationDeleteTarget = {
 };
 
 const ApplicationsCard = ({
-  state,
   setState,
   product,
   onApplicationsChange,
