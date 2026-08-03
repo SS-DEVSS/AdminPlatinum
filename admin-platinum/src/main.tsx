@@ -21,6 +21,7 @@ import NewBlogPost from "@/pages/news/newBlogPost";
 import EditBlogPost from "@/pages/news/editBlogPost";
 import { NewsProvider } from "./context/news-context";
 import Banners from "@/pages/banners";
+import Gallery from "@/pages/gallery";
 import Products from "@/pages/products/products";
 import { CategoryContextProvider } from "./context/categories-context";
 import { ImportProvider } from "./context/import-context";
@@ -218,6 +219,14 @@ const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <Banners />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/dashboard/galeria",
+    element: (
+      <ProtectedRoute>
+        <Gallery />
       </ProtectedRoute>
     ),
   },
