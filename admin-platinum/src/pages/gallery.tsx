@@ -98,7 +98,7 @@ const Gallery = () => {
 
   return (
     <Layout>
-      <section className="max-w-[1000px] mx-auto">
+      <section className="w-full max-w-full">
         <h1 className="text-2xl font-semibold mb-4">Galería</h1>
 
         <Card>
